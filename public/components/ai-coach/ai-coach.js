@@ -298,6 +298,9 @@
     else if (act === 'plan-save') savePlan();
     else if (act === 'goal-take') setGoal({ kind: b.getAttribute('data-kind'), target: Number(b.getAttribute('data-target')) });
     else if (act === 'goal-drop') setGoal(null);
+    else if (act === 'commit-take') setCommit({ kind: b.getAttribute('data-kind'), target: Number(b.getAttribute('data-target')), day: b.getAttribute('data-day') });
+    else if (act === 'commit-drop') setCommit(null);
+    else if (act === 'action-apply') applyAction(b);
     else if (act === 'desktop') setDesktop(b.getAttribute('aria-checked') !== 'true');
     else if (act === 'settings') { if (S.view === 'settings') showChat(); else showSettings(); }
     else if (act === 'back') showChat();
@@ -531,7 +534,7 @@
       '</div></div>';
   }
   var GOAL_TR = { stop_every_trade: 'Her işlemde stop kullan', max_trades_per_day: 'Günde en fazla {target} işlem', stop_after_losses: 'Art arda {target} kayıptan sonra o gün dur',
-    max_daily_loss: 'Günlük zarar {target} olunca dur', no_size_up_after_loss: 'Kayıptan sonra lot büyütme' };
+    max_daily_loss: 'Günlük zarar {target} olunca dur', no_size_up_after_loss: 'Kayıptan sonra lot büyütme', no_trading: 'Hiç işlem açma' };
   function goalText(g) { return _t('aiCoach.goal.' + g.kind, GOAL_TR[g.kind] || g.kind, { target: g.kind === 'max_daily_loss' ? money(g.target) : g.target }); }
   // start screen: last week in one line, the goal's result, and this week's goal (taken: progress; else a suggestion to take)
   function weeklyCard(w) {
@@ -569,6 +572,165 @@
       if (S.view === 'chat' && !S.messages.length) renderMessages();
     }).catch(function () { toast(_t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error'); });
   }
+  // ---------------------------------------------------------------- daily promises (_shared/commitments.ts)
+  // The coach ends an answer with a [[commit:KIND:TARGET:WHEN]] line; the server resolves it to { kind:'commit', commit:
+  // { kind, target, day } } in visuals and the line becomes a card with an "I promise" button. Taken: coach_settings.plan.commitment.
+  var COMMIT_LINE = /^\s*\[\[(commit:[a-z_]+:[0-9.]+:(?:today|tomorrow))\]\]\s*$/;
+  function localDay(offset) {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + (offset || 0) * 864e5)); }
+    catch (e) { return new Date(Date.now() + (offset || 0) * 864e5).toISOString().slice(0, 10); }
+  }
+  function dayLabel(day) {
+    if (day === localDay(0)) return _t('aiCoach.commit.today', 'Bugün');
+    if (day === localDay(1)) return _t('aiCoach.commit.tomorrow', 'Yarın');
+    if (day === localDay(-1)) return _t('aiCoach.commit.yesterday', 'Dün');
+    try { return new Intl.DateTimeFormat(lang(), { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(day + 'T12:00:00Z')); } catch (e) { return day; }
+  }
+  function sameCommit(a, b) { return !!a && !!b && a.kind === b.kind && Number(a.target) === Number(b.target) && a.day === b.day; }
+  function renderCommit(v) {
+    var c = v.commit, box = el('div', 'wwai-commit');
+    var taken = sameCommit(S.prefs && S.prefs.plan && S.prefs.plan.commitment, c), past = c.day < localDay(0);
+    box.appendChild(el('span', 'wwai-commit-label', esc(_t('aiCoach.commit.offer', 'Söz')) + ' · ' + esc(dayLabel(c.day))));
+    box.appendChild(el('b', 'wwai-commit-text', esc(goalText(c))));
+    if (taken) box.appendChild(el('span', 'wwai-commit-state is-pos', esc(_t('aiCoach.commit.taken_short', 'Söz verdin. Gün bitince bakacağım.'))));
+    else if (past) box.appendChild(el('span', 'wwai-commit-state', esc(_t('aiCoach.commit.expired', 'Bu sözün günü geçti.'))));
+    else {
+      var b = el('button', 'wwai-upgrade', esc(_t('aiCoach.commit.take', 'Söz veriyorum'))); b.type = 'button';
+      b.setAttribute('data-act', 'commit-take'); b.setAttribute('data-kind', c.kind); b.setAttribute('data-target', String(c.target)); b.setAttribute('data-day', c.day);
+      box.appendChild(b);
+    }
+    return box;
+  }
+  // start screen: the open promise and how the day goes, the latest result, the record of the last 30 days
+  function commitCard(st) {
+    var box = el('div', 'wwai-week wwai-commit-card'), cur = st.current, last = st.last;
+    if (last && !(cur && cur.day === last.day)) {
+      box.appendChild(el('p', 'wwai-week-goal ' + (last.kept ? 'is-pos' : 'is-neg'), esc(last.kept
+        ? _t('aiCoach.commit.kept', '{day} sözünü tuttun: {goal}', { day: dayLabel(last.day), goal: goalText(last) })
+        : _t('aiCoach.commit.missed', '{day} sözün tutmadı ({n} ihlal): {goal}', { day: dayLabel(last.day), goal: goalText(last), n: last.breaks }))));
+    }
+    if (cur) {
+      var row = el('div', 'wwai-week-now');
+      var state = cur.status === 'upcoming' ? '' : ' · ' + esc(cur.breaks ? _t('aiCoach.week.breaks', '{n} ihlal', { n: cur.breaks }) : _t('aiCoach.week.clean', 'şimdilik temiz'));
+      row.appendChild(el('span', '', esc(_t('aiCoach.commit.current', '{day} için sözün', { day: dayLabel(cur.day) })) + ': <b>' + esc(goalText(cur)) + '</b>' + state));
+      row.appendChild(el('button', 'wwai-link', esc(_t('aiCoach.week.drop', 'Bırak')))).setAttribute('data-act', 'commit-drop');
+      box.appendChild(row);
+    }
+    if (st.record && st.record.total) box.appendChild(el('p', 'wwai-commit-record', esc(_t('aiCoach.commit.record', 'Son 30 günde {total} sözün {kept} tanesini tuttun.', { kept: st.record.kept, total: st.record.total }))));
+    return box;
+  }
+  function setCommit(c) {
+    session().then(function (s) {
+      if (!s) throw new Error('session');
+      return fetch(endpoint() + '/functions/v1/ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() },
+        body: JSON.stringify({ action: 'commit', commit: c, tz: tz() }) }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      if (!j || !j.ok) throw new Error('commit');
+      S.prefs = S.prefs || {}; S.prefs.plan = Object.assign({}, S.prefs.plan || {}); if (j.commitment) S.prefs.plan.commitment = j.commitment; else delete S.prefs.plan.commitment;
+      S.snap = {};
+      toast(j.commitment ? _t('aiCoach.commit.taken', 'Sözün kaydedildi. Gün bitince sonucuna birlikte bakacağız.') : _t('aiCoach.commit.dropped', 'Söz bırakıldı.'), 'success');
+      if (S.view === 'chat') renderMessages();
+    }).catch(function () { toast(_t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error'); });
+  }
+  // ---------------------------------------------------------------- action cards (_shared/actions.ts)
+  // The coach prepares a change ([[action:aN]] line, the clean action in visuals); nothing happens until the member taps
+  // "Apply". The server validates it again; the monthly profit target lives in this browser (dashboard), so it is set here.
+  var ACTION_LINE = /^\s*\[\[(action:a[1-3])\]\]\s*$/;
+  var APPLIED_KEY = 'ww_ai_coach_applied';
+  function appliedSet() { try { return JSON.parse(sessionStorage.getItem(APPLIED_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function actionKey(a) { return JSON.stringify(a) + '|' + (a.type === 'add_strategy' || a.type === 'set_monthly_target' ? actionJournal() : ''); }
+  function markApplied(a, v) { var m = appliedSet(); m[actionKey(a)] = v; try { sessionStorage.setItem(APPLIED_KEY, JSON.stringify(m)); } catch (e) { /* ignore */ } }
+  // the journal a strategy / monthly target goes to: the chat's journal, else the one in view, else the active one
+  function actionJournal() {
+    var j = S.convJournal || currentJournal();
+    if (!j) { try { j = (global.journal && global.journal.getActiveJournalId && global.journal.getActiveJournalId()) || ''; } catch (e) { j = ''; } }
+    return j || '';
+  }
+  function journalName(id) { var l = S.journals || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].name; return ''; }
+  function monthlyTarget(jid) { try { var v = Number(localStorage.getItem('ww_monthly_target_' + (jid || ''))); return v > 0 ? v : null; } catch (e) { return null; } }
+  var PLAN_LABEL = { max_trades_per_day: ['aiCoach.plan.max_trades', 'Günlük en fazla işlem'], max_daily_loss: ['aiCoach.plan.max_daily_loss', 'Günlük en fazla zarar'],
+    max_loss_per_trade: ['aiCoach.plan.max_trade_loss', 'İşlem başına en fazla zarar'], require_stop: ['aiCoach.plan.require_stop', 'Her işlemde stop zorunlu'], no_trading_after: ['aiCoach.plan.no_after', 'Bu saatten sonra işlem yok'] };
+  function ruleValue(k, v) {
+    if (k === 'require_stop') return v ? _t('aiCoach.action.on', 'açık') : _t('aiCoach.action.off', 'kapalı');
+    if (k === 'no_trading_after') return (v < 10 ? '0' : '') + v + ':00';
+    if (k === 'max_daily_loss' || k === 'max_loss_per_trade') return money(v);
+    return String(v);
+  }
+  function renderAction(a) {
+    var box = el('div', 'wwai-commit wwai-action'), title = '', lines = [], btn = '';
+    var done = appliedSet()[actionKey(a)];
+    if (a.type === 'add_strategy') {
+      title = _t('aiCoach.action.strategy', 'Yeni strateji');
+      lines.push('<b><span class="wwai-action-dot" style="background:' + esc(a.color) + '"></span>' + esc(a.name) + '</b>');
+      if (a.description) lines.push('<span class="wwai-action-desc">' + esc(a.description) + '</span>');
+      var jn = journalName(actionJournal());
+      if (jn) lines.push('<span class="wwai-action-sub">' + esc(_t('aiCoach.action.journal', 'Defter: {name}', { name: jn })) + '</span>');
+      btn = _t('aiCoach.action.add_strategy', 'Stratejiyi ekle');
+    } else if (a.type === 'set_plan') {
+      title = _t('aiCoach.action.plan', 'İşlem planı');
+      var cur = (S.prefs && S.prefs.plan) || {}, changes = 0;
+      Object.keys(a.rules || {}).forEach(function (k) {
+        var L = PLAN_LABEL[k]; if (!L) return;
+        if (cur[k] === a.rules[k]) return;                  // the coach repeated a rule the plan already has
+        changes++;
+        var was = cur[k] != null && cur[k] !== a.rules[k] ? ' <span class="wwai-action-sub">(' + esc(_t('aiCoach.action.was', 'şu an {v}', { v: ruleValue(k, cur[k]) })) + ')</span>' : '';
+        lines.push(esc(_t(L[0], L[1])) + ': <b>' + esc(ruleValue(k, a.rules[k])) + '</b>' + was);
+      });
+      (a.remove || []).forEach(function (k) { var L = PLAN_LABEL[k]; if (L && cur[k] != null) { changes++; lines.push(esc(_t('aiCoach.action.remove', 'Kaldır: {rule}', { rule: _t(L[0], L[1]) }))); } });
+      if (!changes) { lines.push(esc(_t('aiCoach.action.same', 'Planında zaten bu kurallar var.'))); done = done || 'same'; }
+      btn = _t('aiCoach.action.update_plan', 'Planı güncelle');
+    } else if (a.type === 'set_goal') {
+      title = _t('aiCoach.action.goal', 'Bu haftanın hedefi');
+      lines.push('<b>' + esc(goalText(a)) + '</b>');
+      btn = _t('aiCoach.week.take', 'Hedef olarak al');
+    } else if (a.type === 'set_monthly_target') {
+      title = _t('aiCoach.action.monthly', 'Aylık kâr hedefi');
+      var now = monthlyTarget(actionJournal());
+      lines.push('<b>' + esc(money(a.amount)) + '</b>' + (now && now !== a.amount ? ' <span class="wwai-action-sub">(' + esc(_t('aiCoach.action.was', 'şu an {v}', { v: money(now) })) + ')</span>' : ''));
+      var jn2 = journalName(actionJournal());
+      if (jn2) lines.push('<span class="wwai-action-sub">' + esc(_t('aiCoach.action.journal', 'Defter: {name}', { name: jn2 })) + '</span>');
+      btn = _t('aiCoach.action.save_target', 'Hedefi kaydet');
+    } else return box;
+    box.appendChild(el('span', 'wwai-commit-label', esc(title)));
+    box.appendChild(el('div', 'wwai-action-body', lines.map(function (x) { return '<div>' + x + '</div>'; }).join('')));
+    if (done === 'same') { /* nothing to apply: the line above says so */ }
+    else if (done) box.appendChild(el('span', 'wwai-commit-state is-pos', esc(done === 'exists' ? _t('aiCoach.action.exists', 'Bu isimde bir strateji zaten var.') : _t('aiCoach.action.done', 'Uygulandı.'))));
+    else {
+      var b = el('button', 'wwai-upgrade', esc(btn)); b.type = 'button'; b.setAttribute('data-act', 'action-apply');
+      b._action = a; box.appendChild(b);
+    }
+    return box;
+  }
+  function applyAction(btn) {
+    var a = btn && btn._action; if (!a || btn.disabled) return;
+    btn.disabled = true;
+    var jid = actionJournal();
+    function finish(state, msg) { markApplied(a, state); toast(msg, 'success'); S.snap = {}; renderMessages(); }
+    if (a.type === 'set_monthly_target') {                    // the dashboard reads it from this browser
+      if (!jid) { btn.disabled = false; toast(_t('aiCoach.action.no_journal', 'Önce bir defter seç.'), 'error'); return; }
+      try { localStorage.setItem('ww_monthly_target_' + jid, String(a.amount)); } catch (e) { btn.disabled = false; toast(_t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error'); return; }
+      try { global.dispatchEvent(new CustomEvent('ww:monthly-target', { detail: { journalId: jid, amount: a.amount } })); } catch (e) { /* ignore */ }
+      finish('done', _t('aiCoach.action.target_saved', 'Aylık hedefin kaydedildi.'));
+      return;
+    }
+    session().then(function (s) {
+      if (!s) throw new Error('session');
+      return fetch(endpoint() + '/functions/v1/ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() },
+        body: JSON.stringify({ action: 'apply', act: a, journalId: jid || null, tz: tz() }) }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      if (!j || !j.ok) throw Object.assign(new Error('apply'), { code: j && j.code });
+      if (j.plan) { S.prefs = S.prefs || {}; S.prefs.plan = j.plan; }
+      if (a.type === 'add_strategy') {
+        if (global.wwCache && global.wwCache.invalidate) try { global.wwCache.invalidate('strategies'); } catch (e) { /* ignore */ }
+        if (!j.existed) try { global.dispatchEvent(new CustomEvent('strategy-saved')); } catch (e) { /* ignore */ }
+        finish(j.existed ? 'exists' : 'done', j.existed ? _t('aiCoach.action.exists', 'Bu isimde bir strateji zaten var.') : _t('aiCoach.action.strategy_added', '"{name}" stratejin eklendi.', { name: a.name }));
+      } else if (a.type === 'set_plan') finish('done', _t('aiCoach.plan.saved', 'Planın kaydedildi.'));
+      else finish('done', _t('aiCoach.week.taken', 'Hedefin kaydedildi. Hafta boyunca takip edeceğim.'));
+    }).catch(function (e) {
+      btn.disabled = false;
+      toast(e && e.code === 'NO_JOURNAL' ? _t('aiCoach.action.no_journal', 'Önce bir defter seç.') : _t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error');
+    });
+  }
   function savePlan() {
     var f = R.settings, raw = {};
     f.querySelectorAll('[data-plan]').forEach(function (x) {
@@ -582,11 +744,17 @@
     if (raw.no_trading_after != null && (raw.no_trading_after < 0 || raw.no_trading_after > 23)) delete raw.no_trading_after;
     session().then(function (s) {
       if (!s || !s.user) throw new Error('session');
-      var old = (S.prefs && S.prefs.plan) || {}, keep = {};                     // the weekly goal and the coach choice live in the plan too
-      if (old.goal) keep.goal = old.goal;
-      if (old.coach || storedCoach()) keep.coach = old.coach || storedCoach();
-      raw = Object.assign(raw, keep);
-      return global.sb.from('coach_settings').upsert({ user_id: s.user.id, plan: raw, time_zone: tz() }, { onConflict: 'user_id' });
+      // the weekly goal, the coach choice and the daily promise (and its log) live in the plan too: every key that is not a
+      // rule is kept as it is. Read from the server first: it may have settled a promise since the panel loaded (writing
+      // the copy loaded earlier back would bring the settled promise back and notify twice).
+      return global.sb.from('coach_settings').select('plan').eq('user_id', s.user.id).maybeSingle().then(function (cur) {
+        if (cur && cur.error) throw cur.error;
+        var old = (cur && cur.data && cur.data.plan) || {}, keep = {}, RULES = ['max_trades_per_day', 'max_daily_loss', 'max_loss_per_trade', 'require_stop', 'no_trading_after'];
+        Object.keys(old).forEach(function (k) { if (RULES.indexOf(k) < 0) keep[k] = old[k]; });
+        if (!keep.coach && storedCoach()) keep.coach = storedCoach();
+        raw = Object.assign(raw, keep);
+        return global.sb.from('coach_settings').upsert({ user_id: s.user.id, plan: raw, time_zone: tz() }, { onConflict: 'user_id' });
+      });
     }).then(function (r) {
       if (r && r.error) throw r.error;
       S.prefs = Object.assign({}, S.prefs || {}, { plan: raw }); S.snap = {};          // the opening screen re-reads the score
@@ -681,6 +849,20 @@
     if (m.streaming && lines.length && /^\s*\[\[/.test(lines[lines.length - 1])) lines.pop();
     function flush() { if (chunk.length) { var d = el('div', 'wwai-md', md(chunk.join('\n'))); body.appendChild(d); chunk = []; } }
     lines.forEach(function (ln) {
+      var am = ACTION_LINE.exec(ln);
+      if (am) {                                              // a change the coach prepared: card with "Apply"
+        flush();
+        var ad = m.visuals && m.visuals[am[1]];
+        if (ad && ad.kind === 'action' && ad.action) body.appendChild(renderAction(ad.action));
+        return;
+      }
+      var cm = COMMIT_LINE.exec(ln);
+      if (cm) {                                              // the promise card (no data yet while streaming: nothing)
+        flush();
+        var cd = m.visuals && m.visuals[cm[1]];
+        if (cd && cd.kind === 'commit' && cd.commit) body.appendChild(renderCommit(cd));
+        return;
+      }
       var v = VIZ_LINE.exec(ln);
       if (!v) { chunk.push(ln); return; }
       flush();
@@ -815,6 +997,7 @@
     session().then(function (s) {
       if (!s) throw Object.assign(new Error('session'), { code: 'UNAUTHORIZED' });
       var cc = coach(), body = { message: text, lang: lang(), tz: tz(), stream: true, detail: detail(), coach: cc.id, tone: cc.tone, currency: currency() };
+      var mtv = monthlyTarget(actionJournal()); if (mtv) body.monthlyTarget = mtv;
       if (S.conversationId) body.conversationId = S.conversationId;
       else { var jid = currentJournal(); if (jid) body.journalId = jid; S.convJournal = jid || null; }
       if (img) body.image = { mimeType: img.mimeType, data: img.data };
@@ -1158,6 +1341,7 @@
     else for (var i = 0; i < 3; i++) card.appendChild(el('div', 'wwai-snap-cell wwai-skel'));
     wrap.appendChild(card);
     // personal findings
+    if (snap && snap.commitment) wrap.appendChild(commitCard(snap.commitment));
     if (snap && snap.weekly) wrap.appendChild(weeklyCard(snap.weekly));
     if (snap && snap.insights && snap.insights.length) {
       wrap.appendChild(el('p', 'wwai-start-label', esc(_t('aiCoach.for_you', 'Senin için'))));

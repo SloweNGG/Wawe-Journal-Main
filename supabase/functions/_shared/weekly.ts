@@ -50,7 +50,7 @@ export function goalBreaks(kind: GoalKind, target: number, trades: T[], tz: stri
   }
   return { trades: w.length, breaks };
 }
-function usualLots(trades: T[]) {
+export function usualLots(trades: T[]) {
   const m = new Map<string, number[]>();
   for (const t of trades || []) { const l = num(t.lot); if (l > 0) { const k = String(t.symbol || '').toUpperCase(); (m.get(k) || m.set(k, []).get(k)!).push(l); } }
   return new Map([...m.entries()].filter(([, v]) => v.length >= 5).map(([k, v]) => [k, median(v)]));

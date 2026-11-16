@@ -16,7 +16,12 @@
 //   POST { action: "alerts", journalId, tz? } -> { ok, alerts }: live coach checks after a manual trade (_shared/coach-alerts.ts),
 //   written to public.notifications like after a sync; saves the member's zone in coach_settings. No Gemini call.
 //   POST { action: "goal", goal: { kind, target } | null, tz? } -> { ok, goal }: this week's goal (_shared/weekly.ts) in coach_settings.plan.goal.
-//   snapshot / alerts also write last week's review once (notification coach.weekly, _shared/weekly.ts).
+//   POST { action: "commit", commit: { kind, target, day } | null, tz? } -> { ok, commitment }: the member takes (or drops) the
+//   promise the coach proposed with a [[commit:...]] line (_shared/commitments.ts), stored in coach_settings.plan.commitment.
+//   POST { action: "apply", act: { type, ... }, journalId?, tz? } -> { ok, ... }: the member confirmed a card the coach wrote
+//   with an [[action:{...}]] line (_shared/actions.ts): add a strategy, set plan rules, set this week's goal. Validated again here.
+//   snapshot / alerts / chat also write last week's review once (notification coach.weekly, _shared/weekly.ts) and settle a
+//   promise whose day is over (notification coach.commit, result in plan.commitment_log).
 //   POST { action: "snapshot", journalId?, tz? } -> { ok, snapshot: { month, overall, insights, coach_suggestion } } for the panel's
 //   opening screen: numbers and rule-based findings (_shared/insights.ts), and the coach that fits the strongest finding
 //   (the coach picker's "pick for me"). No Gemini call, no message counted.
@@ -41,6 +46,8 @@ import { readPaged } from '../_shared/paged.ts';
 import { runCoachAlerts } from '../_shared/coach-alerts.ts';
 import { cleanPlan, disciplineReport, checkTrades } from '../_shared/discipline.ts';
 import { weekStart, addDays, weeklyReview, goalProgress, cleanGoal, runWeeklyReview } from '../_shared/weekly.ts';
+import { cleanCommitment, commitmentState, resolveCommitments, settleOnce } from '../_shared/commitments.ts';
+import { resolveActions, applyAction } from '../_shared/actions.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
 import { resolveCoach, coachIntro, suggestCoach, type Coach } from '../_shared/coach-personas.ts';
 import { runChain, modelHealth } from '../_shared/model-chain.ts';
@@ -82,17 +89,23 @@ function planScore(rawPlan: any, trades: any[], tz: string) {
     return rows.length ? Math.round(rows.filter((c) => !c.broken.length).length / rows.length * 1000) / 10 : null;
   };
 }
-// the weekly review covers all journals: the last 5 weeks of trades are read for it (a journal-scoped chat does not have them)
-async function weeklyOnce(admin: any, userId: string, tz: string) {
-  const { data: cs } = await admin.from('coach_settings').select('plan').eq('user_id', userId).maybeSingle();
+// the weekly review and the daily commitment cover all journals: the last 5 weeks of trades are read for them (a
+// journal-scoped chat does not have them). Writes last week's review and a finished commitment's result once.
+// -> { weekly: { review, goal }, commitment } or null on a read error
+async function coachDaily(admin: any, userId: string, tz: string) {
+  const { data: cs } = await admin.from('coach_settings').select('plan, updated_at').eq('user_id', userId).maybeSingle();
   const since = new Date(Date.now() - 35 * 864e5).toISOString();
   const rows = await readPaged((a, b) => admin.from('trades').select('symbol, lot, trade_date, exit_date, pnl, exit_price, stop_loss, platform_source')
     .eq('user_id', userId).gte('trade_date', since).order('trade_date', { ascending: false }).range(a, b), 3000);
   if (!rows) return null;
+  await settleOnce(admin, userId, cs || null, rows, tz);          // updates cs.plan when it settles
   const goal = cs?.plan?.goal || null;
   const written = await runWeeklyReview(admin, userId, rows, { tz, goal, discipline: planScore(cs?.plan, rows, tz) });
   const lastWs = addDays(weekStart(Date.now(), tz), -7);
-  return { review: written || weeklyReview(rows, tz, lastWs, goal, planScore(cs?.plan, rows, tz)), goal: goalProgress(rows, tz, goal, Date.now()) };
+  return {
+    weekly: { review: written || weeklyReview(rows, tz, lastWs, goal, planScore(cs?.plan, rows, tz)), goal: goalProgress(rows, tz, goal, Date.now()) },
+    commitment: commitmentState(cs?.plan, rows, tz, Date.now()),
+  };
 }
 
 // Everything the coach knows about the member: trade summary (+ prop challenge state) and the raw trades for the charts.
@@ -290,8 +303,9 @@ serve(async (req: Request) => {
     const sum = loaded.summary;
     const p = new Intl.DateTimeFormat('en-CA', { timeZone: tzs, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
     const nowMonth = `${p.find((x) => x.type === 'year')?.value}-${p.find((x) => x.type === 'month')?.value}`;
-    const weekly = await weeklyOnce(adm, user.id, tzs).catch(() => null);
-    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum), weekly, coach_suggestion: suggestCoach(pickInsights(sum, 50)) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+    const daily = await coachDaily(adm, user.id, tzs).catch(() => null);
+    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum), weekly: daily?.weekly || null,
+      commitment: daily?.commitment || null, coach_suggestion: suggestCoach(pickInsights(sum, 50)) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
   }
   if (body?.action === 'goal') {
     // the member takes (or drops: goal null) this week's goal; stored in coach_settings.plan.goal, rules kept
@@ -307,6 +321,34 @@ serve(async (req: Request) => {
     if (ue) return fail('SERVER', 'Could not save the goal.', 500, cors);
     return jsonRes({ ok: true, goal: g }, 200, { ...cors, 'Cache-Control': 'no-store' });
   }
+  if (body?.action === 'commit') {
+    // the member takes the coach's promise for today / tomorrow (or drops it: commit null); a finished one is settled first
+    const tzs = safeTimeZone(body?.tz);
+    const c = body?.commit == null ? null : cleanCommitment(body.commit, Date.now(), tzs);
+    if (body?.commit != null && !c) return fail('BAD_REQUEST', 'Invalid commitment.', 400, cors);
+    const adm = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+    const daily = await coachDaily(adm, user.id, tzs).catch(() => null);         // settles yesterday's before it is replaced
+    if (!daily) return fail('SERVER', 'Could not save the commitment.', 500, cors);
+    const { data: cs, error: ce } = await adm.from('coach_settings').select('plan').eq('user_id', user.id).maybeSingle();
+    if (ce) return fail('SERVER', 'Could not save the commitment.', 500, cors);
+    const plan = { ...((cs && cs.plan) || {}) };
+    if (c) plan.commitment = c; else delete plan.commitment;
+    const { error: ue } = await adm.from('coach_settings').upsert({ user_id: user.id, plan, time_zone: tzs }, { onConflict: 'user_id' });
+    if (ue) return fail('SERVER', 'Could not save the commitment.', 500, cors);
+    return jsonRes({ ok: true, commitment: c }, 200, { ...cors, 'Cache-Control': 'no-store' });
+  }
+  if (body?.action === 'apply') {
+    // a card the member confirmed: never trusted as sent, applyAction validates it again
+    const tzs = safeTimeZone(body?.tz);
+    const jid = typeof body?.journalId === 'string' ? body.journalId : null;
+    const adm = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+    const r: any = await applyAction(adm, user.id, body?.act, { journalId: jid, tz: tzs }).catch(() => ({ ok: false, code: 'SERVER' }));
+    if (!r.ok) {
+      const st = r.code === 'BAD_REQUEST' || r.code === 'NO_JOURNAL' ? 400 : r.code === 'NOT_FOUND' ? 404 : 500;
+      return fail(r.code, 'Could not apply.', st, cors);
+    }
+    return jsonRes(r, 200, { ...cors, 'Cache-Control': 'no-store' });
+  }
   if (body?.action === 'alerts') {
     // after a manual trade: the same live checks the sync functions run; also remembers the member's zone for them
     const jid = typeof body?.journalId === 'string' ? body.journalId : '';
@@ -319,7 +361,7 @@ serve(async (req: Request) => {
       const { error: tze } = await adm.from('coach_settings').upsert({ user_id: user.id, time_zone: tzs }, { onConflict: 'user_id' });
       if (tze) console.error('ai-coach: time zone not saved:', String(tze.code || '-'));
     }
-    await weeklyOnce(adm, user.id, tzs).catch(() => null);
+    await coachDaily(adm, user.id, tzs).catch(() => null);
     const alerts = await runCoachAlerts(adm, user.id, jid, {
       tz: tzs, propContextFor: async (j: string) => (await loadPropContexts(adm, user.id, j))[0] || null,
     });
@@ -370,10 +412,15 @@ serve(async (req: Request) => {
   async function run(send: (event: string, data: unknown) => void): Promise<Outcome> {
     try {
       const t0 = Date.now();
-      const loaded = await loadContext(admin, user!.id, scopeJournal, tz);
+      const [loaded, daily] = await Promise.all([loadContext(admin, user!.id, scopeJournal, tz), coachDaily(admin, user!.id, tz).catch(() => null)]);
       const tCtx = Date.now();
       if (!loaded) { await refund(); return { ok: false, code: 'SERVER', message: 'Could not read the journal.', status: 500 }; }
       const context = loaded.summary;
+      // all journals, like the weekly goal. The latest result is told once, in the first answer of a new chat.
+      if (daily?.commitment) context.commitment = { ...daily.commitment, mention_last: !conversation && !!daily.commitment.last };
+      // the dashboard's monthly profit target lives in the browser: the panel sends it for the journal in view
+      const mt = Number(body?.monthlyTarget);
+      if (Number.isFinite(mt) && mt > 0 && mt < 1e9) context.monthly_profit_target = Math.round(mt * 100) / 100;
       const equity = equityCurve(loaded.trades);
 
       let msgs: any[] = [];
@@ -410,7 +457,10 @@ serve(async (req: Request) => {
         if (lastStatus === 429 || lastStatus === 503) return { ok: false, code: 'BUSY', message: 'The AI service is busy. Try again in a minute.', status: 503 };
         return { ok: false, code: 'UPSTREAM', message: 'The AI service could not answer. Try again shortly.', status: 502 };
       }
-      const { text: reply, visuals } = resolveVisuals(got.text, context, equity);
+      const rv = resolveVisuals(got.text, context, equity);
+      const rc = resolveCommitments(rv.text, Date.now(), tz);         // the "I promise" card: absolute day, never the model's
+      const ra = resolveActions(rc.text);                           // cards the member confirms (strategy, plan, goals)
+      const reply = ra.text, visuals: Record<string, unknown> = { ...rv.visuals, ...rc.visuals, ...ra.visuals };
 
       let cid = conversation?.id ?? null;
       if (!cid) {

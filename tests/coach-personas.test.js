@@ -133,7 +133,7 @@ describe('panel and locales', () => {
       }
       for (const k of ['title', 'question', 'hint', 'suggest', 'take', 'done', 'change', 'yours', 'tone', 'tone_soft', 'tone_balanced', 'tone_strict', 'tone_soft_hint', 'tone_balanced_hint', 'tone_strict_hint'])
         assert.ok(loc['aiCoach.coach.' + k], l + ' aiCoach.coach.' + k);
-      const titles = Object.keys(loc).filter((k) => /^coach\.(alert\.[a-z_]+|weekly)\.title$/.test(k));
+      const titles = Object.keys(loc).filter((k) => /^coach\.(alert\.[a-z_]+|weekly|commit)\.title$/.test(k));
       assert.ok(titles.length >= 15, l + ' titles');
       for (const k of titles) assert.match(loc[k], /^\{coach\}: /, l + ' ' + k);
       for (const k of ['aiCoach.open', 'aiCoach.err.off', 'aiCoach.set.desktop_test']) assert.match(loc[k], /\{coach\}/, l + ' ' + k);
