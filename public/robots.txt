@@ -5,11 +5,9 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /settings/
-Disallow: /login
-Disallow: /register
-Disallow: /forgot-password
-Disallow: /update-password
 Disallow: /api/
+# Auth pages (/login, /register, /forgot-password, /update-password) are not blocked here on purpose:
+# they carry <meta name="robots" content="noindex">, which crawlers can only see if they may fetch the page.
 
 Sitemap: https://wawejournal.com/sitemap.xml
 

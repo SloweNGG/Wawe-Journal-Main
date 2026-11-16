@@ -1,0 +1,19 @@
+---
+// Bilinmeyen adresler için sayfa. Cloudflare Pages, dist/404.html varsa eşleşmeyen her yola bunu
+// 404 durum koduyla döner. Bu dosya yokken Pages "SPA modu"na geçip her yola 200 + ana sayfa
+// veriyordu (soft 404: Google bunları yinelenen içerik sayar, /llms.txt gibi yollar da yanlış çıkar).
+import PageLayout from '../layouts/PageLayout.astro';
+---
+<PageLayout title="Page Not Found – Wawe Journal" description="This page does not exist or has moved." noIndex={true}>
+  <section class="page-hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="notfound.pill">404</b></span>
+      <h1 class="anim" style="--d:.15s" data-i18n="notfound.title">Page not found</h1>
+      <p class="page-lead anim" style="--d:.3s" data-i18n="notfound.desc">The page you are looking for does not exist or has moved. Check the address, or start from one of the links below.</p>
+      <div class="page-actions">
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Back to Home</a>
+        <a href="/contact" class="btn btn-line" data-i18n="notfound.contact">Contact support</a>
+      </div>
+    </div>
+  </section>
+</PageLayout>

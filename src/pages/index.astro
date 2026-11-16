@@ -6,7 +6,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   lang="en"
   showNavbar={false}
   title="Wawe Journal - Trading Journal with Built-in Backtest Replay"
-  description="Log every trade, find your mistakes and test your strategy. Trading journal, analytics and candle-by-candle backtest replay with cTrader sync and prop firm tracking."
+  description="Log every trade, find your mistakes and test your strategy. A trading journal with analytics, backtest replay, cTrader sync and prop firm tracking."
   canonical="https://wawejournal.com/"
 >
 <Fragment slot="head">
@@ -38,6 +38,18 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "alternateName": ["WaweJournal"],
         "url": "https://wawejournal.com/",
         "logo": "https://wawejournal.com/images/brand/logo-512.png",
+        "email": "support@wawejournal.com",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "support@wawejournal.com",
+          "availableLanguage": ["English", "Turkish", "German"]
+        },
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "WaweDev",
+          "url": "https://wawedev.com"
+        },
         "sameAs": [
           "https://www.instagram.com/wawejournal/"
         ]
@@ -52,11 +64,52 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "operatingSystem": "Web",
         "url": "https://wawejournal.com/",
         "author": { "@id": "https://wawejournal.com/#organization" },
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
+        "inLanguage": ["en", "tr", "de"],
+        "featureList": [
+          "Trade journal with tags, strategies, screenshots and notes",
+          "Performance analytics: win rate, profit factor, expectancy, drawdown",
+          "Candle-by-candle backtest replay on synthetic or cTrader data",
+          "cTrader auto-sync (read-only)",
+          "Import from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA, CSV and Excel",
+          "Prop firm rule tracking: daily loss, max drawdown, profit target",
+          "Overtrade and daily loss alerts",
+          "Multiple journals for live, prop and practice accounts"
+        ],
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Starter",
+            "price": "0",
+            "priceCurrency": "USD",
+            "url": "https://wawejournal.com/#pricing"
+          },
+          {
+            "@type": "Offer",
+            "name": "Pro (monthly)",
+            "price": "12",
+            "priceCurrency": "USD",
+            "url": "https://wawejournal.com/#pricing",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "price": "12",
+              "priceCurrency": "USD",
+              "billingDuration": "P1M"
+            }
+          },
+          {
+            "@type": "Offer",
+            "name": "Pro (yearly)",
+            "price": "99",
+            "priceCurrency": "USD",
+            "url": "https://wawejournal.com/#pricing",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "price": "99",
+              "priceCurrency": "USD",
+              "billingDuration": "P1Y"
+            }
+          }
+        ]
       }
     ]
   }
@@ -183,7 +236,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
                   </div>
                 </div>
                 <div class="sc-view">
-                  <img class="sc-shot is-on" data-path="/dashboard" src="/images/landing/screen-dashboard.webp" alt="Wawe Journal Dashboard screen" width="1800" height="947" loading="lazy" decoding="async" />
+                  <img class="sc-shot is-on" data-path="/dashboard" src="/images/landing/screen-dashboard.webp" alt="Wawe Journal Dashboard screen" width="1800" height="947" fetchpriority="high" decoding="async" />
                   <img class="sc-shot" data-path="/trades" src="/images/landing/screen-trades.webp" alt="Wawe Journal Trades screen" width="1800" height="947" loading="lazy" decoding="async" />
                   <img class="sc-shot" data-path="/strategies" src="/images/landing/screen-strategies.webp" alt="Wawe Journal Strategies screen" width="1800" height="947" loading="lazy" decoding="async" />
                   <img class="sc-shot" data-path="/calendar" src="/images/landing/screen-calendar.webp" alt="Wawe Journal Calendar screen" width="1800" height="947" loading="lazy" decoding="async" />

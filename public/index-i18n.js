@@ -332,6 +332,12 @@
       common: {
         back_home: '← Back to Home'
       },
+      notfound: {
+        pill: '404',
+        title: 'Page not found',
+        desc: 'The page you are looking for does not exist or has moved. Check the address, or start from one of the links below.',
+        contact: 'Contact support'
+      },
       about: {
         title: 'About Us',
         founder_title: 'WaweDev',
@@ -703,6 +709,12 @@
       common: {
         back_home: '← Ana Sayfaya Dön'
       },
+      notfound: {
+        pill: '404',
+        title: 'Sayfa bulunamadı',
+        desc: 'Aradığın sayfa yok ya da taşınmış. Adresi kontrol et veya aşağıdaki bağlantılardan birinden devam et.',
+        contact: 'Destekle iletişime geç'
+      },
       about: {
         title: 'Biz Kimiz?',
         founder_title: 'WaweDev',
@@ -1072,6 +1084,12 @@
       },
       common: {
         back_home: '← Zurück zur Startseite'
+      },
+      notfound: {
+        pill: '404',
+        title: 'Seite nicht gefunden',
+        desc: 'Die gesuchte Seite existiert nicht oder wurde verschoben. Prüfe die Adresse oder mache über einen der Links unten weiter.',
+        contact: 'Support kontaktieren'
       },
       about: {
         title: 'Über uns',

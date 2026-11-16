@@ -1,0 +1,28 @@
+# Wawe Journal
+
+> Wawe Journal is a web-based trading journal for forex, futures, stock and crypto traders. It combines trade logging, performance analytics, candle-by-candle backtest replay, cTrader auto-sync and prop firm rule tracking in one app. Available in English, Turkish and German. Free Starter plan; Pro costs $12 per month or $99 per year.
+
+Wawe Journal is not a broker and never places or closes trades on a user's real accounts. Broker connections are read-only; the only orders placed in Wawe are simulated ones inside backtest practice accounts.
+
+## Product
+
+- [Home and feature overview](https://wawejournal.com/): journal, analytics, backtest replay, prop firm tracking, pricing and FAQ
+- [Pricing](https://wawejournal.com/#pricing): Starter (free) and Pro ($12/month or $99/year)
+- [FAQ](https://wawejournal.com/#faq): data sources, broker support, privacy, free plan
+
+## Key facts
+
+- Journal: log trades with tags, strategies, sessions, mistakes, screenshots and notes; multiple journals for live, prop and practice accounts.
+- Analytics: win rate, profit factor, payoff ratio, expectancy, max drawdown, cumulative P&L, strategy comparison, day and session breakdown.
+- Backtest replay: step candle by candle or play at up to 10x on Wawe's synthetic data, or on real cTrader candles up to the previous day. Simulated orders with lot size, stop loss and take profit; results are saved to a linked journal.
+- Prop firm tracking: daily loss limit, max drawdown and profit target tracked against rule sets for firms such as FTMO, FundedNext, Topstep, Funding Pips, The 5%ers, E8 Markets, Apex Trader and Alpha Capital.
+- Integrations: cTrader auto-sync is live. Statement or CSV import from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and any CSV or Excel file. MetaTrader auto-sync is in progress.
+- Starter (free): unlimited trade logging and calendar, CSV and broker import, core analytics, 1 backtest account, 1 prop firm rule tracker, cTrader auto-sync.
+- Pro: everything in Starter, up to 10 backtest accounts, up to 10 prop firm rule trackers, strategy comparison and advanced analytics, overtrade and daily loss alerts, customizable dashboard charts.
+
+## Company
+
+- [About](https://wawejournal.com/about): built by WaweDev, an independent solo developer
+- [Contact](https://wawejournal.com/contact): support@wawejournal.com, replies within 24 hours on weekdays
+- [Privacy Policy](https://wawejournal.com/privacy)
+- [Terms of Service](https://wawejournal.com/terms)

@@ -12,7 +12,8 @@ export interface Props {
 const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal', noIndex = false } = Astro.props;
 // Cloudflare "/about.html" adresini "/about"a yönlendirdiği için canonical temiz adres olmalı
 const cleanPath = Astro.url.pathname.replace(/(^|\/)index\.html$/, '/').replace(/\.html$/, '');
-const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
+// noindex sayfada (ör. 404) canonical olmaz: "dizine ekleme" ile "tercih edilen adres bu" çelişir
+const canonical = noIndex ? undefined : new URL(cleanPath, 'https://wawejournal.com').href;
 ---
 <Layout lang={lang} showNavbar={false} title={title} description={description} canonical={canonical} noIndex={noIndex}>
 <Fragment slot="head">
