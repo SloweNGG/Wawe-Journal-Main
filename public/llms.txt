@@ -22,7 +22,7 @@ Wawe Journal is not a broker and never places or closes trades on a user's real 
 
 ## Company
 
-- [About](https://wawejournal.com/about): built by WaweDev, an independent solo developer
+- [About](https://wawejournal.com/about): built by an independent solo developer
 - [Contact](https://wawejournal.com/contact): support@wawejournal.com, replies within 24 hours on weekdays
 - [Privacy Policy](https://wawejournal.com/privacy)
 - [Terms of Service](https://wawejournal.com/terms)

@@ -163,7 +163,7 @@
           "btn": "Start for free →"
         },
         "ft": {
-          "desc_h": "Trading journal, analytics and backtest replay. Part of the <a href=\"https://wawedev.com\" target=\"_blank\" rel=\"noopener\">wawedev</a> brand.",
+          "desc_h": "Trading journal, analytics and backtest replay.",
           "product": "PRODUCT",
           "company": "COMPANY",
           "social": "SOCIAL",
@@ -385,7 +385,7 @@
         about: 'About', privacy: 'Privacy', terms: 'Terms', home: 'Home',
         copy: '© 2026 Wawe Journal. All rights reserved.',
         rights: 'All rights reserved.',
-        credit: 'WaweJournal is a part of <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a> brand.'
+        credit: 'Wawe Journal'
       }
     },
 
@@ -545,7 +545,7 @@
           "btn": "Ücretsiz başla →"
         },
         "ft": {
-          "desc_h": "Trading günlüğü, analiz ve backtest replay. <a href=\"https://wawedev.com\" target=\"_blank\" rel=\"noopener\">wawedev</a> markasının bir parçası.",
+          "desc_h": "Trading günlüğü, analiz ve backtest replay.",
           "product": "ÜRÜN",
           "company": "ŞİRKET",
           "social": "SOSYAL",
@@ -761,7 +761,7 @@
         about: 'Hakkımızda', privacy: 'Gizlilik', terms: 'Şartlar', home: 'Ana Sayfa',
         copy: '© 2026 Wawe Journal. Tüm hakları saklıdır.',
         rights: 'Tüm hakları saklıdır.',
-        credit: 'WaweJournal, <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a> markasının bir parçasıdır.'
+        credit: 'Wawe Journal'
       }
     },
 
@@ -921,7 +921,7 @@
           "btn": "Kostenlos starten →"
         },
         "ft": {
-          "desc_h": "Trading-Journal, Analysen und Backtest-Replay. Teil der Marke <a href=\"https://wawedev.com\" target=\"_blank\" rel=\"noopener\">wawedev</a>.",
+          "desc_h": "Trading-Journal, Analysen und Backtest-Replay.",
           "product": "PRODUKT",
           "company": "UNTERNEHMEN",
           "social": "SOCIAL",
@@ -1138,7 +1138,7 @@
         about: 'Über uns', privacy: 'Datenschutz', terms: 'AGB', home: 'Startseite',
         copy: '© 2026 Wawe Journal. Alle Rechte vorbehalten.',
         rights: 'Alle Rechte vorbehalten.',
-        credit: 'WaweJournal ist Teil der Marke <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a>.'
+        credit: 'Wawe Journal'
       }
     }
   };
