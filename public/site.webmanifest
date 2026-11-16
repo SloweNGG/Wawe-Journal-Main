@@ -1,7 +1,7 @@
 {
   "name": "Wawe Journal",
   "short_name": "Wawe",
-  "description": "Professional Trading Journal for Traders",
+  "description": "Free trading journal, analytics and backtest replay for traders",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",
