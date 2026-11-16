@@ -90,6 +90,9 @@
 /index.css
   Cache-Control: public, max-age=31536000, immutable
 
+/landing-coach.js
+  Cache-Control: public, max-age=31536000, immutable
+
 /landing-glass.css
   Cache-Control: public, max-age=31536000, immutable
 

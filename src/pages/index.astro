@@ -6,7 +6,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   lang="en"
   showNavbar={false}
   title="Wawe Journal – Free Trading Journal & Backtesting App"
-  description="Wawe Journal is a free trading journal for forex, crypto and prop firm traders. Log every trade, find what works and replay the market candle by candle."
+  description="Wawe Journal is a free trading journal for forex, crypto and prop firm traders. Log every trade, ask an AI coach what works and replay the market candle by candle."
   canonical="https://wawejournal.com/"
 >
 <Fragment slot="head">
@@ -54,7 +54,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "@id": "https://wawejournal.com/#app",
         "name": "Wawe Journal",
         "alternateName": ["WaweJournal"],
-        "description": "Wawe Journal is a trading journal with performance analytics and built-in candle-by-candle backtest replay, cTrader sync and prop firm rule tracking.",
+        "description": "Wawe Journal is a trading journal with performance analytics, an AI coach that answers from your own trades, built-in candle-by-candle backtest replay, cTrader sync and prop firm rule tracking.",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "Web",
         "url": "https://wawejournal.com/",
@@ -63,6 +63,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "featureList": [
           "Trade journal with tags, strategies, screenshots and notes",
           "Performance analytics: win rate, profit factor, expectancy, drawdown",
+          "AI trading coach that answers from your own journal, with live alerts, a trading plan and weekly reviews",
           "Candle-by-candle backtest replay on synthetic or cTrader data",
           "cTrader auto-sync (read-only)",
           "Import from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA, CSV and Excel",
@@ -142,6 +143,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   <script src="/config.js" is:inline defer></script>
   <script src="/index-i18n.js" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/landing-coach.js" is:inline defer></script>
 </Fragment>
 
 <div class="lp">
@@ -164,6 +166,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       <nav class="navlinks" aria-label="Primary">
         <a href="#journal" data-i18n="lp.nav.journal">Journal</a>
         <a href="#analytics" data-i18n="lp.nav.analytics">Analytics</a>
+        <a href="#coach" data-i18n="lp.nav.coach">AI Coach</a>
         <a href="#backtest" data-i18n="lp.nav.backtest">Backtest</a>
         <a href="#pricing" data-i18n="lp.nav.pricing">Pricing</a>
         <a href="#faq" data-i18n="lp.nav.faq">FAQ</a>
@@ -187,12 +190,12 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
     <!-- HERO -->
     <section class="hero-scene" aria-label="Introduction">
       <div class="hero-copy">
-        <a href="#backtest" class="g hero-badge">
+        <a href="#coach" class="g hero-badge">
           <span class="mono tag-new" data-i18n="lp.hero.new">NEW</span>
-          <span data-i18n="lp.hero.new_text">Backtest is live →</span>
+          <span data-i18n="lp.hero.new_text">Meet your AI coach →</span>
         </a>
         <h1 data-i18n-html="lp.hero.title_h">Never make the same<br><span class="shine">mistake twice.</span></h1>
-        <p class="hero-sub" data-i18n="lp.hero.sub">Journal, analytics, prop firm tracking and backtest replay. All in one place.</p>
+        <p class="hero-sub" data-i18n="lp.hero.sub">Journal, analytics, an AI coach, prop firm tracking and backtest replay. All in one place.</p>
         <div class="hero-actions">
           <a href="register.html" class="b bp b-lg" data-i18n="lp.hero.start">Start for free</a>
           <a href="login.html" class="b b-lg" data-i18n="lp.hero.signin">Sign in</a>
@@ -325,6 +328,147 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       </div>
     </section>
 
+    <!-- AI COACH: the chat on the right cycles through the five coaches (public/landing-coach.js); without JS Kai stays -->
+    <section id="coach" class="sec">
+      <div class="sec-in">
+        <div class="coach">
+          <div class="coach-copy">
+            <div class="mono eyebrow accent" data-i18n="lp.c.tag">NEW · AI COACH</div>
+            <h2 data-i18n-html="lp.c.title_h">An AI coach that knows your trades. <span class="dim">Not just the market.</span></h2>
+            <p class="soft-p" data-i18n="lp.c.d">Ask anything about your trading. The coach answers from your own journal: your trades, strategies, notes, prop challenges and backtests. Type, speak or drop in a chart screenshot.</p>
+            <div class="coach-pick">
+              <div class="mono coach-pick-h" data-i18n="lp.c.pick">PICK THE COACH FOR WHAT HOLDS YOU BACK</div>
+              <div class="personas">
+                <button type="button" class="g persona is-on" data-coach="kai" aria-pressed="true"><span class="wwc-av wwc-av-kai" style="--av:26px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span><b>Kai</b><span data-i18n="lp.c.kai">All-round</span><span class="persona-bar" aria-hidden="true"></span></button>
+                <button type="button" class="g persona" data-coach="mira" aria-pressed="false"><span class="wwc-av wwc-av-mira" style="--av:26px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span><b>Mira</b><span data-i18n="lp.c.mira">Psychology</span><span class="persona-bar" aria-hidden="true"></span></button>
+                <button type="button" class="g persona" data-coach="rex" aria-pressed="false"><span class="wwc-av wwc-av-rex" style="--av:26px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span><b>Rex</b><span data-i18n="lp.c.rex">Overtrading</span><span class="persona-bar" aria-hidden="true"></span></button>
+                <button type="button" class="g persona" data-coach="atlas" aria-pressed="false"><span class="wwc-av wwc-av-atlas" style="--av:26px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span><b>Atlas</b><span data-i18n="lp.c.atlas">Discipline</span><span class="persona-bar" aria-hidden="true"></span></button>
+                <button type="button" class="g persona" data-coach="nova" aria-pressed="false"><span class="wwc-av wwc-av-nova" style="--av:26px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span><b>Nova</b><span data-i18n="lp.c.nova">Risk</span><span class="persona-bar" aria-hidden="true"></span></button>
+              </div>
+            </div>
+            <div><a href="register.html" class="b bp" data-i18n="lp.c.cta">Meet your coach</a></div>
+          </div>
+          <div class="g chat" data-coach="kai">
+            <div class="chat-orb" aria-hidden="true"></div>
+            <div class="convos">
+              <div class="convo is-on" data-coach="kai">
+                <div class="chat-head">
+                  <span class="chat-face"><span class="wwc-av wwc-av-kai" style="--av:40px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span></span>
+                  <span class="chat-who"><span class="chat-name">Kai <span class="dim">· <span data-i18n="lp.c.role">AI Coach</span></span></span><span class="chat-focus" data-i18n="lp.c.kai">All-round</span></span>
+                  <span class="mono rules-ex" data-i18n="lp.p.example">example</span>
+                </div>
+                <div class="msg msg-me" data-i18n="lp.c.kai_q">How did my month go?</div>
+                <div class="ai-slot">
+                  <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+                  <div class="msg msg-ai">
+                    <p data-i18n-html="lp.c.kai_a">Net <span class="nw">+$1,860</span> over 42 trades, 57% win rate. Tuesday to Thursday carries the month; Fridays cost you <span class="nw">−$610</span>.</p>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.kai_b1">Tue–Thu · win rate</span><span class="mono">63%</span></div><div class="bar"><div class="bar-fill bf-g" style="width:63%"></div></div></div>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.kai_b2">Friday · win rate</span><span class="mono">29%</span></div><div class="bar"><div class="bar-fill bf-r" style="width:29%"></div></div></div>
+                    <p class="msg-tip" data-i18n="lp.c.kai_a2">Sit out Fridays for two weeks, then we compare.</p>
+                  </div>
+                </div>
+                <div class="chat-alert">
+                  <span class="chat-alert-t" data-i18n="lp.c.kai_at">Kai: more trades than usual today</span>
+                  <span data-i18n="lp.c.kai_ad">9 trades today, you usually make 4. Late trades of the day tend to go worse.</span>
+                </div>
+              </div>
+              <div class="convo" data-coach="mira" aria-hidden="true">
+                <div class="chat-head">
+                  <span class="chat-face"><span class="wwc-av wwc-av-mira" style="--av:40px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span></span>
+                  <span class="chat-who"><span class="chat-name">Mira <span class="dim">· <span data-i18n="lp.c.role">AI Coach</span></span></span><span class="chat-focus" data-i18n="lp.c.mira">Psychology</span></span>
+                  <span class="mono rules-ex" data-i18n="lp.p.example">example</span>
+                </div>
+                <div class="msg msg-me" data-i18n="lp.c.mira_q">Which emotions cost me money?</div>
+                <div class="ai-slot">
+                  <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+                  <div class="msg msg-ai">
+                    <p data-i18n-html="lp.c.mira_a">FOMO. Your 14 trades with “FOMO” in the note lost <span class="nw">−$980</span> in total, while your calm trades are in profit.</p>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.mira_b1">Calm trades · win rate</span><span class="mono">61%</span></div><div class="bar"><div class="bar-fill bf-g" style="width:61%"></div></div></div>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.mira_b2">“FOMO” trades · win rate</span><span class="mono">21%</span></div><div class="bar"><div class="bar-fill bf-r" style="width:21%"></div></div></div>
+                    <p class="msg-tip" data-i18n="lp.c.mira_a2">When you feel you’re missing out, write one line on why before you enter. Most of those trades won’t survive it.</p>
+                  </div>
+                </div>
+                <div class="chat-alert">
+                  <span class="chat-alert-t" data-i18n="lp.c.mira_at">Mira: bigger size after a loss</span>
+                  <span data-i18n="lp.c.mira_ad">Your last trade was 2.5× your usual lot, right after a loss. Trying to win it back is the most expensive mistake.</span>
+                </div>
+              </div>
+              <div class="convo" data-coach="rex" aria-hidden="true">
+                <div class="chat-head">
+                  <span class="chat-face"><span class="wwc-av wwc-av-rex" style="--av:40px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span></span>
+                  <span class="chat-who"><span class="chat-name">Rex <span class="dim">· <span data-i18n="lp.c.role">AI Coach</span></span></span><span class="chat-focus" data-i18n="lp.c.rex">Overtrading</span></span>
+                  <span class="mono rules-ex" data-i18n="lp.p.example">example</span>
+                </div>
+                <div class="msg msg-me" data-i18n="lp.c.rex_q">When does my day start going wrong?</div>
+                <div class="ai-slot">
+                  <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+                  <div class="msg msg-ai">
+                    <p data-i18n-html="lp.c.rex_a">From your <b>4th trade</b> of the day. In the last 30 days your first 3 trades won 64% of the time and made <span class="nw">+$2,180</span>. From trade 4 on it drops to 31%, and those trades cost you <span class="nw">−$1,240</span>.</p>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.rex_b1">Trades 1–3 · win rate</span><span class="mono">64%</span></div><div class="bar"><div class="bar-fill bf-g" style="width:64%"></div></div></div>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.rex_b2">Trade 4 and later · win rate</span><span class="mono">31%</span></div><div class="bar"><div class="bar-fill bf-r" style="width:31%"></div></div></div>
+                    <p class="msg-tip" data-i18n="lp.c.rex_a2">Put a cap of 3 trades a day in your plan. I’ll warn you as soon as you go past it.</p>
+                  </div>
+                </div>
+                <div class="chat-alert">
+                  <span class="chat-alert-t" data-i18n="lp.c.rex_at">Rex: daily trade cap passed</span>
+                  <span data-i18n="lp.c.rex_ad">4 trades today, your plan’s cap is 3. Consider stopping for the day.</span>
+                </div>
+              </div>
+              <div class="convo" data-coach="atlas" aria-hidden="true">
+                <div class="chat-head">
+                  <span class="chat-face"><span class="wwc-av wwc-av-atlas" style="--av:40px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span></span>
+                  <span class="chat-who"><span class="chat-name">Atlas <span class="dim">· <span data-i18n="lp.c.role">AI Coach</span></span></span><span class="chat-focus" data-i18n="lp.c.atlas">Discipline</span></span>
+                  <span class="mono rules-ex" data-i18n="lp.p.example">example</span>
+                </div>
+                <div class="msg msg-me" data-i18n="lp.c.atlas_q">Do I stick to my plan?</div>
+                <div class="ai-slot">
+                  <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+                  <div class="msg msg-ai">
+                    <p data-i18n-html="lp.c.atlas_a">84% of your trades in the last 7 days followed your plan. The rule you break most is the stop loss: 6 trades without one lost <span class="nw">−$1,120</span>.</p>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.atlas_b1">By the plan · win rate</span><span class="mono">58%</span></div><div class="bar"><div class="bar-fill bf-g" style="width:58%"></div></div></div>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.atlas_b2">Plan broken · win rate</span><span class="mono">27%</span></div><div class="bar"><div class="bar-fill bf-r" style="width:27%"></div></div></div>
+                    <p class="msg-tip" data-i18n="lp.c.atlas_a2">Set the stop before you enter, not after. I’ll flag every trade without one.</p>
+                  </div>
+                </div>
+                <div class="chat-alert">
+                  <span class="chat-alert-t" data-i18n="lp.c.atlas_at">Atlas: a trade without a stop</span>
+                  <span data-i18n="lp.c.atlas_ad">FTMO 100K: your last trade had no stop loss. Your plan requires one on every trade.</span>
+                </div>
+              </div>
+              <div class="convo" data-coach="nova" aria-hidden="true">
+                <div class="chat-head">
+                  <span class="chat-face"><span class="wwc-av wwc-av-nova" style="--av:40px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span></span>
+                  <span class="chat-who"><span class="chat-name">Nova <span class="dim">· <span data-i18n="lp.c.role">AI Coach</span></span></span><span class="chat-focus" data-i18n="lp.c.nova">Risk</span></span>
+                  <span class="mono rules-ex" data-i18n="lp.p.example">example</span>
+                </div>
+                <div class="msg msg-me" data-i18n="lp.c.nova_q">How much room is left on my challenge?</div>
+                <div class="ai-slot">
+                  <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+                  <div class="msg msg-ai">
+                    <p data-i18n-html="lp.c.nova_a">Not much. You’ve used 72% of the max loss limit, and your last two losses went past the stop (<span class="nw">−2.4R</span> and <span class="nw">−1.9R</span>).</p>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.nova_b1">Daily loss limit · used</span><span class="mono">38%</span></div><div class="bar"><div class="bar-fill bf-v" style="width:38%"></div></div></div>
+                    <div class="rule"><div class="rule-row"><span data-i18n="lp.c.nova_b2">Max loss limit · used</span><span class="mono">72%</span></div><div class="bar"><div class="bar-fill bf-a" style="width:72%"></div></div></div>
+                    <p class="msg-tip" data-i18n="lp.c.nova_a2">Risk 0.5% per trade until you’re back under half of the limit.</p>
+                  </div>
+                </div>
+                <div class="chat-alert">
+                  <span class="chat-alert-t" data-i18n="lp.c.nova_at">Nova: the max loss limit is close</span>
+                  <span data-i18n="lp.c.nova_ad">FTMO 100K: $2,800 left to the max loss limit, about 4 average losses. Halve your risk per trade.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cards4">
+          <div class="g card18"><div class="card-t" data-i18n="lp.c.c1_t">Answers from your numbers</div><div class="card-d" data-i18n="lp.c.c1_d">Win rate by hour, the cost of trades without a stop, which strategy to drop. With tables and charts, not generic tips.</div></div>
+          <div class="g card18"><div class="card-t" data-i18n="lp.c.c2_t">Live alerts</div><div class="card-d" data-i18n="lp.c.c2_d">Losing streak, bigger size after a loss, a prop limit getting close: the coach warns you right after the trade.</div></div>
+          <div class="g card18"><div class="card-t" data-i18n="lp.c.c3_t">Your trading plan</div><div class="card-d" data-i18n="lp.c.c3_d">Write your own rules. Every trade is scored against them and broken rules get flagged.</div></div>
+          <div class="g card18"><div class="card-t" data-i18n="lp.c.c4_t">Weekly review</div><div class="card-d" data-i18n="lp.c.c4_d">Each week: what worked, what cost you, and one goal to focus on next.</div></div>
+        </div>
+        <p class="coach-note" data-i18n="lp.c.note">On every plan: a few messages a day on Starter, more on Pro. AI answers can be wrong and are not investment advice.</p>
+      </div>
+    </section>
+
     <!-- BACKTEST -->
     <section id="backtest" class="sec">
       <div class="sec-in">
@@ -374,7 +518,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <div class="privacy-copy">
             <div class="mono eyebrow accent" data-i18n="lp.w.priv_tag">YOUR DATA, YOUR RULES</div>
             <div class="privacy-t" data-i18n="lp.w.priv_t">Your trading data stays yours.</div>
-            <div class="privacy-d" data-i18n="lp.w.priv_d">We never share your data with third parties. Wawe is not a broker and never trades on your accounts. Your trades are stored only on the secure infrastructure we run Wawe on.</div>
+            <div class="privacy-d" data-i18n="lp.w.priv_d">We never sell your data or share it for advertising. Wawe is not a broker and never trades on your accounts. Your trades are stored only on the secure infrastructure we run Wawe on. The optional AI coach uses a summary of your journal only when you use it.</div>
           </div>
           <a href="privacy.html" class="b">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
@@ -386,7 +530,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
     <!-- PRICING -->
     <section id="pricing" class="sec" data-period="monthly">
       <div class="sec-in pricing">
-        <h2 class="center mid" data-i18n-html="lp.pr.title_h">Fair pricing. <span class="dim">Backtest, prop tracking and cTrader sync on every plan.</span></h2>
+        <h2 class="center mid" data-i18n-html="lp.pr.title_h">Fair pricing. <span class="dim">Backtest, prop tracking, cTrader sync and the AI coach on every plan.</span></h2>
         <div role="group" aria-label="Billing period" class="g toggle">
           <button type="button" class="seg on" id="pick-monthly" aria-pressed="true" data-i18n="lp.pr.monthly">Monthly</button>
           <button type="button" class="seg" id="pick-yearly" aria-pressed="false" data-i18n="lp.pr.yearly">Yearly · save 31%</button>
@@ -401,6 +545,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f4">1 backtest account</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f5">1 prop firm rule tracker</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f6">cTrader auto-sync</span></div>
+              <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f7">AI coach with a daily message allowance</span></div>
             </div>
             <a href="register.html" class="b" data-i18n="lp.pr.free_btn">Start for free</a>
           </div>
@@ -412,6 +557,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
             </div>
             <div class="feats">
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.p1">Everything in Starter</span></div>
+              <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.p7">More AI coach messages every day</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.p2">Up to 10 backtest accounts</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.p3">Up to 10 prop firm rule trackers</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.p4">Strategy comparison &amp; advanced analytics</span></div>
@@ -436,7 +582,8 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <details class="g faq"><summary><span data-i18n="lp.f.q5">Which brokers and platforms are supported?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a5">Automatic sync is live for cTrader today.
 You can also import statements from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA or any CSV/Excel file.
 Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add each integration only once it is error-free, because in trading there is no room for wrong numbers.</span></div></details>
-          <details class="g faq"><summary><span data-i18n="lp.f.q6">Is my data private?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a6">Yes. We never share your data with third parties. Your trades, broker connections and account data are stored only with the secure infrastructure providers we run Wawe on.</span> <a href="privacy.html" data-i18n="lp.f.a6_link">Read our privacy policy →</a></div></details>
+          <details class="g faq"><summary><span data-i18n="lp.f.q6">Is my data private?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a6">Yes. We never sell your data or share it for advertising. Your trades, broker connections and account data are stored only with the secure infrastructure providers we run Wawe on. The one exception is the optional AI coach, and only when you use it (see the next question).</span> <a href="privacy.html" data-i18n="lp.f.a6_link">Read our privacy policy →</a></div></details>
+          <details class="g faq"><summary><span data-i18n="lp.f.q7">What does the AI coach see, and where does my data go?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a7">When you send a message, the coach uses your question and a summary of your journal: statistics, strategies, recent and largest trades with their notes, prop challenges and backtests. Never your email, name, payment data or broker tokens. Don’t write personal details into your notes or chats. The coach is optional: if you don’t use it, none of your data goes to it. Its answers can be wrong and are not investment advice.</span> <a href="privacy.html#ai-coach" data-i18n="lp.f.a7_link">How the AI coach uses your data →</a></div></details>
         </div>
       </div>
     </section>
@@ -455,9 +602,9 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
       <div class="foot-top">
         <div class="foot-brand">
           <div class="foot-logo"><img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="36" height="24" />Wawe Journal</div>
-          <div class="foot-desc" data-i18n-html="lp.ft.desc_h">Trading journal, analytics and backtest replay.</div>
+          <div class="foot-desc" data-i18n-html="lp.ft.desc_h">Trading journal, analytics, AI coach and backtest replay.</div>
         </div>
-        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="#journal" data-i18n="lp.nav.journal">Journal</a><a href="#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="#backtest" data-i18n="lp.nav.backtest">Backtest</a><a href="#pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="#journal" data-i18n="lp.nav.journal">Journal</a><a href="#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="#coach" data-i18n="lp.nav.coach">AI Coach</a><a href="#backtest" data-i18n="lp.nav.backtest">Backtest</a><a href="#pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
         <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="about.html" data-i18n="lp.ft.about">About</a><a href="privacy.html" data-i18n="lp.ft.privacy">Privacy</a><a href="terms.html" data-i18n="lp.ft.terms">Terms</a><a href="contact.html" data-i18n="lp.ft.contact">Contact</a></div>
         <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.social">SOCIAL</div><div class="foot-social"><a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Wawe Journal on Instagram" class="social-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="0.9" fill="currentColor" stroke="none"></circle></svg></a></div><a href="mailto:support@wawejournal.com">support@wawejournal.com</a></div>
       </div>
