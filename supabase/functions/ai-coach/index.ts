@@ -34,7 +34,7 @@ import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
 import { summarizeTrades, safeTimeZone, equityCurve } from '../_shared/trade-summary.ts';
 import { COACH_KNOWLEDGE, answerLength, answerLengthRule, currencySymbol, currencyRule, type AnswerLength } from '../_shared/coach-knowledge.ts';
 import { resolveVisuals } from '../_shared/visuals.ts';
-import { createStepBuilder, takeSseEvents } from '../_shared/gemini-stream.ts';
+import { createStepBuilder, takeSseEvents, createLeakGuard } from '../_shared/gemini-stream.ts';
 import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
 import { loadPropContexts } from '../_shared/prop-context.ts';
 import { readPaged } from '../_shared/paged.ts';
@@ -159,6 +159,7 @@ export function systemInstruction(lang: string, context: unknown, detail: Answer
     '',
     'Rules:',
     `- Always answer in ${LANGS[lang] || 'Turkish'}, whatever language the data is in.`,
+    '- Write only the final answer the trader reads. Think silently: never write your reasoning, analysis of the request, rule checklists, drafts or word counts.',
     '- Base every claim about the trader on the JSON. Quote the concrete numbers and say when a sample is too small to conclude anything.',
     '- Never invent trades, numbers or strategies that are not in the data. If the data cannot answer the question, say so and say what the trader could record to make it answerable.',
     '- Use short paragraphs and bullet lists; markdown bold and lists are rendered. No tables, no headings above level 3.',
@@ -218,7 +219,15 @@ async function streamGeminiInner(model: string, payload: Record<string, unknown>
     return { ok: false, status: res.status, steps: [], text: '', forwarded: false };
   }
   const b = createStepBuilder(), reader = res.body.getReader(), dec = new TextDecoder();
-  let buf = '', forwarded = false;
+  const guard = createLeakGuard(onDelta);   // reasoning written as answer text never reaches the member
+  let buf = '', gotText = false;
+  const feed = (ev: any) => { const d = b.push(ev); if (d) { gotText = true; guard.push(d); } };
+  const leak = () => {
+    console.error('ai-coach reasoning leak:', model);
+    reader.cancel().catch(() => {});
+    // like a busy model: the next model is tried and this one is put last for a while
+    return { ok: false, status: 503, steps: [], text: '', forwarded: guard.forwarded };
+  };
   try {
     for (;;) {
       const { value, done } = await reader.read();
@@ -226,18 +235,18 @@ async function streamGeminiInner(model: string, payload: Record<string, unknown>
       buf += dec.decode(value, { stream: true });
       const { events, rest } = takeSseEvents(buf);
       buf = rest;
-      for (const ev of events) {
-        const d = b.push(ev);
-        if (d) { forwarded = true; onDelta(d); }
-      }
-      if (forwarded) arm(IDLE_MS);
+      for (const ev of events) feed(ev);
+      if (guard.leaked) return leak();
+      if (gotText) arm(IDLE_MS);
     }
     buf += dec.decode();
-    for (const ev of takeSseEvents(buf + '\n\n').events) { const d = b.push(ev); if (d) { forwarded = true; onDelta(d); } }
+    for (const ev of takeSseEvents(buf + '\n\n').events) feed(ev);
   } catch (_) {
     console.error('ai-coach stream broken:', model, signal.aborted ? 'timeout' : 'read error');
-    return { ok: false, status: 503, steps: b.result().steps, text: b.result().text, forwarded };
+    return { ok: false, status: 503, steps: b.result().steps, text: b.result().text, forwarded: guard.forwarded };
   }
+  if (!guard.end()) return leak();
+  const forwarded = guard.forwarded;
   const r = b.result();
   if (r.error || !r.text || r.status !== 'completed') {
     // an error event, no text, or a stream cut off before interaction.completed: not a usable answer

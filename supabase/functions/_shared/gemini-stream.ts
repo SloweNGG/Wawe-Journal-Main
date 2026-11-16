@@ -21,6 +21,40 @@ export function takeSseEvents(buffer: string): { events: any[]; rest: string } {
   return { events, rest };
 }
 
+// Reasoning written into the answer. Sometimes a model writes its thinking ("Thinking Process: Analyze the User's
+// Input ... Constraint Checklist ... Drafting ...") as ordinary output text instead of a thought step, and the member
+// saw all of it. The guard holds back the start of the answer until it can tell, and stops the stream when such text
+// appears; the caller then treats the attempt as failed and asks the next model.
+const LEAK_START = /^[\s*#_>`-]*(thinking process|thought process|thoughts?\s*[:\n]|my reasoning|reasoning( process)?\s*:|internal (reasoning|monologue)|analy[sz](e|ing) the (user'?s?|trader'?s?) (input|request|message|question))/i;
+const LEAK_ANY = /(constraint checklist|drafting the (response|answer)|refining (the )?(length|tone|response|draft)|evaluate against (the )?(coach )?persona|word count:\s*~?\d|\bthe user (says|said|asks|asked|is asking|wants|just)\b)/i;
+export const LEAK_HOLD_CHARS = 80;
+export function leakedReasoning(text: string): boolean { return LEAK_START.test(text) || LEAK_ANY.test(text); }
+
+// forward(text) gets the text the member may see. push() returns false once reasoning was found (stop the stream).
+export function createLeakGuard(forward: (t: string) => void, hold = LEAK_HOLD_CHARS) {
+  let all = '', sent = 0, leaked = false;
+  const check = () => {
+    // the start pattern only on the opening; the other phrases anywhere (a window around the new text is enough)
+    if (sent === 0 && LEAK_START.test(all)) leaked = true;
+    else if (LEAK_ANY.test(all.slice(Math.max(0, sent - 60)))) leaked = true;
+    return !leaked;
+  };
+  const release = () => { if (all.length > sent) { forward(all.slice(sent)); sent = all.length; } };
+  return {
+    push(d: string): boolean {
+      if (leaked) return false;
+      all += d;
+      if (!check()) return false;
+      if (sent > 0 || all.trim().length >= hold) release();
+      return true;
+    },
+    // end of the answer: a short answer that never reached the hold length is checked and sent now
+    end(): boolean { if (leaked || !check()) return false; release(); return true; },
+    get leaked() { return leaked; },
+    get forwarded() { return sent > 0; },
+  };
+}
+
 export function createStepBuilder() {
   const steps: any[] = [];
   let text = '', status = '', error: StreamResult['error'] = null;

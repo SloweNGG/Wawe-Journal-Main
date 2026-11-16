@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveVisuals, buildVisual, MAX_VISUALS } from '../supabase/functions/_shared/visuals.ts';
-import { takeSseEvents, createStepBuilder } from '../supabase/functions/_shared/gemini-stream.ts';
+import { takeSseEvents, createStepBuilder, createLeakGuard, leakedReasoning } from '../supabase/functions/_shared/gemini-stream.ts';
 import { COACH_KNOWLEDGE, VISUAL_DATASETS, VISUAL_METRICS, answerLength, answerLengthRule } from '../supabase/functions/_shared/coach-knowledge.ts';
 import { summarizeTrades, equityCurve } from '../supabase/functions/_shared/trade-summary.ts';
 
@@ -106,6 +106,51 @@ describe('gemini-stream', () => {
     const { events: ev } = takeSseEvents('data: {broken\r\n\r\nevent: error\r\ndata: {"event_type":"error","error":{"code":"service_unavailable","message":"busy"}}\r\n\r\n');
     ev.forEach((e) => b.push(e));
     assert.deepEqual(b.result().error, { code: 'service_unavailable', message: 'busy' }); assert.equal(b.result().text, '');
+  });
+});
+
+describe('gemini-stream: reasoning written into the answer', () => {
+  const run = (text, size = 5) => {
+    const out = []; const g = createLeakGuard((t) => out.push(t));
+    let ok = true;
+    for (let i = 0; i < text.length && ok; i += size) ok = g.push(text.slice(i, i + size));
+    if (ok) ok = g.end();
+    return { ok, shown: out.join(''), leaked: g.leaked };
+  };
+  // seen on live 2026-11-16 (shortened): the whole thinking came as output text
+  const LIVE = 'Thinking Process:\n\nAnalyze the User\'s Input: The user says "neyse gideyim backtest çalışayım".\n' +
+    'Evaluate against Coach Persona & Rules:\nTone: STRICT.\nConstraint Checklist:\nAnswer in Turkish.\n' +
+    'Drafting the Response:\nHangi stratejiyi test edeceksin?\nRefining Length & Tone:\nWord count: ~55 words.\n' +
+    'Hangi stratejiyi test edeceksin? 73 işlemde %38,4 win rate.\nEmir: Bugün masadan kalk.';
+  it('the live leak is stopped before anything is shown', () => {
+    for (const size of [1, 3, 17, 400]) {
+      const r = run(LIVE, size);
+      assert.equal(r.ok, false); assert.equal(r.leaked, true); assert.equal(r.shown, '', 'chunk ' + size);
+    }
+    assert.ok(leakedReasoning(LIVE));
+  });
+  it('other openings and phrases later in the answer', () => {
+    for (const t of ['**Thinking Process**\n1. ...', 'Thoughts:\nThe trader...', 'Analyzing the trader\'s request: ...',
+      'Reasoning: the user wants ...']) assert.equal(run(t).ok, false, t);
+    const late = 'Win rate %38,4 ve net zarar 916,9 $. Önce riskini küçült, sonra stratejiyi test et.\n\n' +
+      'Constraint Checklist:\n- Turkish: yes\n- Word count: ~40';
+    const r = run(late, 9);
+    assert.equal(r.ok, false); assert.ok(!r.shown.includes('Checklist'), r.shown);
+  });
+  it('a normal answer flows unchanged, short answers too', () => {
+    const a = '### Bugün\n\n**73 işlemde** %38,4 kazanma oranı ve **−916,9 $** net sonuç var. Bu bir analiz değil, bir uyarı: ' +
+      'önce stop kullan, sonra test et. Düşünce sürecin ne olmalı? Plan yaz, sonra işlem aç.';
+    for (const size of [1, 7, 500]) { const r = run(a, size); assert.equal(r.ok, true); assert.equal(r.shown, a); }
+    const s = run('Evet, haklısın.'); assert.equal(s.ok, true); assert.equal(s.shown, 'Evet, haklısın.');
+    // English answers keep words like "thinking" and "analysis" when they are not a reasoning header
+    const en = run('Your thinking after a loss drives the next trade: 6 of 9 revenge trades lost. Analysis of your stops shows...');
+    assert.equal(en.ok, true);
+  });
+  it('the start of the answer is held back only until it can be judged', () => {
+    const out = []; const g = createLeakGuard((t) => out.push(t), 20);
+    g.push('Merhaba, '); assert.deepEqual(out, []);
+    g.push('verilerine baktım ve '); assert.equal(out.join(''), 'Merhaba, verilerine baktım ve ');
+    g.push('şunu gördüm.'); assert.equal(out.length, 2); assert.equal(g.forwarded, true);
   });
 });
 
