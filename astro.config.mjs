@@ -105,6 +105,12 @@ export default defineConfig({
   // asset-version minify'dan SONRA çalışmalı (build:done kancaları sırayla çalışır)
   integrations: [react(), bundleAppScript(), minifyDistAssets(), assetVersionIntegration(BUILD_ID)],
   vite: {
+    build: {
+      // Astro derleme hedefini "esnext" yapıyor; bu durumda CSS küçültücü (lightningcss) tarayıcı hedefi olmadan
+      // çalışıp önekli/öneksiz çiftlerden birini siliyor ve önek eklemiyordu (ör. backdrop-filter Chrome'da
+      // ya da 18 öncesi Safari'de kayboluyordu). Vite'ın kendi varsayılanı (baseline widely available) ile sabitlenir.
+      cssTarget: ['chrome111', 'edge111', 'firefox114', 'safari16.4', 'ios16.4'],
+    },
     define: {
       // Derleme kimliği (yukarıdaki BUILD_ID): SPA router, açık sekmede deploy sonrası eski ve yeni
       // sürüm script'lerinin karışmaması için sürüm değişince tam sayfa yüklemesi yapar

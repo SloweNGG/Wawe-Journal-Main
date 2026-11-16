@@ -54,9 +54,9 @@ const buildId = __WW_BUILD_ID__;
 </style>
 
 <script>
-  // Not: Astro bu script'i Layout'u kullanan TÜM sayfalara ekliyor (bileşen koşullu
-  // render edilse bile). Astro'nun router'ı import edildiği anda popstate vb. dinlemeye
-  // başladığı için onu sadece SPA sayfalarında (meta etiketi varsa) dinamik yüklüyoruz.
+  // Not: Astro 5+ bu script'i yalnızca bileşenin render edildiği (spa={true}) sayfalara ekler
+  // (Astro 4 Layout'u kullanan TÜM sayfalara ekliyordu). Astro'nun router'ı import edildiği anda
+  // popstate vb. dinlemeye başladığı için onu yine de meta etiketi varsa dinamik yüklüyoruz.
 
   type Phase = 'loading' | 'interactive';
   type QueuedListener = { target: EventTarget; type: string; fn: EventListenerOrEventListenerObject };
