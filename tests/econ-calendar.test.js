@@ -6,7 +6,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { parseFeed, eventId, symbolCurrencies, tradedCurrencies, coachCalendar, localTime, COACH_EVENTS_MAX } from '../supabase/functions/_shared/econ-calendar.ts';
+import { parseFeed, eventId, symbolCurrencies, tradedCurrencies, coachCalendar, localTime, COACH_EVENTS_MAX, pairLabel, memberPairs, PAIR_CATALOG, pairOf } from '../supabase/functions/_shared/econ-calendar.ts';
 import { ensureFresh, staleIds, readCalendar, REFRESH_MS, CLAIM_MS } from '../supabase/functions/_shared/econ-feed.ts';
 import { makeDb } from './helpers/fake-db.js';
 
@@ -63,32 +63,56 @@ describe('econ-calendar: currencies a member trades', () => {
   });
 });
 
+describe('econ-calendar: pairs', () => {
+  it('labels as the member reads them', () => {
+    assert.equal(pairLabel('EURUSD'), 'EUR/USD');
+    assert.equal(pairLabel('eurusd.m'), 'EUR/USD');
+    assert.equal(pairLabel('EUR/USD'), 'EUR/USD');
+    assert.equal(pairLabel('XAUUSD+'), 'XAU/USD');
+    assert.equal(pairLabel('BTCUSDT'), 'BTC/USD');
+    assert.equal(pairLabel('NAS100.cash'), 'NAS100');
+    assert.equal(pairLabel('US30'), 'US30');
+  });
+  it("the member's pairs, most traded first, unknown symbols left out; the catalog maps too", () => {
+    assert.deepEqual(memberPairs(['XAUUSD', 'xauusd.m', 'EURUSD', 'AAPL', 'GER40']), [
+      { label: 'XAU/USD', currencies: ['USD'] }, { label: 'EUR/USD', currencies: ['EUR', 'USD'] }, { label: 'GER40', currencies: ['EUR'] }]);
+    for (const l of PAIR_CATALOG) assert.ok(pairOf(l).currencies.length, l);
+    assert.deepEqual(pairOf('GBP/JPY').currencies, ['GBP', 'JPY']);
+  });
+});
+
 describe('econ-calendar: the coach slice', () => {
   const ev = parseFeed(FEED);
   const now = Date.parse('2026-11-17T12:00:00Z');
-  it('high + medium, member currencies, local times, minutes from now, no actual values', () => {
-    const c = coachCalendar(ev, ['USD'], now, 'Europe/Istanbul', '2026-11-17T11:50:00Z');
+  it('high (any currency) + medium in my currencies, local times, the pairs each event moves, no actual values', () => {
+    const c = coachCalendar(ev, ['EURUSD', 'XAUUSD'], now, 'Europe/Istanbul', '2026-11-17T11:50:00Z');
     assert.equal(c.source, 'Forex Factory');
     assert.equal(c.now_local, '2026-11-17 15:00');
-    assert.deepEqual(c.events.map((e) => e.title), ['Retail Sales m/m', 'Building Permits']);
-    assert.deepEqual(c.events[0], { when_local: '2026-11-17 16:30', minutes_from_now: 90, currency: 'USD', title: 'Retail Sales m/m', impact: 'high', forecast: '0.1%', previous: '0.8%' });
-    assert.equal('forecast' in c.events[1], false);
+    assert.deepEqual(c.my_pairs, ['EUR/USD', 'XAU/USD']);
+    assert.deepEqual(c.my_currencies, ['USD', 'EUR']);
+    assert.deepEqual(c.events.map((e) => e.currency + ' ' + e.title), ['USD Retail Sales m/m', 'GBP CPI y/y', 'USD Building Permits']);
+    assert.deepEqual(c.events[0], { when_local: '2026-11-17 16:30', minutes_from_now: 90, status: 'upcoming', currency: 'USD', title: 'Retail Sales m/m', impact: 'high',
+      forecast: '0.1%', previous: '0.8%', moves_my_pairs: ['EUR/USD', 'XAU/USD'] });
+    assert.equal('moves_my_pairs' in c.events[1], false);                  // GBP: none of my pairs
     assert.equal(c.covers_until_local, '2026-11-20 03:30');
     assert.equal(c.note, undefined);
   });
-  it('all currencies when none are known; events released over 2 h ago are dropped', () => {
-    const c = coachCalendar(ev, [], Date.parse('2026-11-17T16:00:00Z'), 'UTC', 'x');
-    assert.equal(c.currencies, 'all');
-    assert.deepEqual(c.events.map((e) => e.currency + ' ' + e.title), ['GBP CPI y/y', 'USD Building Permits']);
+  it('released events of the last 3 days stay (status released); older ones go', () => {
+    const c = coachCalendar(ev, ['EURUSD'], Date.parse('2026-11-19T12:00:00Z'), 'UTC', 'x');
+    const r = c.events.find((e) => e.title === 'Retail Sales m/m');
+    assert.equal(r.status, 'released'); assert.ok(r.minutes_from_now < 0);
+    assert.equal(coachCalendar(ev, ['EURUSD'], Date.parse('2026-11-21T14:00:00Z'), 'UTC', 'x').events.some((e) => e.title === 'Retail Sales m/m'), false);
   });
-  it('never loaded: a note; capped with high impact kept first', () => {
-    assert.equal(coachCalendar([], ['USD'], now, 'UTC', null).note, 'calendar not loaded yet');
+  it('no symbols: all currencies; never loaded: a note; capped with my upcoming events first', () => {
+    assert.equal(coachCalendar(ev, [], now, 'UTC', 'x').my_currencies, 'all');
+    assert.equal(coachCalendar([], ['EURUSD'], now, 'UTC', null).note, 'calendar not loaded yet');
     const many = [];
-    for (let i = 0; i < 50; i++) many.push({ id: 'm' + i, title: 'M' + i, currency: 'USD', impact: 'medium', event_at: new Date(now + (i + 1) * 3600e3).toISOString(), forecast: null, previous: null });
+    for (let i = 0; i < 60; i++) many.push({ id: 'm' + i, title: 'M' + i, currency: 'JPY', impact: 'high', event_at: new Date(now + (i + 1) * 3600e3).toISOString(), forecast: null, previous: null });
     many.push({ id: 'h', title: 'NFP', currency: 'USD', impact: 'high', event_at: new Date(now + 100 * 3600e3).toISOString(), forecast: null, previous: null });
-    const c = coachCalendar(many, ['USD'], now, 'UTC', 'x');
+    const c = coachCalendar(many, ['EURUSD'], now, 'UTC', 'x');
     assert.equal(c.events.length, COACH_EVENTS_MAX);
     assert.ok(c.events.some((e) => e.title === 'NFP'));
+    assert.ok(c.events.every((e, i, a) => i === 0 || a[i - 1].minutes_from_now <= e.minutes_from_now));
   });
   it('localTime', () => { assert.equal(localTime('2026-11-17T13:30:00.000Z', 'America/New_York'), '2026-11-17 08:30'); });
 });
@@ -150,18 +174,33 @@ describe('econ-calendar: navbar badge helpers', () => {
   const now = Date.parse('2026-11-17T12:00:00Z');
   const ev = (id, cur, imp, minutes) => ({ id, title: id, currency: cur, impact: imp, event_at: new Date(now + minutes * 60e3).toISOString() });
   const events = [ev('a', 'USD', 'high', -10), ev('b', 'USD', 'medium', 20), ev('c', 'EUR', 'high', 45), ev('d', 'EUR', 'low', 45), ev('e', 'GBP', 'high', 45)];
-  it('prefs are cleaned', () => {
-    assert.deepEqual(E.cleanPrefs(null), { impact: 'high', ccys: [], alert: true, minutes: 15, desktop: false });
-    assert.deepEqual(E.cleanPrefs({ impact: 'x', ccys: ['usd', 'EUR', 1], minutes: 7, alert: false, desktop: true }), { impact: 'high', ccys: ['EUR'], alert: false, minutes: 15, desktop: true });
+  const mine = [{ label: 'EUR/USD', currencies: ['EUR', 'USD'] }, { label: 'XAU/USD', currencies: ['USD'] }];
+  const catalog = [{ label: 'GBP/USD', currencies: ['GBP', 'USD'] }, { label: 'USD/JPY', currencies: ['USD', 'JPY'] }];
+  it('prefs are cleaned (old currency filters dropped)', () => {
+    assert.deepEqual(E.cleanPrefs(null), { impact: 'high', pairs: null, alert: true, minutes: 15, desktop: false });
+    assert.deepEqual(E.cleanPrefs({ impact: 'x', ccys: ['EUR'], pairs: ['EUR/USD', 'bad pair!', 3], minutes: 7, alert: false, desktop: true }),
+      { impact: 'high', pairs: ['EUR/USD'], alert: false, minutes: 15, desktop: true });
   });
-  it('next event by filters; events at the same time come together; just released counts as now', () => {
-    const p = E.cleanPrefs({});
-    const g = E.nextGroup(events, p, now);
+  it('pairs: null = mine, [] = all, picked from mine and the catalog', () => {
+    assert.deepEqual(E.activePairs(E.cleanPrefs({}), mine, catalog).map((p) => p.label), ['EUR/USD', 'XAU/USD']);
+    assert.deepEqual(E.activePairs(E.cleanPrefs({ pairs: [] }), mine, catalog), []);
+    assert.deepEqual(E.activePairs(E.cleanPrefs({ pairs: ['GBP/USD', 'NOPE'] }), mine, catalog).map((p) => p.label), ['GBP/USD']);
+    assert.deepEqual(E.togglePair(E.cleanPrefs({}), mine, 'GBP/USD'), ['EUR/USD', 'XAU/USD', 'GBP/USD']);
+    assert.deepEqual(E.togglePair(E.cleanPrefs({}), mine, 'EUR/USD'), ['XAU/USD']);
+    assert.deepEqual(E.togglePair(E.cleanPrefs({ pairs: ['GBP/USD'] }), mine, 'GBP/USD'), []);
+    assert.deepEqual(E.affects(mine, 'USD'), ['EUR/USD', 'XAU/USD']);
+    assert.deepEqual(E.affects(mine, 'GBP'), []);
+  });
+  it('next event by impact and pairs; same-time events together; just released counts as now', () => {
+    const p = E.cleanPrefs({}), all = [];
+    const g = E.nextGroup(events, p, all, now);
     assert.deepEqual(g.events.map((e) => e.id), ['c', 'e']);
-    assert.equal(E.nextGroup(events, E.cleanPrefs({ impact: 'medium' }), now).events[0].id, 'b');
-    assert.deepEqual(E.nextGroup(events, E.cleanPrefs({ ccys: ['GBP'] }), now).events.map((e) => e.id), ['e']);
-    assert.equal(E.nextGroup([ev('x', 'USD', 'high', -1)], p, now).events[0].id, 'x');
-    assert.equal(E.nextGroup([ev('x', 'USD', 'high', -3)], p, now), null);
+    assert.deepEqual(E.nextGroup(events, p, mine, now).events.map((e) => e.id), ['c']);         // GBP moves none of my pairs
+    assert.deepEqual(E.groupPairs(g, mine), ['EUR/USD']);
+    assert.equal(E.nextGroup(events, E.cleanPrefs({ impact: 'medium' }), mine, now).events[0].id, 'b');
+    assert.deepEqual(E.nextGroup(events, p, [catalog[0]], now).events.map((e) => e.id), ['e']);
+    assert.equal(E.nextGroup([ev('x', 'USD', 'high', -1)], p, all, now).events[0].id, 'x');
+    assert.equal(E.nextGroup([ev('x', 'USD', 'high', -3)], p, all, now), null);
     assert.equal(E.groupTitle(g), 'EUR c +1');
   });
   it('countdown', () => {
@@ -171,12 +210,13 @@ describe('econ-calendar: navbar badge helpers', () => {
     assert.equal(E.countdown(3 * 3600e3 + 12 * 60e3), '3s 12dk');
     assert.equal(E.countdown(2 * 86400e3 + 4 * 3600e3), '2g 4s');
   });
-  it('alerts: within the minutes, not started, not alerted, alerts on', () => {
+  it('alerts: within the minutes, not started, not alerted, alerts on, my pairs', () => {
     const p = E.cleanPrefs({ impact: 'medium', minutes: 30 });
-    assert.deepEqual(E.dueAlerts(events, p, now, {}).map((g) => g.events.map((e) => e.id)), [['b']]);
-    assert.deepEqual(E.dueAlerts(events, E.cleanPrefs({ minutes: 60 }), now, {}).map((g) => g.events.map((e) => e.id)), [['c', 'e']]);
-    assert.deepEqual(E.dueAlerts(events, p, now, { b: 1 }), []);
-    assert.deepEqual(E.dueAlerts(events, E.cleanPrefs({ impact: 'medium', minutes: 30, alert: false }), now, {}), []);
+    assert.deepEqual(E.dueAlerts(events, p, mine, now, {}).map((g) => g.events.map((e) => e.id)), [['b']]);
+    assert.deepEqual(E.dueAlerts(events, E.cleanPrefs({ minutes: 60 }), mine, now, {}).map((g) => g.events.map((e) => e.id)), [['c']]);
+    assert.deepEqual(E.dueAlerts(events, E.cleanPrefs({ minutes: 60 }), [], now, {}).map((g) => g.events.map((e) => e.id)), [['c', 'e']]);
+    assert.deepEqual(E.dueAlerts(events, p, mine, now, { b: 1 }), []);
+    assert.deepEqual(E.dueAlerts(events, E.cleanPrefs({ impact: 'medium', minutes: 30, alert: false }), mine, now, {}), []);
   });
 });
 
@@ -188,7 +228,10 @@ describe('econ-calendar: wiring and texts', () => {
     assert.match(layout, /\/components\/econ-calendar\/econ-calendar\.css/);
     assert.match(layout, /\/components\/econ-calendar\/econ-calendar\.js/);
     const coach = fs.readFileSync('supabase/functions/ai-coach/index.ts', 'utf8');
-    assert.match(coach, /context\.economic_calendar = coachCalendar\(/);
+    assert.match(coach, /context\.economic_calendar = coachCalendar\(cal\.events, loaded\.trades/);
+    assert.match(fs.readFileSync('supabase/functions/econ-calendar/index.ts', 'utf8'), /pairs: memberPairs\(/);
+    // the panel can hand a question to the coach
+    assert.match(fs.readFileSync('public/components/ai-coach/ai-coach.js', 'utf8'), /, ask: askFromOutside, coachName/);
     assert.match(fs.readFileSync('supabase/functions/_shared/coach-knowledge.ts', 'utf8'), /### Economic calendar \(economic_calendar\)/);
   });
   it('every text the badge uses exists in all locales', async () => {

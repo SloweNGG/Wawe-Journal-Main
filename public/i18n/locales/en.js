@@ -3104,4 +3104,12 @@ export default {
   "econ.alert_title": "Upcoming news",
   "econ.alert_body": "{t} · in {n} min ({time})",
   "econ.alert_tip": "Watch spreads and slippage before opening new positions.",
+  "econ.ask": "Ask the coach",
+  "econ.ask_week": "Based on this week's economic calendar, what should I watch out for on my pairs?",
+  "econ.ask_event": "How does {ccy} {title} ({when}) affect {pairs}? How should I act around that time?",
+  "econ.ask_event_pairs": "my {list} pairs",
+  "econ.ask_event_mine": "my trades",
+  "econ.pairs": "Pairs",
+  "econ.my_pairs": "My pairs",
+  "econ.all_pairs": "All pairs",
 };

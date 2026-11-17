@@ -3049,4 +3049,12 @@ export default {
   "econ.alert_title": "Yaklaşan haber",
   "econ.alert_body": "{t} · {n} dk sonra ({time})",
   "econ.alert_tip": "Yeni pozisyon açmadan önce spread ve kaymaya dikkat et.",
+  "econ.ask": "Koça sor",
+  "econ.ask_week": "Bu haftaki ekonomik takvime göre paritelerim için nelere dikkat etmeliyim?",
+  "econ.ask_event": "{ccy} {title} ({when}) {pairs}nasıl etkiler? O saatte nasıl davranmalıyım?",
+  "econ.ask_event_pairs": "{list} paritelerimi ",
+  "econ.ask_event_mine": "işlemlerimi ",
+  "econ.pairs": "Pariteler",
+  "econ.my_pairs": "Paritelerim",
+  "econ.all_pairs": "Tüm pariteler",
 };

@@ -1,117 +1,204 @@
 /* ============================================================
    WAWE - ECONOMIC CALENDAR: navbar countdown badge, panel, alert cards (econ-calendar.js).
-   Theme tokens from styles.css (dark default, body.light-theme). Impact colours like Forex Factory: high red,
-   medium orange, low yellow, holiday grey.
+   The panel copies the notification panel (navbar.css .bell-panel*: size, header, tab rows, body, footer, dark "card"
+   override, mobile placement) under its own class names: navbar.js drives every .bell-tab-btn on the page.
+   Impact colours like Forex Factory: high red, medium orange, low yellow, holiday grey.
    ============================================================ */
-.nav-econ { position: relative; display: flex; align-items: center; flex-shrink: 1; min-width: 0; }
-.nav-econ { --econ-high: #ef4444; --econ-medium: #f59e0b; --econ-low: #eab308; --econ-holiday: #94a3b8; }
+.nav-econ { position: relative; display: flex; align-items: center; flex-shrink: 1; min-width: 0;
+  --econ-high: #ef4444; --econ-medium: #f59e0b; --econ-low: #eab308; --econ-holiday: #94a3b8; }
 
+/* ── badge (same height, border and glass as the bell button) ── */
 .econ-btn {
-  display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 280px; min-width: 0;
-  padding: 0 11px 0 10px; border-radius: 999px; border: 1px solid var(--glass-border, rgba(255,255,255,.1));
-  background: rgba(255,255,255,0.03); color: var(--muted, #9ca3af); font: 600 12px/1 var(--font, inherit);
-  cursor: pointer; white-space: nowrap; transition: border-color .2s ease, color .2s ease, background .2s ease;
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 320px; min-width: 0;
+  padding: 0 11px 0 10px; border-radius: 999px; border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.03); color: var(--muted); font: 600 12px/1 var(--font);
+  cursor: pointer; white-space: nowrap; transition: all 0.2s ease;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
-.econ-btn:hover, .econ-btn[aria-expanded="true"] { color: var(--text, #fff); border-color: rgba(var(--ac-rgb, 139,92,246), .45); }
-.econ-btn:focus-visible { outline: 2px solid rgba(var(--ac-rgb, 139,92,246), .7); outline-offset: 2px; }
 body.light-theme .econ-btn { background: rgba(0,0,0,0.02); }
-.econ-btn .econ-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 170px; color: var(--text, #fff); font-weight: 600; }
+.econ-btn:hover, .econ-btn[aria-expanded="true"] { color: var(--text); border-color: rgba(var(--ac-rgb), .45); }
+.econ-btn:focus-visible { outline: 2px solid rgba(var(--ac-rgb), .7); outline-offset: 2px; }
+.econ-btn .econ-pair { flex-shrink: 0; font: 700 10.5px/1 var(--font-mono, var(--font)); padding: 3px 6px; border-radius: 99px;
+  background: rgba(var(--ac-rgb), 0.16); border: 1px solid rgba(var(--ac-rgb), 0.3); color: var(--ac-l2); }
+body.light-theme .econ-btn .econ-pair { color: var(--ac-d1); background: rgba(var(--ac-rgb), 0.1); }
+.econ-btn .econ-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 170px; color: var(--text); }
+.econ-btn .econ-more { flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 2px 5px; border-radius: 999px; background: rgba(127,127,127,.16); color: var(--text); }
 .econ-btn .econ-sep { opacity: .45; }
-.econ-btn .econ-more { flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 2px 5px; border-radius: 999px; background: rgba(127,127,127,.16); color: var(--text, #fff); }
 .econ-btn .econ-cd { font-variant-numeric: tabular-nums; font-weight: 700; }
 .econ-btn.is-soon .econ-cd { color: var(--econ-medium); }
 .econ-btn.imp-high.is-soon .econ-cd { color: var(--econ-high); }
 .econ-btn.is-now { border-color: color-mix(in srgb, var(--econ-high) 60%, transparent); }
 .econ-btn.is-now .econ-cd { color: var(--econ-high); animation: econ-pulse 1.2s ease-in-out infinite; }
-.econ-btn .econ-quiet { font-weight: 600; }
 
-/* calendar icon drawn in CSS (no icon font dependency) */
+/* calendar icon drawn in CSS */
 .econ-ico { width: 13px; height: 12px; border: 1.5px solid currentColor; border-radius: 3px; position: relative; flex-shrink: 0; }
 .econ-ico::before { content: ''; position: absolute; left: -1.5px; right: -1.5px; top: 2px; border-top: 1.5px solid currentColor; }
 
 .econ-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--econ-holiday); }
-.imp-high .econ-dot, .econ-dot.imp-high { background: var(--econ-high); box-shadow: 0 0 0 3px color-mix(in srgb, var(--econ-high) 18%, transparent); }
+.imp-high .econ-dot { background: var(--econ-high); box-shadow: 0 0 0 3px color-mix(in srgb, var(--econ-high) 18%, transparent); }
 .imp-medium .econ-dot { background: var(--econ-medium); }
 .imp-low .econ-dot { background: var(--econ-low); }
-
 @keyframes econ-pulse { 50% { opacity: .45; } }
 
-/* ── panel ── */
+/* ── panel = .bell-panel ── */
 .econ-panel {
-  position: absolute; top: 46px; right: 0; width: 400px; max-width: calc(100vw - 20px); max-height: min(560px, calc(100vh - 80px));
+  position: absolute; top: 46px; right: 0; width: 380px; max-width: calc(100vw - 20px); max-height: 520px;
   display: flex; flex-direction: column; overflow: hidden;
-  background: rgba(13, 14, 24, 0.985); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
-  box-shadow: 0 24px 64px -12px rgba(0,0,0,.75), 0 0 0 1px rgba(var(--ac-rgb, 139,92,246), .12);
-  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px) scale(.98); transform-origin: top right;
-  transition: opacity .2s cubic-bezier(.16,1,.3,1), transform .22s cubic-bezier(.16,1,.3,1), visibility .2s;
-  z-index: var(--z-bell, 9999); color: var(--text, #fff); font-family: var(--font, inherit);
+  background: rgba(13, 14, 24, 0.90);
+  backdrop-filter: blur(28px) saturate(200%); -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-10px) scale(0.97); transform-origin: top right;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+  z-index: var(--z-bell, 9999);
+  box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(var(--ac-rgb), 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  font-family: var(--font); color: var(--text);
 }
-.econ-panel.open { opacity: 1; visibility: visible; pointer-events: auto; transform: none; }
-body.light-theme .econ-panel { background: rgba(255,255,255,0.98); border-color: rgba(0,0,0,.08); box-shadow: 0 24px 64px -12px rgba(15,23,42,.18), 0 0 0 1px rgba(var(--ac-rgb, 139,92,246), .1); }
+body.light-theme .econ-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(28px) saturate(190%); -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 24px 64px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(var(--ac-rgb), 0.1);
+}
+.econ-panel.open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }
 
-.econ-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 14px 16px 10px; }
-.econ-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text, #fff); }
-.econ-sub { margin-top: 3px; font-size: 11px; color: var(--muted, #9ca3af); }
-.econ-x { background: none; border: 0; color: var(--muted, #9ca3af); font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
-.econ-x:hover { color: var(--text, #fff); }
+/* header = .bell-panel-header */
+.econ-panel-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 9px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06); background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%); flex-shrink: 0;
+}
+body.light-theme .econ-panel-header { border-bottom: 1px solid rgba(0, 0, 0, 0.06); background: linear-gradient(180deg, rgba(0, 0, 0, 0.01) 0%, transparent 100%); }
+.econ-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.econ-panel-header h3 { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 0; letter-spacing: -0.01em; white-space: nowrap; }
+.econ-src { white-space: nowrap; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: rgba(var(--ac-rgb), 0.16); border: 1px solid rgba(var(--ac-rgb), 0.3); color: var(--ac-l1); line-height: 1.2; }
+body.light-theme .econ-src { color: var(--ac-d1); background: rgba(var(--ac-rgb), 0.1); }
+.econ-head-actions { display: flex; align-items: center; gap: 6px; }
+.econ-close {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); color: var(--muted);
+  width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: all 0.2s ease;
+}
+.econ-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.15); }
+body.light-theme .econ-close { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); }
+.econ-ask-all {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border-radius: 7px; cursor: pointer;
+  font: 600 11px/1 var(--font); color: var(--ac-l2); background: rgba(var(--ac-rgb), 0.1); border: 1px solid rgba(var(--ac-rgb), 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.econ-ask-all:hover { background: rgba(var(--ac-rgb), 0.18); border-color: rgba(var(--ac-rgb), 0.5); transform: translateY(-1px); }
+body.light-theme .econ-ask-all { color: var(--ac-d1); }
 
-.econ-filters { padding: 0 16px 10px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--glass-border, rgba(255,255,255,.08)); }
-.econ-seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgba(127,127,127,.08); }
-.econ-seg button { flex: 1; border: 0; background: none; color: var(--muted, #9ca3af); font: 600 11.5px/1 var(--font, inherit); padding: 7px 6px; border-radius: 7px; cursor: pointer; }
-.econ-seg button.on { background: rgba(var(--ac-rgb, 139,92,246), .18); color: var(--text, #fff); }
-.econ-ccys { display: flex; flex-wrap: wrap; gap: 4px; }
-.econ-ccys button { border: 1px solid var(--glass-border, rgba(255,255,255,.1)); background: none; color: var(--muted, #9ca3af); font: 600 11px/1 var(--font, inherit); padding: 5px 8px; border-radius: 999px; cursor: pointer; }
-.econ-ccys button.on { border-color: rgba(var(--ac-rgb, 139,92,246), .6); color: var(--text, #fff); background: rgba(var(--ac-rgb, 139,92,246), .12); }
+/* tab rows = .bell-filter-tabs / .bell-tab-btn */
+.econ-tabs {
+  display: flex; align-items: center; gap: 2px; padding: 6px 8px 7px 8px; flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: rgba(255, 255, 255, 0.015);
+}
+.econ-tabs::-webkit-scrollbar { display: none; }
+body.light-theme .econ-tabs { background: rgba(0, 0, 0, 0.015); border-bottom: 1px solid rgba(0, 0, 0, 0.05); }
+.econ-tab {
+  display: inline-flex; align-items: center; gap: 4px; background: transparent; border: 1px solid transparent; color: var(--muted);
+  font-family: var(--font); font-size: 11px; font-weight: 500; padding: 4px 7px; border-radius: 99px; cursor: pointer;
+  transition: all 0.18s ease; white-space: nowrap; flex-shrink: 0;
+}
+.econ-tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+body.light-theme .econ-tab:hover { background: rgba(0, 0, 0, 0.04); }
+.econ-tab.active { background: rgba(var(--ac-rgb), 0.16); border-color: rgba(var(--ac-rgb), 0.35); color: var(--ac-l2); font-weight: 600; }
+body.light-theme .econ-tab.active { background: rgba(var(--ac-rgb), 0.12); border-color: rgba(var(--ac-rgb), 0.3); color: var(--ac-d1); }
+.econ-count { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); color: inherit; opacity: 0.8; }
+body.light-theme .econ-count { background: rgba(0,0,0,0.05); }
+.econ-tab.active .econ-count { background: rgba(var(--ac-rgb), 0.3); opacity: 1; }
+.econ-chip { font-family: var(--font-mono, var(--font)); font-size: 10.5px; border-color: rgba(127,127,127,.18); }
+.econ-chip.is-mine::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--ac-rgb)); margin-left: 2px; }
 
-.econ-list { overflow-y: auto; padding: 4px 8px 8px; flex: 1; min-height: 80px; overscroll-behavior: contain; }
-.econ-day { position: sticky; top: 0; z-index: 1; padding: 9px 8px 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted, #9ca3af); background: inherit; }
-.econ-panel .econ-day { background: rgba(13, 14, 24, 0.98); }
-body.light-theme .econ-panel .econ-day { background: rgba(255,255,255,0.99); }
-.econ-row { display: grid; grid-template-columns: 44px 10px 34px 1fr auto; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 9px; font-size: 12.5px; }
+/* body = .bell-panel-body */
+.econ-panel-body { flex: 1; overflow-y: auto; min-height: 90px; padding: 4px 8px 8px; overscroll-behavior: contain; }
+.econ-panel-body::-webkit-scrollbar { width: 4px; }
+.econ-panel-body::-webkit-scrollbar-track { background: transparent; }
+.econ-panel-body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 99px; }
+body.light-theme .econ-panel-body::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); }
+.econ-day { position: sticky; top: -4px; z-index: 1; padding: 9px 6px 5px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: rgba(13, 14, 24, 0.97); }
+body.light-theme .econ-day { background: rgba(255, 255, 255, 0.98); }
+.econ-row { display: grid; grid-template-columns: 40px 8px 30px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 6px; border-radius: 9px; font-size: 12px; }
 .econ-row:hover { background: rgba(127,127,127,.07); }
 .econ-row.past { opacity: .45; }
-.econ-row.next { background: rgba(var(--ac-rgb, 139,92,246), .1); }
-.econ-time { font-variant-numeric: tabular-nums; color: var(--muted, #9ca3af); font-size: 12px; }
-.econ-ccy { font-weight: 700; font-size: 11.5px; color: var(--text, #fff); }
-.econ-title { min-width: 0; color: var(--text, #fff); line-height: 1.3; }
-.econ-title small { display: block; margin-top: 2px; font-size: 11px; color: var(--muted, #9ca3af); }
-.econ-row .econ-cd { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--econ-high); }
-.econ-empty, .econ-note { padding: 18px 10px; text-align: center; font-size: 12.5px; color: var(--muted, #9ca3af); }
-.econ-note { padding: 12px 10px 6px; font-size: 11.5px; }
+.econ-row.next { background: rgba(var(--ac-rgb), .1); }
+.econ-time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 11.5px; }
+.econ-ccy { font-weight: 700; font-size: 11px; color: var(--text); }
+.econ-title { min-width: 0; color: var(--text); line-height: 1.3; }
+.econ-title small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+.econ-hits { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.econ-hits b { font: 700 9.5px/1 var(--font-mono, var(--font)); padding: 2px 5px; border-radius: 99px; color: var(--ac-l2); background: rgba(var(--ac-rgb), 0.12); border: 1px solid rgba(var(--ac-rgb), 0.25); }
+body.light-theme .econ-hits b { color: var(--ac-d1); }
+.econ-end { display: flex; align-items: center; gap: 4px; }
+.econ-row .econ-cd { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--econ-high); }
+.econ-ask {
+  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border-radius: 7px; cursor: pointer;
+  color: var(--ac-l2); background: rgba(var(--ac-rgb), 0.08); border: 1px solid rgba(var(--ac-rgb), 0.25);
+  opacity: 0; transition: opacity .15s ease, background .15s ease;
+}
+.econ-row:hover .econ-ask, .econ-ask:focus-visible, .econ-row.next .econ-ask { opacity: 1; }
+.econ-ask:hover { background: rgba(var(--ac-rgb), 0.18); }
+@media (hover: none) { .econ-ask { opacity: 1; } }
+body.light-theme .econ-ask { color: var(--ac-d1); }
+.econ-empty, .econ-note { padding: 1.4rem 1rem; text-align: center; font-size: 12px; color: var(--muted); }
+.econ-note { padding: 12px 10px 6px; font-size: 11px; }
 
-.econ-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px 12px; border-top: 1px solid var(--glass-border, rgba(255,255,255,.08)); font-size: 12px; color: var(--text, #fff); }
-.econ-sw { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.econ-sw input { accent-color: rgb(var(--ac-rgb, 139,92,246)); }
-.econ-foot select { background: rgba(127,127,127,.1); color: var(--text, #fff); border: 1px solid var(--glass-border, rgba(255,255,255,.1)); border-radius: 7px; padding: 4px 6px; font: 600 11.5px var(--font, inherit); }
-.econ-foot select:disabled, .econ-sw input:disabled { opacity: .5; }
-.econ-fine { flex-basis: 100%; font-size: 10.5px; color: var(--muted, #9ca3af); }
+/* footer = .bell-panel-footer */
+.econ-panel-footer {
+  padding: 8px 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); background: rgba(0, 0, 0, 0.22); flex-shrink: 0; font-size: 11.5px; color: var(--text);
+}
+body.light-theme .econ-panel-footer { background: rgba(0, 0, 0, 0.02); border-top: 1px solid rgba(0, 0, 0, 0.05); }
+.econ-foot-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.econ-sw { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.econ-sw input { accent-color: rgb(var(--ac-rgb)); margin: 0; }
+.econ-foot-row select { background: rgba(127,127,127,.1); color: var(--text); border: 1px solid var(--glass-border); border-radius: 7px; padding: 3px 6px; font: 600 11px var(--font); }
+.econ-foot-row select:disabled, .econ-sw input:disabled { opacity: .5; }
+.econ-fine { margin-top: 5px; font-size: 10px; color: var(--muted); opacity: .85; line-height: 1.35; }
+
+/* dark theme: black card panels like the avatar, accounts and notification menus (navbar.css "SİYAH AÇILIR PANELLER") */
+:root:not(.light-theme) body:not(.light-theme) .nav .econ-panel {
+  background: var(--card-bg); backdrop-filter: none; -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.9);
+}
+:root:not(.light-theme) body:not(.light-theme) .nav .econ-panel-header,
+:root:not(.light-theme) body:not(.light-theme) .nav .econ-tabs,
+:root:not(.light-theme) body:not(.light-theme) .nav .econ-panel-footer,
+:root:not(.light-theme) body:not(.light-theme) .nav .econ-day { background: var(--card-bg); }
 
 /* ── alert cards (under the badge, right aligned like the panel) ── */
 .econ-alerts { position: absolute; top: 46px; right: 0; display: flex; flex-direction: column; gap: 8px; z-index: calc(var(--z-bell, 9999) + 1); pointer-events: none; }
 .econ-card {
   pointer-events: auto; width: 320px; max-width: calc(100vw - 20px); display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: start;
-  padding: 12px 12px 12px 14px; border-radius: 12px; cursor: pointer; font-size: 12.5px; line-height: 1.4; color: var(--text, #fff);
-  background: rgba(13, 14, 24, 0.97); border: 1px solid color-mix(in srgb, var(--econ-medium) 45%, transparent);
-  box-shadow: 0 18px 48px -12px rgba(0,0,0,.7); animation: econ-in .28s cubic-bezier(.16,1,.3,1);
+  padding: 12px 12px 12px 14px; border-radius: 14px; cursor: pointer; font-size: 12.5px; line-height: 1.4; color: var(--text);
+  background: var(--card-bg, rgba(13, 14, 24, 0.97)); border: 1px solid color-mix(in srgb, var(--econ-medium) 45%, transparent);
+  box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.9); animation: econ-in .28s cubic-bezier(.16,1,.3,1);
 }
 .econ-card.imp-high { border-color: color-mix(in srgb, var(--econ-high) 55%, transparent); }
 .econ-card .econ-dot { margin-top: 5px; }
-.econ-card b { font-size: 12.5px; }
-.econ-card small { display: block; margin-top: 3px; color: var(--muted, #9ca3af); font-size: 11px; }
-.econ-card button { background: none; border: 0; color: var(--muted, #9ca3af); font-size: 18px; line-height: 1; cursor: pointer; }
-body.light-theme .econ-card { background: rgba(255,255,255,0.99); box-shadow: 0 18px 48px -12px rgba(15,23,42,.2); }
+.econ-card small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.econ-card button { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 2px; display: flex; }
+body.light-theme .econ-card { background: rgba(255,255,255,0.99); box-shadow: 0 24px 64px -12px rgba(15,23,42,.18); }
 @keyframes econ-in { from { opacity: 0; transform: translateY(-6px); } }
 
-/* ── narrow screens ── */
+/* ── narrow screens: the bell panel's placements ── */
 @media (max-width: 1180px) { .econ-btn .econ-name { max-width: 110px; } }
 @media (max-width: 980px) { .econ-btn .econ-name, .econ-btn .econ-sep, .econ-btn .econ-more { display: none; } }
 @media (max-width: 767px) {
   .econ-btn { height: 30px; padding: 0 9px; }
-  .econ-btn .econ-quiet { display: none; }
-  .econ-panel, .econ-alerts { position: fixed; top: 56px; left: 10px; right: 10px; width: auto; max-width: none; }
+  .econ-btn .econ-quiet, .econ-btn .econ-pair { display: none; }
+  .econ-panel, .econ-alerts { position: fixed; top: 54px; right: 8px; left: 8px; width: auto; max-width: none; }
   .econ-card { width: auto; }
+  .econ-ask-all span { display: none; }
 }
-@media (max-width: 374px) { .econ-btn .econ-cd { font-size: 11px; } .econ-btn { padding: 0 7px; gap: 4px; } }
+@media (max-width: 480px) {
+  .econ-panel, .econ-alerts { top: 52px; }
+  .econ-panel { max-height: calc(100vh - 68px); }
+  .econ-panel-header { padding: 0.5rem 0.6rem; }
+}
+@media (max-width: 374px) {
+  .econ-panel, .econ-alerts { top: 48px; right: 6px; left: 6px; }
+  .econ-panel { max-height: calc(100vh - 60px); }
+  .econ-btn { padding: 0 7px; gap: 4px; }
+  .econ-btn .econ-cd { font-size: 11px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .econ-btn.is-now .econ-cd, .econ-card { animation: none; }
   .econ-panel { transition: none; }

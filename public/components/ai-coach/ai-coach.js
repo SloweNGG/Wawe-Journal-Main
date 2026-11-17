@@ -1565,6 +1565,21 @@
     } catch (e) { /* ignore */ }
   }
 
-  global.WwAiCoach = { open: function () { if (S.mounted) setOpen(true); }, close: function () { if (S.mounted) setOpen(false); }, coachName: coachName, setCoach: function (id) { setCoach(id); }, _md: md, _joinDictation: joinDictation };
+  // ask(text): another component (the economic calendar) opens the coach with a question; it starts a new chat (a new
+  // topic; the earlier one stays in the history) and is sent like a suggested question. While an answer is still coming,
+  // the text waits in the box for the member to send.
+  function askFromOutside(text) {
+    if (!S.mounted) return false;
+    text = String(text || '').trim().slice(0, MAX_MESSAGE);
+    if (!text) return false;
+    setOpen(true);
+    if (S.pending) { R.input.value = text; autosize(); try { R.input.focus(); } catch (e) { /* ignore */ } return true; }
+    // a conversation still loading ignores its result once the id changed (openConversation checks it)
+    S.conversationId = null; S.convJournal = undefined; S.messages = []; clearImage();
+    save({ open: S.open, conversationId: null });
+    R.input.value = text; send();
+    return true;
+  }
+  global.WwAiCoach = { open: function () { if (S.mounted) setOpen(true); }, close: function () { if (S.mounted) setOpen(false); }, ask: askFromOutside, coachName: coachName, setCoach: function (id) { setCoach(id); }, _md: md, _joinDictation: joinDictation };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { start(0); }); else start(0);
 })(typeof window !== 'undefined' ? window : globalThis);

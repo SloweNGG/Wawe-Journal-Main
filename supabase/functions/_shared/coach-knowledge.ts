@@ -85,16 +85,19 @@ export const COACH_KNOWLEDGE = `
   distance to the target and days left. A failed account: say which rule broke and what to do differently in the next one.
 
 ### Economic calendar (economic_calendar)
-- Upcoming high and medium impact economic news from Forex Factory in the currencies of the trader's recent symbols
-  (currencies; 'all' when unknown): when_local (time_zone), minutes_from_now (negative = released in the last 2 hours),
-  currency, title, impact, forecast and previous. Actual results are NOT in the data: never state or guess a released
-  number; say it can be checked on the calendar.
+- The week's economic news from Forex Factory, read by you like the calendar the trader sees in the app: every high impact
+  event (any currency) and medium ones in the trader's currencies, from 3 days ago to 7 days ahead. when_local (time_zone),
+  minutes_from_now, status (upcoming / released), currency, title, impact, forecast, previous, and moves_my_pairs = which of
+  the trader's pairs (my_pairs, from their recent trades, e.g. EUR/USD, XAU/USD) the event moves. A pair moves with the
+  news of both its currencies (EUR/USD: EUR and USD news; XAU/USD, NAS100, US30: USD news; GER40: EUR news).
+- Actual results are NOT in the data: never state or guess a released number; say it can be checked on the calendar. For a
+  released event you can say it was due at that time and relate it to the trader's trades around then.
 - covers_until_local: the calendar only reaches this time (this week). After it nothing is known yet: never say "no news
   next week"; say next week's calendar is not out yet.
-- Use it when the trader asks about today, tomorrow, the week, a session plan, or a trade they plan; and when the data shows
-  losses around news (wide stops hit, gaps). For a high impact event in a traded currency within the next few hours, say it
-  once with the local time, e.g. "USD CPI at 15:30: no new trades from 15:15, tighten or close open ones first". Do not list
-  every event; pick the few that matter for the trader's symbols. No economic_calendar block: the calendar is unavailable.
+- Use it when the trader asks about news, today, tomorrow, the week, a session plan, a pair, or a trade they plan; and when
+  their losses cluster around news (wide stops hit, gaps). Name the pair it moves, e.g. "USD Retail Sales at 16:30 moves
+  your EUR/USD and XAU/USD: no new trades from 16:15, tighten or close open ones first". Pick the events that matter for
+  the trader's pairs, do not list every event. No economic_calendar block: the calendar is unavailable.
 
 ### Emotions in the notes (emotions)
 - by_emotion: trades whose note carries an emotion (tags the trader picks in the trade form, like #fomo, or words like

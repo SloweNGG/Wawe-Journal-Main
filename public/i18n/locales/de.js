@@ -3070,4 +3070,12 @@ export default {
   "econ.alert_title": "Anstehende News",
   "econ.alert_body": "{t} · in {n} Min. ({time})",
   "econ.alert_tip": "Achte vor neuen Positionen auf Spreads und Slippage.",
+  "econ.ask": "Coach fragen",
+  "econ.ask_week": "Worauf sollte ich laut dem Wirtschaftskalender dieser Woche bei meinen Paaren achten?",
+  "econ.ask_event": "Wie wirkt sich {ccy} {title} ({when}) auf {pairs}aus? Wie sollte ich mich um diese Zeit verhalten?",
+  "econ.ask_event_pairs": "meine Paare {list} ",
+  "econ.ask_event_mine": "meine Trades ",
+  "econ.pairs": "Paare",
+  "econ.my_pairs": "Meine Paare",
+  "econ.all_pairs": "Alle Paare",
 };

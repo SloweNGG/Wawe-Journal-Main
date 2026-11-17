@@ -74,7 +74,7 @@ export async function loadEvents(admin: any, fromIso: string, toIso: string): Pr
 export async function readCalendar(admin: any, now = Date.now()): Promise<{ events: EconEvent[]; fetchedAt: string | null } | null> {
   const [{ data: st, error: se }, events] = await Promise.all([
     admin.from('econ_feed_state').select('last_success_at').eq('id', 1).maybeSingle(),
-    loadEvents(admin, new Date(now - 3 * 3600e3).toISOString(), new Date(now + 8 * 86400e3).toISOString()),
+    loadEvents(admin, new Date(now - 73 * 3600e3).toISOString(), new Date(now + 8 * 86400e3).toISOString()),
   ]);
   if (se || !st) return null;
   return { events, fetchedAt: st.last_success_at || null };
