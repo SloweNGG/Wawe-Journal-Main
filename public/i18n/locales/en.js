@@ -2900,7 +2900,7 @@ export default {
   "aiCoach.set.journal_hint": "New chats start with this journal.",
   "aiCoach.set.journal_active": "Open journal",
   "aiCoach.set.privacy": "Data and privacy",
-  "aiCoach.set.privacy_text": "Your questions and a summary of your journal are sent to Google Gemini to generate answers; Google may use this data to improve its services. Chart images are not stored.",
+  "aiCoach.set.privacy_text": "Your questions and a summary of your journal are sent to Google Gemini to generate answers; Google may use this data to improve its services. When Gemini is busy, messages without images may be answered by a free model through OpenRouter; these providers may also store the data. Chart images are not stored.",
   "aiCoach.set.privacy_link": "Privacy policy",
   "aiCoach.set.delete_all": "Delete all chats",
   "aiCoach.set.delete_all_hint": "Your past chats are deleted permanently.",

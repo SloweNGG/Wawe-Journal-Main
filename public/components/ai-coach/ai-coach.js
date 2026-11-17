@@ -1480,7 +1480,7 @@
     // data
     h += '<div class="wwai-group">';
     h += row(_t('aiCoach.set.privacy', 'Veri ve gizlilik'),
-      _t('aiCoach.set.privacy_text', 'Soruların ve defterinin özeti cevap üretmek için Google Gemini\'ye gönderilir; Google bu verileri hizmetlerini geliştirmek için kullanabilir. Grafik görselleri saklanmaz.'),
+      _t('aiCoach.set.privacy_text', 'Soruların ve defterinin özeti cevap üretmek için Google Gemini\'ye gönderilir; Google bu verileri hizmetlerini geliştirmek için kullanabilir. Gemini yoğunken görselsiz mesajlar OpenRouter üzerinden ücretsiz bir modelle cevaplanabilir; bu sağlayıcılar da verileri saklayabilir. Grafik görselleri saklanmaz.'),
       '<a class="wwai-link" href="/privacy#ai-coach" target="_blank" rel="noopener">' + esc(_t('aiCoach.set.privacy_link', 'Gizlilik politikası')) + ' →</a>', 'is-stack');
     h += row(_t('aiCoach.set.delete_all', 'Tüm sohbetleri sil'), _t('aiCoach.set.delete_all_hint', 'Geçmiş sohbetlerin kalıcı olarak silinir.'),
       '<button type="button" class="wwai-danger" data-act="delete-all">' + esc(_t('aiCoach.set.delete', 'Sil')) + '</button>');

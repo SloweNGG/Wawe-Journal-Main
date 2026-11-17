@@ -2845,7 +2845,7 @@ export default {
   "aiCoach.set.journal_hint": "Yeni sohbetler bu defterle başlar.",
   "aiCoach.set.journal_active": "Açık olan defter",
   "aiCoach.set.privacy": "Veri ve gizlilik",
-  "aiCoach.set.privacy_text": "Soruların ve defterinin özeti cevap üretmek için Google Gemini'ye gönderilir; Google bu verileri hizmetlerini geliştirmek için kullanabilir. Grafik görselleri saklanmaz.",
+  "aiCoach.set.privacy_text": "Soruların ve defterinin özeti cevap üretmek için Google Gemini'ye gönderilir; Google bu verileri hizmetlerini geliştirmek için kullanabilir. Gemini yoğunken görselsiz mesajlar OpenRouter üzerinden ücretsiz bir modelle cevaplanabilir; bu sağlayıcılar da verileri saklayabilir. Grafik görselleri saklanmaz.",
   "aiCoach.set.privacy_link": "Gizlilik politikası",
   "aiCoach.set.delete_all": "Tüm sohbetleri sil",
   "aiCoach.set.delete_all_hint": "Geçmiş sohbetlerin kalıcı olarak silinir.",

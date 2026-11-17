@@ -1,5 +1,6 @@
 // supabase/functions/ai-coach/index.ts
-// AI coach: the member asks about their own trading (optionally with a chart screenshot); Google Gemini answers with a
+// AI coach: the member asks about their own trading (optionally with a chart screenshot); Google Gemini (or, when every
+// Gemini model is busy, a free OpenRouter model: _shared/openrouter-stream.ts) answers with a
 // summary of the member's trades and strategies (_shared/trade-summary.ts) and a fixed knowledge base
 // (_shared/coach-knowledge.ts) as context, plus the state of the member's active prop challenges (_shared/prop-context.ts)
 // and their backtest accounts (_shared/backtest-context.ts).
@@ -27,7 +28,7 @@
 //   (the coach picker's "pick for me"). No Gemini call, no message counted.
 // Security:
 //   - The member's JWT is required; every row is read for the caller only (journal and conversation ownership checked).
-//   - GEMINI_API_KEY lives in the function secrets and never reaches the browser or a log.
+//   - GEMINI_API_KEY and OPENROUTER_API_KEY live in the function secrets and never reach the browser or a log.
 //   - Daily message limit per plan (ai_take_message, refunded when Gemini fails). Images are sent to Gemini, never stored.
 // Gemini Interactions API, streamed (stateless: store=false; the model's output steps are rebuilt from the stream, kept in
 // ai_messages.steps and sent back unchanged to the same model, as the API requires for thought signatures; another model
@@ -51,14 +52,21 @@ import { resolveActions, applyAction } from '../_shared/actions.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
 import { resolveCoach, coachIntro, suggestCoach, type Coach } from '../_shared/coach-personas.ts';
 import { runChain, modelHealth } from '../_shared/model-chain.ts';
+import { OPENROUTER_URL, isOpenRouter, openRouterChain, chatMessages, chatRequest, createChatBuilder, chatOutcome } from '../_shared/openrouter-stream.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || '';
 // tried in order: a model that is busy (429/503) or failing (5xx) hands over to the next one
-const GEMINI_MODELS = (Deno.env.get('GEMINI_MODELS') || 'gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite')
+// (free tier: 3.8/3.6 Flash allow 20 requests a day per project, 3.5 Flash Lite 500, so Lite goes first)
+const GEMINI_MODELS = (Deno.env.get('GEMINI_MODELS') || 'gemini-3.5-flash-lite,gemini-3.6-flash')
   .split(',').map((m) => m.trim()).filter(Boolean);
+// after every Gemini model: OpenRouter's free models (_shared/openrouter-stream.ts), only when OPENROUTER_API_KEY is set
+// and the message has no chart screenshot. OPENROUTER_MODELS = comma-separated OpenRouter model ids.
+const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY') || '';
+const OPENROUTER_MODELS = OPENROUTER_API_KEY
+  ? openRouterChain(Deno.env.get('OPENROUTER_MODELS') || 'nvidia/nemotron-3-ultra-550b-a55b:free') : [];
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse';
 const GEMINI_REVISION = '2026-05-20';
 // a model may accept the request and then stay silent (seen on the free tier: 100 s without a word): give up on it and
@@ -270,6 +278,69 @@ async function streamGeminiInner(model: string, payload: Record<string, unknown>
   return { ok: true, status: 200, steps: r.steps.filter((s: any) => s && s.type !== 'user_input'), text: r.text, forwarded };
 }
 
+// One streamed OpenRouter call (same contract as streamGemini; steps are always empty: later turns get the plain text).
+async function streamOpenRouter(model: string, messages: unknown[], onDelta: (t: string) => void, firstWordMs: number) {
+  const ac = new AbortController();
+  let timer = setTimeout(() => ac.abort(), firstWordMs);
+  const arm = (ms: number) => { clearTimeout(timer); timer = setTimeout(() => ac.abort(), ms); };
+  try { return await streamOpenRouterInner(model, messages, onDelta, ac.signal, arm); }
+  finally { clearTimeout(timer); }
+}
+async function streamOpenRouterInner(model: string, messages: unknown[], onDelta: (t: string) => void,
+  signal: AbortSignal, arm: (ms: number) => void) {
+  let res: Response;
+  try {
+    res = await fetch(OPENROUTER_URL, {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OPENROUTER_API_KEY },
+      body: JSON.stringify(chatRequest(model, messages)),
+    });
+  } catch (_) {
+    console.error('ai-coach openrouter error:', model, signal.aborted ? 'timeout' : 'network');
+    return { ok: false, status: 503, steps: [], text: '', forwarded: false };
+  }
+  if (!res.ok || !res.body) {
+    let code = '-';
+    try { const j = await res.json(); code = String(j?.error?.code || '-'); } catch (_) { /* no body */ }
+    console.error('ai-coach openrouter error:', model, res.status, code.slice(0, 40));
+    const status = res.status === 429 || res.status >= 500 || res.status === 408 ? (res.status === 429 ? 429 : 503) : res.status;
+    return { ok: false, status, steps: [], text: '', forwarded: false };
+  }
+  const b = createChatBuilder(), reader = res.body.getReader(), dec = new TextDecoder();
+  const guard = createLeakGuard(onDelta);
+  let buf = '', gotText = false;
+  const feed = (ev: any) => { const d = b.push(ev); if (d) { gotText = true; guard.push(d); } };
+  const leak = () => {
+    console.error('ai-coach reasoning leak:', model);
+    reader.cancel().catch(() => {});
+    return { ok: false, status: 503, steps: [], text: '', forwarded: guard.forwarded };
+  };
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const { events, rest } = takeSseEvents(buf);
+      buf = rest;
+      for (const ev of events) feed(ev);
+      if (guard.leaked) return leak();
+      if (gotText) arm(IDLE_MS);
+    }
+    buf += dec.decode();
+    for (const ev of takeSseEvents(buf + '\n\n').events) feed(ev);
+  } catch (_) {
+    console.error('ai-coach stream broken:', model, signal.aborted ? 'timeout' : 'read error');
+    return { ok: false, status: 503, steps: [], text: b.result().text, forwarded: guard.forwarded };
+  }
+  if (!guard.end()) return leak();
+  const r = b.result(), status = chatOutcome(r);
+  if (status !== 200) {
+    console.error('ai-coach stream error:', model, r.error ? r.error.code.slice(0, 40) : (r.text ? 'cut off' : 'empty'), r.finish || '-');
+    return { ok: false, status, steps: [], text: r.text, forwarded: guard.forwarded };
+  }
+  return { ok: true, status: 200, steps: [], text: r.text, forwarded: guard.forwarded };
+}
+
 serve(async (req: Request) => {
   const cors = getCorsHeaders(req.headers.get('origin'));
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
@@ -440,11 +511,16 @@ serve(async (req: Request) => {
 
       // model chain (_shared/model-chain.ts): busy models last, one more round after a pause on a short demand spike
       let tFirst = 0;
-      const chained = await runChain(GEMINI_MODELS, (model, firstWordMs) => streamGemini(model, {
-        system_instruction: system,
-        input: [...buildHistory(msgs, model), { type: 'user_input', content: userContent }],
-        generation_config: { thinking_level: 'low', max_output_tokens: 4096 },
-      }, (t) => { if (!tFirst) tFirst = Date.now(); send('delta', { text: t }); }, firstWordMs), {
+      // OpenRouter models are text only: a message with a chart screenshot stays on Gemini
+      const models = image ? GEMINI_MODELS : [...GEMINI_MODELS, ...OPENROUTER_MODELS];
+      const onDelta = (t: string) => { if (!tFirst) tFirst = Date.now(); send('delta', { text: t }); };
+      const chained = await runChain(models, (model, firstWordMs) => isOpenRouter(model)
+        ? streamOpenRouter(model, chatMessages(system, msgs, message), onDelta, firstWordMs)
+        : streamGemini(model, {
+          system_instruction: system,
+          input: [...buildHistory(msgs, model), { type: 'user_input', content: userContent }],
+          generation_config: { thinking_level: 'low', max_output_tokens: 4096 },
+        }, onDelta, firstWordMs), {
         health: HEALTH,
         onReset: () => { tFirst = 0; send('reset', {}); },   // the member saw part of a broken answer: the panel clears it
       });

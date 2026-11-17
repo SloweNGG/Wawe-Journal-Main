@@ -97,7 +97,9 @@ describe('model chain: time to the first word (simulated free tier)', () => {
   it('the edge function uses the chain and logs only timings', async () => {
     const fs = await import('node:fs');
     const src = fs.readFileSync('supabase/functions/ai-coach/index.ts', 'utf8');
-    assert.match(src, /await runChain\(GEMINI_MODELS,/);
+    assert.match(src, /await runChain\(models,/);
+    // OpenRouter (text only) comes after every Gemini model, never for a message with a screenshot
+    assert.match(src, /const models = image \? GEMINI_MODELS : \[\.\.\.GEMINI_MODELS, \.\.\.OPENROUTER_MODELS\];/);
     assert.match(src, /const HEALTH = modelHealth\(\);/);
     const log = src.match(/console\.log\('ai-coach timing ' \+ JSON\.stringify\(\{([\s\S]*?)\}\)\);/);
     assert.ok(log, 'timing log');
