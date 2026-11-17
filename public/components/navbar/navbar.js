@@ -1163,6 +1163,7 @@ function getNavbarHTML(translations) {
         <a href="/analytics.html" data-page="analytics" data-pro-link><span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span></a>
       </div>
       <div class="nav-right">
+        <div class="nav-econ" id="nav-econ"></div>
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
           <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="wwToggleBell(event, this)">
             <i data-lucide="bell" class="nav-bell-icon"></i>

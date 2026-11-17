@@ -52,6 +52,8 @@ import { resolveActions, applyAction } from '../_shared/actions.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
 import { resolveCoach, coachIntro, suggestCoach, type Coach } from '../_shared/coach-personas.ts';
 import { runChain, modelHealth } from '../_shared/model-chain.ts';
+import { readCalendar } from '../_shared/econ-feed.ts';
+import { coachCalendar, tradedCurrencies } from '../_shared/econ-calendar.ts';
 import { OPENROUTER_URL, isOpenRouter, openRouterChain, chatMessages, chatRequest, createChatBuilder, chatOutcome } from '../_shared/openrouter-stream.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -483,7 +485,8 @@ serve(async (req: Request) => {
   async function run(send: (event: string, data: unknown) => void): Promise<Outcome> {
     try {
       const t0 = Date.now();
-      const [loaded, daily] = await Promise.all([loadContext(admin, user!.id, scopeJournal, tz), coachDaily(admin, user!.id, tz).catch(() => null)]);
+      const [loaded, daily, cal] = await Promise.all([loadContext(admin, user!.id, scopeJournal, tz), coachDaily(admin, user!.id, tz).catch(() => null),
+        readCalendar(admin).catch(() => null)]);
       const tCtx = Date.now();
       if (!loaded) { await refund(); return { ok: false, code: 'SERVER', message: 'Could not read the journal.', status: 500 }; }
       const context = loaded.summary;
@@ -493,6 +496,11 @@ serve(async (req: Request) => {
       const mt = Number(body?.monthlyTarget);
       if (Number.isFinite(mt) && mt > 0 && mt < 1e9) context.monthly_profit_target = Math.round(mt * 100) / 100;
       const equity = equityCurve(loaded.trades);
+      // upcoming economic news (Forex Factory, _shared/econ-calendar.ts) in the currencies of the member's recent symbols
+      if (cal) {
+        const ccys = tradedCurrencies(loaded.trades.slice(0, 300).map((t: any) => String(t.symbol || '')));
+        context.economic_calendar = coachCalendar(cal.events, ccys, Date.now(), tz, cal.fetchedAt);
+      }
 
       let msgs: any[] = [];
       if (conversation) {

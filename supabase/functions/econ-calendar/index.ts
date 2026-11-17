@@ -1,0 +1,45 @@
+// supabase/functions/econ-calendar/index.ts
+// Economic calendar for the navbar countdown badge (public/components/econ-calendar/econ-calendar.js).
+//   POST {} (or GET) with the member's JWT -> { ok, events: [{ id, title, currency, impact, event_at, forecast, previous }],
+//     fetched_at, covers_until }: events from 24 h ago to the end of the cached week, oldest first.
+//   The data is Forex Factory's weekly export cached in public.econ_events (migration 202611170001); a call refreshes it
+//   when it is older than 30 minutes (_shared/econ-feed.ts: one refresh at a time, at most one try per 5 minutes).
+//   covers_until: the last event the export has; the export only has this week, so after it nothing is known yet.
+// Security: a signed-in member is required (the data is public, the refresh is not something to hand to anyone);
+// the tables are service-role only. verify_jwt stays on.
+
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
+import { ensureFresh, loadEvents } from '../_shared/econ-feed.ts';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+
+serve(async (req: Request) => {
+  const cors = getCorsHeaders(req.headers.get('origin'));
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  if (req.method !== 'POST' && req.method !== 'GET') return jsonRes({ ok: false, code: 'METHOD' }, 405, cors);
+
+  const auth = req.headers.get('authorization');
+  if (!auth || !auth.startsWith('Bearer ')) return jsonRes({ ok: false, code: 'UNAUTHORIZED' }, 401, cors);
+  const { data: { user }, error } = await createClient(SUPABASE_URL, SUPABASE_ANON_KEY).auth.getUser(auth.substring(7));
+  if (error || !user) return jsonRes({ ok: false, code: 'UNAUTHORIZED' }, 401, cors);
+
+  try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    const state = await ensureFresh(admin);
+    if (!state) return jsonRes({ ok: false, code: 'NOT_CONFIGURED' }, 503, cors);
+    const now = Date.now();
+    const events = await loadEvents(admin, new Date(now - 86400e3).toISOString(), new Date(now + 14 * 86400e3).toISOString());
+    return jsonRes({
+      ok: true, events,
+      fetched_at: state.last_success_at,
+      covers_until: events.length ? events[events.length - 1].event_at : null,
+    }, 200, { ...cors, 'Cache-Control': 'private, max-age=60' });
+  } catch (_) {
+    console.error('econ-calendar error');
+    return jsonRes({ ok: false, code: 'SERVER' }, 500, { ...cors, 'Cache-Control': 'no-store' });
+  }
+});

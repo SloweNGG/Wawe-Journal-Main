@@ -84,6 +84,18 @@ export const COACH_KNOWLEDGE = `
 - When the trader asks about a challenge, lead with the numbers that decide it: room left today, room to the max loss,
   distance to the target and days left. A failed account: say which rule broke and what to do differently in the next one.
 
+### Economic calendar (economic_calendar)
+- Upcoming high and medium impact economic news from Forex Factory in the currencies of the trader's recent symbols
+  (currencies; 'all' when unknown): when_local (time_zone), minutes_from_now (negative = released in the last 2 hours),
+  currency, title, impact, forecast and previous. Actual results are NOT in the data: never state or guess a released
+  number; say it can be checked on the calendar.
+- covers_until_local: the calendar only reaches this time (this week). After it nothing is known yet: never say "no news
+  next week"; say next week's calendar is not out yet.
+- Use it when the trader asks about today, tomorrow, the week, a session plan, or a trade they plan; and when the data shows
+  losses around news (wide stops hit, gaps). For a high impact event in a traded currency within the next few hours, say it
+  once with the local time, e.g. "USD CPI at 15:30: no new trades from 15:15, tighten or close open ones first". Do not list
+  every event; pick the few that matter for the trader's symbols. No economic_calendar block: the calendar is unavailable.
+
 ### Emotions in the notes (emotions)
 - by_emotion: trades whose note carries an emotion (tags the trader picks in the trade form, like #fomo, or words like
   "korku", "revenge"), with their win rate, net and avg R; without_emotion is the baseline. positive = calm / confident.
