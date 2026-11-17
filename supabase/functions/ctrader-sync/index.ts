@@ -585,7 +585,10 @@ serve(async (req: Request) => {
             exit_date: new Date(execTime).toISOString(),
             multiplier,
             platform_source: 'ctrader',
-            position_id: deal.positionId ? String(deal.positionId) : null,
+            // position_id NULL (mt5.ts ile aynı): canlıdaki trades_platform_unique (user_id, platform_source, position_id)
+            // ve idx_trades_journal_position (journal_id, position_id) index'leri kısmi kapanışta (aynı pozisyonun 2. deal'i)
+            // ve hesap başka deftere bağlanınca "duplicate key" verip tüm partiyi düşürüyordu. Tekrarı import_hash (deal id) önler.
+            position_id: null,
             last_deal_id: deal.dealId ? Number(deal.dealId) : null,
             import_hash: `ctrader:${ctidTraderAccountId}:${deal.dealId}`,
             created_at: new Date().toISOString(),
