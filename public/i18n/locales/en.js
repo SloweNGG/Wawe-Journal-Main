@@ -3116,4 +3116,8 @@ export default {
   "econ.market_energy": "Energy",
   "econ.market_metals": "Metals",
   "econ.market_crypto": "Crypto",
+  "calendar.news.title": "Economic calendar",
+  "calendar.news.change_filter": "Change filter",
+  "calendar.news.none": "No news matching your filter on this day.",
+  "calendar.news.note": "Source: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Released results (actual) are not included; news is recorded since 15 November 2026.",
 };

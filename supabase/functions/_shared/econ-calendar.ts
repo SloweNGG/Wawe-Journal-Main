@@ -195,3 +195,13 @@ export function coachCalendar(events: EconEvent[], symbols: string[], now: numbe
     }),
   };
 }
+
+// econ-calendar's { from, to } (the trading calendar page asks for the month on screen): null = the default range,
+// 'bad' = malformed, reversed or wider than MAX_RANGE_DAYS (a month plus the time zone margin fits)
+export const MAX_RANGE_DAYS = 45;
+export function parseRange(body: any): { from: number; to: number } | null | 'bad' {
+  if (!body || (body.from == null && body.to == null)) return null;
+  const from = Date.parse(String(body.from || '')), to = Date.parse(String(body.to || ''));
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to < from || to - from > MAX_RANGE_DAYS * 86400e3) return 'bad';
+  return { from, to };
+}

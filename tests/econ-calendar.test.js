@@ -6,7 +6,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { parseFeed, eventId, symbolCurrencies, tradedCurrencies, coachCalendar, localTime, COACH_EVENTS_MAX, pairLabel, memberPairs, PAIR_CATALOG, pairOf, mergeFeeds, moves, symbolMarket, SOURCES } from '../supabase/functions/_shared/econ-calendar.ts';
+import { parseFeed, eventId, symbolCurrencies, tradedCurrencies, coachCalendar, localTime, COACH_EVENTS_MAX, pairLabel, memberPairs, PAIR_CATALOG, pairOf, mergeFeeds, moves, symbolMarket, SOURCES, parseRange } from '../supabase/functions/_shared/econ-calendar.ts';
 import { ensureFresh, staleIds, readCalendar, REFRESH_MS, CLAIM_MS } from '../supabase/functions/_shared/econ-feed.ts';
 import { makeDb } from './helpers/fake-db.js';
 
@@ -289,11 +289,38 @@ describe('econ-calendar: navbar badge helpers', () => {
   });
 });
 
+describe('econ-calendar: range requests (trading calendar page)', () => {
+  it('a month with margin is fine; malformed, reversed or too wide is bad; nothing = default', () => {
+    assert.equal(parseRange(null), null); assert.equal(parseRange({}), null);
+    assert.deepEqual(parseRange({ from: '2026-10-30T00:00:00Z', to: '2026-12-03T00:00:00Z' }), { from: Date.parse('2026-10-30T00:00:00Z'), to: Date.parse('2026-12-03T00:00:00Z') });
+    assert.equal(parseRange({ from: 'x', to: '2026-12-03T00:00:00Z' }), 'bad');
+    assert.equal(parseRange({ from: '2026-12-03T00:00:00Z', to: '2026-11-03T00:00:00Z' }), 'bad');
+    assert.equal(parseRange({ from: '2026-01-01T00:00:00Z', to: '2026-12-31T00:00:00Z' }), 'bad');
+    assert.equal(parseRange({ from: '2026-11-01T00:00:00Z' }), 'bad');
+  });
+  it('the badge module offers the calendar page an API', async () => {
+    await import('../public/components/econ-calendar/econ-calendar.js');
+    const W = globalThis.WWEcon;
+    for (const k of ['range', 'visible', 'describe', 'ask', 'canAsk', 'dayKey', 'filterLabel', 'open']) assert.equal(typeof W[k], 'function', k);
+    const ev = [{ id: 'a', title: 'CPI', currency: 'USD', impact: 'high', event_at: '2026-11-17T13:30:00.000Z', impacts: { ff: 'high' } },
+      { id: 'b', title: 'Copper', currency: 'GBP', impact: 'medium', event_at: '2026-11-17T09:00:00.000Z', impacts: { mm: 'medium' } }];
+    assert.deepEqual(W.visible(ev).map((e) => e.id), ['a']);                       // default filter: high impact
+    const d = W.describe(ev[1]);
+    assert.equal(d.market, 'metals'); assert.deepEqual(d.sites, ['MetalsMine']); assert.match(d.time, /\d\d[:.]\d\d/);
+    assert.match(W.dayKey(Date.parse('2026-11-17T13:30:00Z')), /^2026-11-1[78]$/);
+    assert.equal(W.canAsk(), false);                                                 // no coach in Node
+  });
+});
+
 describe('econ-calendar: wiring and texts', () => {
   it('the badge host is in both navbar copies; assets are loaded; the coach gets the calendar', () => {
     assert.match(fs.readFileSync('src/components/Navbar.astro', 'utf8'), /<div class="nav-econ" id="nav-econ"><\/div>\s*<div class="nav-bell-wrapper"/);
     assert.match(fs.readFileSync('public/components/navbar/navbar.js', 'utf8'), /<div class="nav-econ" id="nav-econ"><\/div>\s*<div class="nav-bell-wrapper"/);
     const layout = fs.readFileSync('src/layouts/Layout.astro', 'utf8');
+    const cal = fs.readFileSync('public/interface/calendar/js/calendar.js', 'utf8');
+    assert.match(cal, /hideCalendarSkeleton\(\);\s*calNewsAfterRender\(\);/);          // every month render decorates the days
+    assert.match(cal, /appendDayNews\(dateStr\);/);                                      // the day modal lists the news
+    assert.match(cal, /CAL_PAGE\.on\(window, 'ww:econ-change'/);                         // listeners go with the page (SPA)
     assert.match(layout, /\/components\/econ-calendar\/econ-calendar\.css/);
     assert.match(layout, /\/components\/econ-calendar\/econ-calendar\.js/);
     const coach = fs.readFileSync('supabase/functions/ai-coach/index.ts', 'utf8');
@@ -306,6 +333,9 @@ describe('econ-calendar: wiring and texts', () => {
   it('every text the badge uses exists in all locales', async () => {
     const src = fs.readFileSync('public/components/econ-calendar/econ-calendar.js', 'utf8');
     const keys = [...new Set([...src.matchAll(/_t\('(econ\.[a-z_]+)'/g)].map((m) => m[1]).filter((k) => !k.endsWith('_')))];
+    const calSrc = fs.readFileSync('public/interface/calendar/js/calendar.js', 'utf8');
+    for (const m of calSrc.matchAll(/calT\('((?:calendar\.news|econ)\.[a-z_]+)'/g)) keys.push(m[1]);
+    for (const mk of ['energy', 'metals', 'crypto']) keys.push('econ.market_' + mk);
     for (const imp of ['high', 'medium', 'low', 'holiday']) keys.push('econ.impact_' + imp);
     assert.ok(keys.length > 30);
     for (const l of ['tr', 'en', 'de']) {

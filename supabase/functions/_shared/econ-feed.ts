@@ -16,7 +16,8 @@ import { SOURCES, SOURCE_KEYS, parseFeed, mergeFeeds, type EconEvent, type Sourc
 export const REFRESH_MS = 30 * 60_000;
 export const CLAIM_MS = 5 * 60_000;
 const FETCH_TIMEOUT_MS = 6_000;
-const KEEP_DAYS = 30;
+// past weeks stay for the trading calendar page (news of the days the member traded); ~170 events a week
+const KEEP_DAYS = 400;
 const COLS = 'id, title, currency, impact, event_at, forecast, previous, impacts';
 
 export interface FeedState { last_attempt_at: string | null; last_success_at: string | null; last_status: string | null }
@@ -65,7 +66,7 @@ async function refresh(admin: any, now: number): Promise<string> {
   // a refused site: its events of the stored week, with its own impact
   let stored: EconEvent[] = [];
   if (failed.length) {
-    const { data } = await admin.from('econ_events').select(COLS).gte('event_at', new Date(now - 8 * 86400e3).toISOString()).limit(2000);
+    const { data } = await admin.from('econ_events').select(COLS).gte('event_at', new Date(now - 8 * 86400e3).toISOString()).limit(1000);
     stored = (data || []) as EconEvent[];
   }
   const lists = SOURCE_KEYS.map((k, i) => got[i].events ||
@@ -85,7 +86,7 @@ async function refresh(admin: any, now: number): Promise<string> {
 
 export async function loadEvents(admin: any, fromIso: string, toIso: string): Promise<EconEvent[]> {
   const { data } = await admin.from('econ_events').select(COLS).gte('event_at', fromIso).lte('event_at', toIso)
-    .order('event_at', { ascending: true }).limit(500);
+    .order('event_at', { ascending: true }).limit(1000);   // PostgREST's cap; a 45-day range is ~900
   return (data || []) as EconEvent[];
 }
 

@@ -3061,4 +3061,8 @@ export default {
   "econ.market_energy": "Enerji",
   "econ.market_metals": "Metal",
   "econ.market_crypto": "Kripto",
+  "calendar.news.title": "Ekonomik takvim",
+  "calendar.news.change_filter": "Filtreyi değiştir",
+  "calendar.news.none": "Bu gün filtrene uyan haber yok.",
+  "calendar.news.note": "Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Açıklanan sonuçlar (actual) yok; haberler 15 Kasım 2026'dan beri kaydediliyor.",
 };

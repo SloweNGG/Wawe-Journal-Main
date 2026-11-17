@@ -29,6 +29,7 @@
   var IMPACT_RANK = { high: 3, medium: 2, low: 1, holiday: 0 };
   var MARKET_SOURCE = { fx: 'ff', crypto: 'cc', metals: 'mm', energy: 'ee' };
   var SOURCE_NAMES = { ff: 'Forex Factory', cc: 'CryptoCraft', mm: 'MetalsMine', ee: 'EnergyExch' };
+  var MARKET_FALLBACK = { energy: 'Enerji', metals: 'Metal', crypto: 'Kripto' };
   var SVG_X = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   var SVG_SPARK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>';
 
@@ -142,7 +143,7 @@
   // ---------------------------------------------------------------- state
   var S = { events: [], mine: [], catalog: [], coversUntil: null, fetchedAt: 0, loading: false, error: false, open: false,
     prefs: cleanPrefs(store(PREF_KEY)), timer: null, tickSig: '', listScroll: null };
-  function savePrefs() { store(PREF_KEY, S.prefs); }
+  function savePrefs() { store(PREF_KEY, S.prefs); changed(); }
   function pairs() { return activePairs(S.prefs, S.mine, S.catalog); }
   // pairs shown under each event: the active filter, else the member's own
   function shownPairs() { var p = pairs(); return p.length ? p : S.mine; }
@@ -172,7 +173,7 @@
           if (!j || !j.ok || !Array.isArray(j.events)) { S.error = !S.events.length; render(); return; }
           apply(j); S.fetchedAt = Date.now();
           store(CACHE_KEY, { at: S.fetchedAt, events: j.events, covers_until: S.coversUntil, pairs: j.pairs || [], catalog: j.catalog || [] });
-          S.tickSig = ''; render();
+          S.tickSig = ''; render(); changed();
         });
     }).catch(function () { S.loading = false; S.error = !S.events.length; render(); });
   }
@@ -218,23 +219,34 @@
   }
 
   // ---------------------------------------------------------------- panel
-  function fmtTime(ms) { return new Date(ms).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }); }
-  function dayKey(ms) { var d = new Date(ms); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  // times and days in the app's time zone setting (time-settings.js WwTime), like the trades; the device zone without it
+  function tz() {
+    try { if (global.WwTime && typeof global.WwTime.getTz === 'function') { var z = global.WwTime.getTz(); if (z) return z; } } catch (e) { /* device */ }
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; }
+  }
+  function fmtTime(ms) {
+    var o = { hour: '2-digit', minute: '2-digit' }, z = tz();
+    try { if (z) o.timeZone = z; return new Date(ms).toLocaleTimeString(locale(), o); } catch (e) { return new Date(ms).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }); }
+  }
+  function dayKey(ms) {
+    try { if (global.WwTime && typeof global.WwTime.keyOfInstant === 'function') return global.WwTime.keyOfInstant(ms); } catch (e) { /* device */ }
+    var d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
   function dayLabel(ms, now) {
     var k = dayKey(ms);
     if (k === dayKey(now)) return _t('econ.today', 'Bugün');
     if (k === dayKey(now + 86400e3)) return _t('econ.tomorrow', 'Yarın');
     if (k === dayKey(now - 86400e3)) return _t('econ.yesterday', 'Dün');
-    return new Date(ms).toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
+    var o = { weekday: 'long', day: 'numeric', month: 'long' }, z = tz();
+    try { if (z) o.timeZone = z; return new Date(ms).toLocaleDateString(locale(), o); } catch (e) { return new Date(ms).toLocaleDateString(locale()); }
   }
-  function tz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } }
 
   function renderPanel() {
     var p = document.getElementById('econ-panel');
     if (!p || !S.open) return;
     var now = Date.now(), pr = S.prefs, ps = pairs(), shown = shownPairs(), ask = !!coach();
-    var dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
-    var week = S.events.filter(function (e) { return Date.parse(e.event_at) >= +dayStart; });
+    var today = dayKey(now);
+    var week = S.events.filter(function (e) { return dayKey(Date.parse(e.event_at)) >= today; });
     var list = week.filter(function (e) { return passes(e, pr, ps); });
     var next = nextGroup(S.events, pr, ps, now);
     var countFor = function (imp) { var x = cleanPrefs(pr); x.impact = imp; return week.filter(function (e) { return passes(e, x, ps) && Date.parse(e.event_at) > now - NOW_WINDOW_MS; }).length; };
@@ -278,7 +290,7 @@
           '<span class="econ-dot" title="' + esc(_t('econ.impact_' + e.impact, e.impact)) + '"></span>' +
           '<span class="econ-ccy">' + esc(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
           '<span class="econ-title">' + esc(e.title) +
-            (mk ? '<em class="econ-mkt econ-mkt-' + mk + '" title="' + esc(sourcesOf(e).map(function (k) { return SOURCE_NAMES[k]; }).join(', ')) + '">' + esc(_t('econ.market_' + mk, mk)) + '</em>' : '') +
+            (mk ? '<em class="econ-mkt econ-mkt-' + mk + '" title="' + esc(sourcesOf(e).map(function (k) { return SOURCE_NAMES[k]; }).join(', ')) + '">' + esc(_t('econ.market_' + mk, MARKET_FALLBACK[mk] || mk)) + '</em>' : '') +
             (vals.length ? '<small>' + esc(vals.join(' · ')) + '</small>' : '') +
             (hit.length ? '<span class="econ-hits">' + hit.slice(0, 4).map(function (l) { return '<b>' + esc(l) + '</b>'; }).join('') + (hit.length > 4 ? '<b>+' + (hit.length - 4) + '</b>' : '') + '</span>' : '') +
           '</span>' +
@@ -426,7 +438,7 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - S.fetchedAt > CACHE_MS) load(true); });
     document.addEventListener('astro:after-swap', function () { toggle(false); S.tickSig = ''; render(); });
     window.addEventListener('storage', function (e) {
-      if (e.key === PREF_KEY) { S.prefs = cleanPrefs(store(PREF_KEY)); S.tickSig = ''; render(); }
+      if (e.key === PREF_KEY) { S.prefs = cleanPrefs(store(PREF_KEY)); S.tickSig = ''; render(); changed(); }
       if (e.key === 'ww_language') { S.tickSig = ''; render(); }
     });
     if (global.i18n && typeof global.i18n.onChange === 'function') global.i18n.onChange(function () { S.tickSig = ''; render(); });
@@ -435,9 +447,56 @@
     }
   }
 
+  // ---------------------------------------------------------------- API for other pages (the trading calendar)
+  // range(fromMs, toMs): the events of a range (the month on screen), cached 5 minutes per range.
+  // visible(events): the ones that pass the member's filters (impact, pairs), like the badge.
+  // describe(e): { time, ccy, pairs (the member's pairs it moves), market (energy/metals/crypto or null), impactLabel }.
+  // ask(e): opens the coach with the question about the event (false without the coach).
+  // dayKey(ms): the day of an instant in the app's time zone. Changes (filters, data): window event "ww:econ-change".
+  var RANGES = {};
+  function range(fromMs, toMs) {
+    var k = Math.floor(fromMs / 60000) + '|' + Math.floor(toMs / 60000), c = RANGES[k];
+    if (c && Date.now() - c.at < CACHE_MS) return c.p;
+    var p = session().then(function (s) {
+      if (!s) return [];
+      return fetch(endpoint() + '/functions/v1/econ-calendar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + s.access_token, apikey: anonKey() },
+        body: JSON.stringify({ from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString() }) })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (!j || !j.ok || !Array.isArray(j.events)) { delete RANGES[k]; return []; }
+          if (!S.mine.length && Array.isArray(j.pairs)) { S.mine = cleanPairs(j.pairs); S.catalog = cleanPairs(j.catalog); }
+          return j.events;
+        });
+    }).catch(function () { delete RANGES[k]; return []; });
+    RANGES[k] = { at: Date.now(), p: p };
+    return p;
+  }
+  function changed() { try { global.dispatchEvent(new CustomEvent('ww:econ-change')); } catch (e) { /* old browsers */ } }
+  var api = {
+    range: range,
+    visible: function (events) { var ps = pairs(); return (events || []).filter(function (e) { return passes(e, S.prefs, ps); }); },
+    describe: function (e) {
+      var mk = marketOf(e);
+      return { time: e.impact === 'holiday' ? _t('econ.allday', 'Tatil') : fmtTime(Date.parse(e.event_at)), ccy: ccyText(e.currency), pairs: affects(shownPairs(), e),
+        market: mk, marketLabel: mk ? _t('econ.market_' + mk, MARKET_FALLBACK[mk] || mk) : '', impactLabel: _t('econ.impact_' + e.impact, e.impact),
+        sites: sourcesOf(e).map(function (k) { return SOURCE_NAMES[k]; }) };
+    },
+    ask: function (e) { if (!coach()) return false; askCoach(eventQuestion(e)); return true; },
+    canAsk: function () { return !!coach(); },
+    dayKey: dayKey,
+    filterLabel: function () {
+      var imp = { high: _t('econ.f_high', 'Yüksek'), medium: _t('econ.f_medium', 'Yüksek + Orta'), all: _t('econ.f_all', 'Tümü') }[S.prefs.impact];
+      var ps = pairs();
+      return imp + ' · ' + (S.prefs.pairs === null && S.mine.length ? _t('econ.my_pairs', 'Paritelerim') : ps.length ? ps.map(function (p) { return p.label; }).join(', ') : _t('econ.all_pairs', 'Tüm pariteler'));
+    },
+    openPanel: function () { toggle(true); },
+  };
+
   global.WWEcon = { ready: true, reload: function () { return load(true); }, open: function () { toggle(true); },
+    range: api.range, visible: api.visible, describe: api.describe, ask: api.ask, canAsk: api.canAsk, dayKey: api.dayKey, filterLabel: api.filterLabel,
     _test: { cleanPrefs: cleanPrefs, activePairs: activePairs, affects: affects, moves: moves, marketOf: marketOf, passes: passes, togglePair: togglePair, nextGroup: nextGroup,
       countdown: countdown, dueAlerts: dueAlerts, groupTitle: groupTitle, groupMore: groupMore, groupPairs: groupPairs } };
   if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  try { global.dispatchEvent(new CustomEvent('ww:econ-ready')); } catch (e) { /* old browsers */ }
 })(typeof window !== 'undefined' ? window : globalThis);

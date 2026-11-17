@@ -1,7 +1,10 @@
 // supabase/functions/econ-calendar/index.ts
 // Economic calendar for the navbar countdown badge (public/components/econ-calendar/econ-calendar.js).
-//   POST {} (or GET) with the member's JWT -> { ok, events: [{ id, title, currency, impact, event_at, forecast, previous }],
-//     fetched_at, covers_until, pairs, catalog }: events from 24 h ago to the end of the cached week, oldest first.
+//   POST {} (or GET) with the member's JWT -> { ok, events: [{ id, title, currency, impact, impacts, event_at, forecast,
+//     previous }], fetched_at, covers_until, pairs, catalog }: events from 24 h ago to the end of the cached week, oldest first.
+//   POST { from, to } (ISO times, at most 45 days apart: _shared/econ-calendar.ts parseRange): the events of that range instead (the trading calendar
+//   page asks for the month on screen). Past weeks are kept 400 days (_shared/econ-feed.ts KEEP_DAYS); the exports have
+//   no history, so news before 2026-11-15 (when the cache started) is not there.
 //   pairs: the member's pairs from their last 300 trades ([{ label: "EUR/USD", currencies: ["EUR","USD"] }], most traded
 //   first); catalog: popular pairs to pick from. The badge filters by pair = the news of its currencies
 //   (_shared/econ-calendar.ts pairLabel / symbolCurrencies; the mapping lives only on the server).
@@ -15,11 +18,12 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
 import { ensureFresh, loadEvents } from '../_shared/econ-feed.ts';
-import { memberPairs, pairOf, PAIR_CATALOG } from '../_shared/econ-calendar.ts';
+import { memberPairs, pairOf, PAIR_CATALOG, parseRange } from '../_shared/econ-calendar.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+
 
 serve(async (req: Request) => {
   const cors = getCorsHeaders(req.headers.get('origin'));
@@ -31,13 +35,19 @@ serve(async (req: Request) => {
   const { data: { user }, error } = await createClient(SUPABASE_URL, SUPABASE_ANON_KEY).auth.getUser(auth.substring(7));
   if (error || !user) return jsonRes({ ok: false, code: 'UNAUTHORIZED' }, 401, cors);
 
+  let body: any = null;
+  if (req.method === 'POST') { try { body = await req.json(); } catch (_) { body = null; } }
+  const range = parseRange(body);
+  if (range === 'bad') return jsonRes({ ok: false, code: 'BAD_RANGE' }, 400, cors);
+
   try {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
     const state = await ensureFresh(admin);
     if (!state) return jsonRes({ ok: false, code: 'NOT_CONFIGURED' }, 503, cors);
     const now = Date.now();
     const [events, { data: trades }] = await Promise.all([
-      loadEvents(admin, new Date(now - 86400e3).toISOString(), new Date(now + 14 * 86400e3).toISOString()),
+      range ? loadEvents(admin, new Date(range.from).toISOString(), new Date(range.to).toISOString())
+        : loadEvents(admin, new Date(now - 86400e3).toISOString(), new Date(now + 14 * 86400e3).toISOString()),
       admin.from('trades').select('symbol').eq('user_id', user.id).order('trade_date', { ascending: false }).limit(300),
     ]);
     return jsonRes({

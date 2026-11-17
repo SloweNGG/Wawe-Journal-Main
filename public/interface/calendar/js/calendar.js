@@ -382,6 +382,7 @@ function renderCalendar() {
     if (worstDateEl) worstDateEl.textContent = anyTradedDay ? formatDayLabel(worstDay.date, lang) : '';
 
     hideCalendarSkeleton();
+    calNewsAfterRender();
   } catch (e) {
     wwLog.warn('renderCalendar hatası:', e);
     hideCalendarSkeleton();
@@ -620,6 +621,7 @@ function openDayModal(dateStr) {
 
         body.innerHTML = metricsHtml + instrumentHtml + tradesHtml;
       }
+      appendDayNews(dateStr);
     }
 
     if (modal) {
@@ -1112,6 +1114,131 @@ async function initCalendar() {
     hideCalendarSkeleton();
   }
 }
+
+// ============================================================
+// EKONOMİK HABERLER (navbar'daki takvim: public/components/econ-calendar/econ-calendar.js → window.WWEcon)
+// Ay görünümünde her güne o günün haber noktaları (yüksek / orta etki sayısı), gün penceresinde o günün haber
+// listesi ("Koça sor" ile). Filtreler navbar takvimindekiyle aynı (etki + pariteler). Saat ve gün: uygulamanın saat
+// dilimi ayarı (WwTime). Haberler sunucuda 2026-11-15'ten beri birikiyor; daha eski aylarda haber yok.
+// ============================================================
+var calNews = { key: '', events: [], loading: '' };
+
+function calNewsApi() { return window.WWEcon && typeof window.WWEcon.range === 'function' ? window.WWEcon : null; }
+
+// ayın günleri + iki gün pay (saat dilimi farkı); ay ekrandayken bir kez istenir, WWEcon 5 dk önbellekler
+function calNewsAfterRender() {
+  var api = calNewsApi();
+  if (!api) return;
+  var key = currentYear + '-' + currentMonth;
+  if (calNews.key === key) { decorateNewsCells(); return; }
+  if (calNews.loading === key) return;
+  calNews.loading = key;
+  var from = Date.UTC(currentYear, currentMonth, 1) - 2 * 86400e3, to = Date.UTC(currentYear, currentMonth + 1, 1) + 2 * 86400e3;
+  api.range(from, to).then(function (events) {
+    if (calNews.loading === key) calNews.loading = '';
+    if (!CAL_PAGE.alive || key !== currentYear + '-' + currentMonth) return;
+    calNews.key = key; calNews.events = events || [];
+    decorateNewsCells();
+    if (currentModalDateStr) refreshDayNews(currentModalDateStr);
+  });
+}
+
+function newsOfDays() {
+  var api = calNewsApi(), out = {};
+  if (!api) return out;
+  api.visible(calNews.events).forEach(function (e) {
+    var k = api.dayKey(Date.parse(e.event_at));
+    (out[k] = out[k] || []).push(e);
+  });
+  return out;
+}
+
+function decorateNewsCells() {
+  var grid = document.getElementById('cal-grid');
+  if (!grid) return;
+  var days = newsOfDays();
+  grid.querySelectorAll('.cal-day[data-date]').forEach(function (cell) {
+    var old = cell.querySelector('.day-news');
+    if (old) old.remove();
+    var list = days[cell.getAttribute('data-date')];
+    if (!list || !list.length) return;
+    var hi = list.filter(function (e) { return e.impact === 'high'; }).length, md = list.filter(function (e) { return e.impact === 'medium'; }).length;
+    var other = list.length - hi - md;
+    var el = document.createElement('div');
+    el.className = 'day-news';
+    el.title = list.slice(0, 8).map(function (e) { var d = calNewsApi().describe(e); return d.time + ' ' + d.ccy + ' ' + e.title; }).join('\n') + (list.length > 8 ? '\n…' : '');
+    el.innerHTML = (hi ? '<span class="dn hi"><i></i>' + hi + '</span>' : '') + (md ? '<span class="dn md"><i></i>' + md + '</span>' : '') +
+      (!hi && !md && other ? '<span class="dn lo"><i></i>' + other + '</span>' : '');
+    cell.appendChild(el);
+  });
+}
+
+function dayNewsHtml(dateStr) {
+  var api = calNewsApi();
+  if (!api) return '';
+  var list = (newsOfDays()[dateStr] || []).slice().sort(function (a, b) { return a.event_at < b.event_at ? -1 : a.event_at > b.event_at ? 1 : 0; });
+  var title = calT('calendar.news.title', 'Ekonomik takvim');
+  var head = '<div class="detail-section-title"><span>' + title + (list.length ? ' (' + list.length + ')' : '') + '</span>' +
+    '<button type="button" class="cal-news-filter" data-econ-panel title="' + sanitizeHTML(calT('calendar.news.change_filter', 'Filtreyi değiştir')) + '">' + sanitizeHTML(api.filterLabel()) + '</button></div>';
+  if (calNews.key !== currentYear + '-' + currentMonth && !list.length) return head + '<div class="cal-news-empty">' + calT('econ.loading', 'Yükleniyor…') + '</div>';
+  if (!list.length) return head + '<div class="cal-news-empty">' + calT('calendar.news.none', 'Bu gün filtrene uyan haber yok.') + '</div>';
+  var ask = api.canAsk();
+  var rows = list.map(function (e) {
+    var d = api.describe(e), vals = [];
+    if (e.forecast) vals.push(calT('econ.forecast', 'Bkl') + ' ' + e.forecast);
+    if (e.previous) vals.push(calT('econ.previous', 'Önc') + ' ' + e.previous);
+    return '<div class="cal-news-row imp-' + e.impact + '">' +
+      '<span class="cal-news-time">' + sanitizeHTML(d.time) + '</span>' +
+      '<span class="cal-news-dot" title="' + sanitizeHTML(d.impactLabel) + '"></span>' +
+      '<span class="cal-news-ccy">' + sanitizeHTML(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
+      '<span class="cal-news-title">' + sanitizeHTML(e.title) +
+        (d.market ? '<em class="cal-news-mkt cal-news-mkt-' + d.market + '" title="' + sanitizeHTML(d.sites.join(', ')) + '">' + sanitizeHTML(d.marketLabel) + '</em>' : '') +
+        (vals.length ? '<small>' + sanitizeHTML(vals.join(' · ')) + '</small>' : '') +
+        (d.pairs.length ? '<span class="cal-news-pairs">' + d.pairs.slice(0, 4).map(function (l) { return '<b>' + sanitizeHTML(l) + '</b>'; }).join('') + '</span>' : '') +
+      '</span>' +
+      (ask && e.impact !== 'holiday' ? '<button type="button" class="cal-news-ask" data-econ-ask="' + sanitizeHTML(e.id) + '" title="' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '">' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '</button>' : '') +
+      '</div>';
+  }).join('');
+  return head + '<div class="cal-news-list">' + rows + '</div><div class="cal-news-note">' + calT('calendar.news.note', 'Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Açıklanan sonuçlar (actual) yok; haberler 15 Kasım 2026\'dan beri kaydediliyor.') + '</div>';
+}
+
+function appendDayNews(dateStr) {
+  var body = document.getElementById('day-modal-body');
+  if (!body || !calNewsApi()) return;
+  var box = document.createElement('div');
+  box.className = 'cal-news';
+  box.id = 'cal-day-news';
+  box.innerHTML = dayNewsHtml(dateStr);
+  // işlem yoksa haberler üstte, varsa metriklerin altında
+  var metrics = body.querySelector('.detail-metrics-grid');
+  if (metrics && metrics.nextSibling) body.insertBefore(box, metrics.nextSibling);
+  else if (metrics) body.appendChild(box);
+  else body.insertBefore(box, body.firstChild);
+  if (!body.__econBound) {
+    body.__econBound = true;
+    body.addEventListener('click', function (ev) {
+      var a = ev.target.closest('[data-econ-ask]'), f = ev.target.closest('[data-econ-panel]'), api = calNewsApi();
+      if (!api) return;
+      if (a) {
+        var id = a.getAttribute('data-econ-ask'), e = calNews.events.filter(function (x) { return x.id === id; })[0];
+        if (e && api.ask(e)) closeDayModal();
+      } else if (f) {
+        closeDayModal();
+        ev.stopPropagation();
+        setTimeout(function () { if (window.WWEcon) window.WWEcon.open(); }, 0);
+      }
+    });
+  }
+}
+
+function refreshDayNews(dateStr) {
+  var box = document.getElementById('cal-day-news');
+  if (box) box.innerHTML = dayNewsHtml(dateStr);
+}
+
+// navbar takviminin filtresi değişti / veri geldi; modül sonradan yüklendiyse ayın haberleri şimdi istenir
+CAL_PAGE.on(window, 'ww:econ-change', function () { decorateNewsCells(); if (currentModalDateStr && document.getElementById('cal-day-news')) refreshDayNews(currentModalDateStr); });
+CAL_PAGE.on(window, 'ww:econ-ready', function () { calNewsAfterRender(); });
 
 // ============================================================
 // ⭐ START CALENDAR - DEPENDENCY KONTROLLÜ BAŞLATMA
