@@ -1,7 +1,10 @@
 // ============================================================
 // WAWE - ECONOMIC CALENDAR: navbar countdown badge, calendar panel, pre-news alerts, "ask the coach".
-// Data: the econ-calendar Edge Function (Forex Factory's weekly export cached server-side, migration 202611170001), with
-// the member's pairs (from their trades) and a catalog of popular pairs. Pair -> currencies comes from the server only.
+// Data: the econ-calendar Edge Function (the weekly exports of Forex Factory, CryptoCraft, MetalsMine and EnergyExch,
+// merged and cached server-side, migrations 202611170001-0002), with the member's pairs (from their trades) and a catalog
+// of popular pairs. Pair -> currencies / market comes from the server only. An event moves a pair when (same rule as
+// _shared/econ-calendar.ts moves()): it is Forex Factory news in one of the pair's currencies, or news of the pair's own
+// market site (EnergyExch for USOIL, MetalsMine for XAU/USD, CryptoCraft for BTC/USD) in its currency or global ("ALL").
 //   - Badge (#nav-econ, in Navbar.astro and navbar.js getNavbarHTML): the next event that passes the filters, the member's
 //     pair it moves and a live countdown ("EUR/USD · USD Retail Sales · 42 dk"); "now" for 2 minutes after the time.
 //   - Panel: same look as the notification panel (header, tab rows, body, footer; its own class names because navbar.js
@@ -24,6 +27,8 @@
   var FALLBACK_URL = 'https://odasapyhtdopbnlfhwde.supabase.co';
   var MINUTES = [5, 10, 15, 30, 60];
   var IMPACT_RANK = { high: 3, medium: 2, low: 1, holiday: 0 };
+  var MARKET_SOURCE = { fx: 'ff', crypto: 'cc', metals: 'mm', energy: 'ee' };
+  var SOURCE_NAMES = { ff: 'Forex Factory', cc: 'CryptoCraft', mm: 'MetalsMine', ee: 'EnergyExch' };
   var SVG_X = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   var SVG_SPARK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>';
 
@@ -63,11 +68,28 @@
     var all = mine.concat(catalog);
     return prefs.pairs.map(function (l) { for (var i = 0; i < all.length; i++) if (all[i].label === l) return all[i]; return null; }).filter(Boolean);
   }
-  function affects(pairs, currency) { return pairs.filter(function (p) { return p.currencies.indexOf(currency) >= 0; }).map(function (p) { return p.label; }); }
+  function sourcesOf(e) {
+    var k = e && e.impacts && typeof e.impacts === 'object' ? Object.keys(e.impacts).filter(function (x) { return SOURCE_NAMES[x]; }) : [];
+    return k.length ? k : ['ff'];
+  }
+  function moves(p, e) {
+    var src = sourcesOf(e), own = MARKET_SOURCE[p.market] || 'ff';
+    if (src.indexOf('ff') < 0 && src.indexOf(own) < 0) return false;     // another market's news
+    if (e.currency === 'ALL') return true;                               // global news of a market it is in
+    return p.currencies.indexOf(e.currency) >= 0;
+  }
+  function affects(pairs, e) { return pairs.filter(function (p) { return moves(p, e); }).map(function (p) { return p.label; }); }
+  // the market of news that is not on Forex Factory (for the row's tag); null for Forex Factory news
+  function marketOf(e) {
+    var src = sourcesOf(e);
+    if (src.indexOf('ff') >= 0) return null;
+    for (var m in MARKET_SOURCE) if (MARKET_SOURCE[m] === src[0]) return m;
+    return null;
+  }
   function passes(e, prefs, pairs) {
     var min = prefs.impact === 'high' ? 3 : prefs.impact === 'medium' ? 2 : 0;
     if ((IMPACT_RANK[e.impact] || 0) < min) return false;
-    return !pairs.length || affects(pairs, e.currency).length > 0;
+    return !pairs.length || affects(pairs, e).length > 0;
   }
   // a pair chip clicked: from "my pairs" the picked list starts as my pairs; nothing left = all
   function togglePair(prefs, mine, label) {
@@ -108,11 +130,12 @@
   }
   function groupTop(g) { return g.events.slice().sort(function (a, b) { return IMPACT_RANK[b.impact] - IMPACT_RANK[a.impact]; })[0]; }
   function groupMore(g) { return g.events.length > 1 ? _t('econ.more', '+{n}', { n: g.events.length - 1 }) : ''; }
-  function groupTitle(g) { var top = groupTop(g), more = groupMore(g); return top.currency + ' ' + top.title + (more ? ' ' + more : ''); }
+  function ccyText(c) { return c === 'ALL' ? _t('econ.global', 'Küresel') : c; }
+  function groupTitle(g) { var top = groupTop(g), more = groupMore(g); return ccyText(top.currency) + ' ' + top.title + (more ? ' ' + more : ''); }
   // the pairs a group moves (the event's own currency, any event of the group), for the badge and the alerts
   function groupPairs(g, pairs) {
     var out = [];
-    g.events.forEach(function (e) { affects(pairs, e.currency).forEach(function (l) { if (out.indexOf(l) < 0) out.push(l); }); });
+    g.events.forEach(function (e) { affects(pairs, e).forEach(function (l) { if (out.indexOf(l) < 0) out.push(l); }); });
     return out;
   }
 
@@ -125,7 +148,7 @@
   function shownPairs() { var p = pairs(); return p.length ? p : S.mine; }
   function cleanPairs(list) {
     return (Array.isArray(list) ? list : []).filter(function (p) { return p && typeof p.label === 'string' && Array.isArray(p.currencies); })
-      .map(function (p) { return { label: p.label, currencies: p.currencies.filter(function (c) { return /^[A-Z]{3}$/.test(c); }) }; });
+      .map(function (p) { return { label: p.label, currencies: p.currencies.filter(function (c) { return /^[A-Z]{3}$/.test(c); }), market: MARKET_SOURCE[p.market] ? p.market : 'fx' }; });
   }
   function apply(d) {
     S.events = Array.isArray(d.events) ? d.events : [];
@@ -182,7 +205,7 @@
       sig = g.at + '|' + cd + '|' + lang() + '|' + cls + '|' + gp.join(',');
       html = '<span class="econ-dot" aria-hidden="true"></span>' +
         (gp.length ? '<span class="econ-pair">' + esc(gp[0]) + '</span>' : '') +
-        '<span class="econ-name">' + esc(top.currency + ' ' + top.title) + '</span>' +
+        '<span class="econ-name">' + esc(ccyText(top.currency) + ' ' + top.title) + '</span>' +
         (more ? '<span class="econ-more">' + esc(more) + '</span>' : '') +
         '<span class="econ-sep" aria-hidden="true">·</span><span class="econ-cd">' + esc(cd || _t('econ.now', 'ŞİMDİ')) + '</span>';
       b.title = groupTitle(g) + (gp.length ? ' · ' + gp.join(', ') : '') + ' — ' + fmtTime(g.at) + (cd ? ' (' + cd + ')' : '');
@@ -217,7 +240,7 @@
     var countFor = function (imp) { var x = cleanPrefs(pr); x.impact = imp; return week.filter(function (e) { return passes(e, x, ps) && Date.parse(e.event_at) > now - NOW_WINDOW_MS; }).length; };
 
     var h = '<div class="econ-panel-header"><div class="econ-title-wrap"><h3>' + esc(_t('econ.title_long', 'Ekonomik takvim')) + '</h3>' +
-      '<span class="econ-src">Forex Factory</span></div><div class="econ-head-actions">' +
+      '<span class="econ-src" title="' + esc(Object.keys(SOURCE_NAMES).map(function (k) { return SOURCE_NAMES[k]; }).join(' · ')) + '">Forex Factory +3</span></div><div class="econ-head-actions">' +
       (ask ? '<button type="button" class="econ-ask-all" data-act="ask-week" title="' + esc(_t('econ.ask', 'Koça sor')) + '">' + SVG_SPARK + '<span>' + esc(_t('econ.ask', 'Koça sor')) + '</span></button>' : '') +
       '<button type="button" class="econ-close" data-act="close" aria-label="' + esc(_t('econ.close', 'Kapat')) + '" title="' + esc(_t('econ.close', 'Kapat')) + '">' + SVG_X + '</button></div></div>';
 
@@ -246,15 +269,16 @@
       list.forEach(function (e) {
         var t = Date.parse(e.event_at), dk = dayKey(t);
         if (dk !== lastDay) { lastDay = dk; h += '<div class="econ-day">' + esc(dayLabel(t, now)) + '</div>'; }
-        var past = t < now - NOW_WINDOW_MS, isNext = next && next.at === t, hit = affects(shown, e.currency);
+        var past = t < now - NOW_WINDOW_MS, isNext = next && next.at === t, hit = affects(shown, e), mk = marketOf(e);
         var vals = [];
         if (e.forecast) vals.push(_t('econ.forecast', 'Bkl') + ' ' + e.forecast);
         if (e.previous) vals.push(_t('econ.previous', 'Önc') + ' ' + e.previous);
         h += '<div class="econ-row imp-' + e.impact + (past ? ' past' : '') + (isNext ? ' next' : '') + '">' +
           '<span class="econ-time">' + (e.impact === 'holiday' ? esc(_t('econ.allday', 'Tatil')) : esc(fmtTime(t))) + '</span>' +
           '<span class="econ-dot" title="' + esc(_t('econ.impact_' + e.impact, e.impact)) + '"></span>' +
-          '<span class="econ-ccy">' + esc(e.currency) + '</span>' +
+          '<span class="econ-ccy">' + esc(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
           '<span class="econ-title">' + esc(e.title) +
+            (mk ? '<em class="econ-mkt econ-mkt-' + mk + '" title="' + esc(sourcesOf(e).map(function (k) { return SOURCE_NAMES[k]; }).join(', ')) + '">' + esc(_t('econ.market_' + mk, mk)) + '</em>' : '') +
             (vals.length ? '<small>' + esc(vals.join(' · ')) + '</small>' : '') +
             (hit.length ? '<span class="econ-hits">' + hit.slice(0, 4).map(function (l) { return '<b>' + esc(l) + '</b>'; }).join('') + (hit.length > 4 ? '<b>+' + (hit.length - 4) + '</b>' : '') + '</span>' : '') +
           '</span>' +
@@ -271,7 +295,7 @@
       MINUTES.map(function (m) { return '<option value="' + m + '"' + (pr.minutes === m ? ' selected' : '') + '>' + esc(_t('econ.min_before', '{n} dk önce', { n: m })) + '</option>'; }).join('') + '</select>' +
       (perm === 'unsupported' ? '' : '<label class="econ-sw"><input type="checkbox" data-act="desktop"' + (pr.desktop && perm === 'granted' ? ' checked' : '') + (pr.alert && perm !== 'denied' ? '' : ' disabled') + '> ' +
         esc(perm === 'denied' ? _t('econ.desktop_denied', 'Masaüstü bildirimi tarayıcıda engelli') : _t('econ.desktop', 'Masaüstü bildirimi')) + '</label>') +
-      '</div><div class="econ-fine">' + esc(_t('econ.sub', 'Saatler: {tz} · Kaynak: Forex Factory', { tz: tz() || 'local' })) + ' · ' +
+      '</div><div class="econ-fine">' + esc(_t('econ.sub', 'Saatler: {tz} · Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch', { tz: tz() || 'local' })) + ' · ' +
       esc(_t('econ.fine', 'Uyarılar uygulama açıkken çalışır. Açıklanan sonuçlar (actual) bu takvimde yok.')) + '</div></div>';
 
     var sc = p.querySelector('.econ-panel-body'), keep = sc && S.listScroll != null ? S.listScroll : null;
@@ -301,9 +325,9 @@
     c.ask(text);
   }
   function eventQuestion(e) {
-    var t = Date.parse(e.event_at), hit = affects(shownPairs(), e.currency);
+    var t = Date.parse(e.event_at), hit = affects(shownPairs(), e);
     return _t('econ.ask_event', '{ccy} {title} ({when}) {pairs}nasıl etkiler? O saatte nasıl davranmalıyım?', {
-      ccy: e.currency, title: e.title, when: dayLabel(t, Date.now()) + ' ' + fmtTime(t),
+      ccy: ccyText(e.currency), title: e.title, when: dayLabel(t, Date.now()) + ' ' + fmtTime(t),
       pairs: hit.length ? _t('econ.ask_event_pairs', '{list} paritelerimi ', { list: hit.join(', ') }) : _t('econ.ask_event_mine', 'işlemlerimi '),
     });
   }
@@ -412,7 +436,7 @@
   }
 
   global.WWEcon = { ready: true, reload: function () { return load(true); }, open: function () { toggle(true); },
-    _test: { cleanPrefs: cleanPrefs, activePairs: activePairs, affects: affects, passes: passes, togglePair: togglePair, nextGroup: nextGroup,
+    _test: { cleanPrefs: cleanPrefs, activePairs: activePairs, affects: affects, moves: moves, marketOf: marketOf, passes: passes, togglePair: togglePair, nextGroup: nextGroup,
       countdown: countdown, dueAlerts: dueAlerts, groupTitle: groupTitle, groupMore: groupMore, groupPairs: groupPairs } };
   if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

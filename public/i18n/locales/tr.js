@@ -3012,7 +3012,7 @@ export default {
   "aiCoach.insight_q.prop_odds": "{journal} challenge'ını geçme olasılığımı nasıl artırırım?",
   "econ.title": "Haberler",
   "econ.title_long": "Ekonomik takvim",
-  "econ.sub": "Saatler: {tz} · Kaynak: Forex Factory",
+  "econ.sub": "Saatler: {tz} · Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch",
   "econ.close": "Kapat",
   "econ.min": "{n} dk",
   "econ.hm": "{h}s {m}dk",
@@ -3057,4 +3057,8 @@ export default {
   "econ.pairs": "Pariteler",
   "econ.my_pairs": "Paritelerim",
   "econ.all_pairs": "Tüm pariteler",
+  "econ.global": "Küresel",
+  "econ.market_energy": "Enerji",
+  "econ.market_metals": "Metal",
+  "econ.market_crypto": "Kripto",
 };

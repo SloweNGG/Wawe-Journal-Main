@@ -1,4 +1,4 @@
--- Verify 202611170001_econ_calendar.sql: members and anon have no access, constraints, single feed-state row, refresh claim.
+-- Verify 202611170001_econ_calendar.sql + 202611170002_econ_sources.sql (per-site impacts): members and anon have no access, constraints, single feed-state row, refresh claim.
 -- Ends with ROLLBACK.
 BEGIN;
 DO $$
@@ -14,6 +14,16 @@ BEGIN
   EXCEPTION WHEN check_violation THEN NULL; END;
   BEGIN INSERT INTO public.econ_events (id, title, currency, impact, event_at) VALUES ('0123456789abcdee', 'x', 'USD', 'High', now()); RAISE EXCEPTION 'FAIL: impact case';
   EXCEPTION WHEN check_violation THEN NULL; END;
+  -- per-site impacts (202611170002)
+  UPDATE public.econ_events SET impacts = '{"ff":"high","ee":"low"}' WHERE id = '0123456789abcdef';
+  BEGIN UPDATE public.econ_events SET impacts = '{"xx":"high"}' WHERE id = '0123456789abcdef'; RAISE EXCEPTION 'FAIL: unknown site';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN UPDATE public.econ_events SET impacts = '{"ff":"huge"}' WHERE id = '0123456789abcdef'; RAISE EXCEPTION 'FAIL: unknown impact';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN UPDATE public.econ_events SET impacts = '[]' WHERE id = '0123456789abcdef'; RAISE EXCEPTION 'FAIL: non-object impacts';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  INSERT INTO public.econ_events (id, title, currency, impact, event_at, impacts)
+    VALUES ('0123456789abcde0', 'IEA World Energy Outlook', 'ALL', 'low', now() + interval '2 hours', '{"ee":"low"}');
   BEGIN INSERT INTO public.econ_feed_state (id) VALUES (2); RAISE EXCEPTION 'FAIL: second state row';
   EXCEPTION WHEN check_violation THEN NULL; END;
   -- the refresh claim: only one of two claims inside the window wins (start from an old attempt: on live a real

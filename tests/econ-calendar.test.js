@@ -6,7 +6,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { parseFeed, eventId, symbolCurrencies, tradedCurrencies, coachCalendar, localTime, COACH_EVENTS_MAX, pairLabel, memberPairs, PAIR_CATALOG, pairOf } from '../supabase/functions/_shared/econ-calendar.ts';
+import { parseFeed, eventId, symbolCurrencies, tradedCurrencies, coachCalendar, localTime, COACH_EVENTS_MAX, pairLabel, memberPairs, PAIR_CATALOG, pairOf, mergeFeeds, moves, symbolMarket, SOURCES } from '../supabase/functions/_shared/econ-calendar.ts';
 import { ensureFresh, staleIds, readCalendar, REFRESH_MS, CLAIM_MS } from '../supabase/functions/_shared/econ-feed.ts';
 import { makeDb } from './helpers/fake-db.js';
 
@@ -28,14 +28,30 @@ describe('econ-calendar: parse', () => {
     const r = parseFeed(FEED);
     assert.equal(r.length, 5);
     assert.deepEqual(r[0], { id: eventId('USD', 'Retail Sales m/m', '2026-11-17T13:30:00.000Z'), title: 'Retail Sales m/m', currency: 'USD', impact: 'high',
-      event_at: '2026-11-17T13:30:00.000Z', forecast: '0.1%', previous: '0.8%' });
+      event_at: '2026-11-17T13:30:00.000Z', forecast: '0.1%', previous: '0.8%', impacts: { ff: 'high' } });
     assert.match(r[0].id, /^[0-9a-f]{16}$/);
     assert.equal(r[2].forecast, null);
     assert.equal(r[3].impact, 'holiday');
     assert.equal(parseFeed('<html>Request Denied</html>'), null);
     assert.equal(parseFeed({ error: 1 }), null);
     assert.deepEqual(parseFeed([]), []);
+    assert.deepEqual(parseFeed([{ title: 'IEA World Energy Outlook', country: 'All', date: '2026-11-19T05:00:00-05:00', impact: 'Low' }], 'ee')[0].impacts, { ee: 'low' });
   });
+  it('merges the four sites: one row per event, every site impact kept, the highest wins', () => {
+    const ff = parseFeed(FEED, 'ff');
+    const cc = parseFeed([{ ...FEED[0], impact: 'Low' }], 'cc');
+    const ee = parseFeed([{ ...FEED[0], impact: 'High' }, { title: 'Distillate Inventories', country: 'USD', date: '2026-11-18T10:30:00-05:00', impact: 'High', forecast: '', previous: '4.1M' }], 'ee');
+    const mm = parseFeed([{ ...FEED[2], impact: 'Low', forecast: '1.30M' }], 'mm');
+    const m = mergeFeeds([ff, cc, mm, ee]);
+    assert.equal(m.length, 6);
+    const rs = m.find((e) => e.title === 'Retail Sales m/m');
+    assert.deepEqual(rs.impacts, { ff: 'high', cc: 'low', ee: 'high' }); assert.equal(rs.impact, 'high');
+    const bp = m.find((e) => e.title === 'Building Permits');
+    assert.deepEqual(bp.impacts, { ff: 'medium', mm: 'low' }); assert.equal(bp.impact, 'medium'); assert.equal(bp.forecast, '1.30M');  // FF had none
+    assert.deepEqual(m.find((e) => e.title === 'Distillate Inventories').impacts, { ee: 'high' });
+    assert.ok(m.every((e, i) => i === 0 || m[i - 1].event_at <= e.event_at));
+  });
+  it('every site has an export url', () => { for (const k of ['ff', 'cc', 'mm', 'ee']) assert.match(SOURCES[k].url, /^https:\/\/nfs\.faireconomy\.media\/[a-z]{2}_calendar_thisweek\.json$/); });
   it('ids change with the time (a rescheduled event is a new row)', () => {
     assert.notEqual(eventId('USD', 'CPI', '2026-11-17T13:30:00.000Z'), eventId('USD', 'CPI', '2026-11-17T14:30:00.000Z'));
     assert.equal(eventId('USD', 'CPI', 'a'), eventId('USD', 'CPI', 'a'));
@@ -75,9 +91,28 @@ describe('econ-calendar: pairs', () => {
   });
   it("the member's pairs, most traded first, unknown symbols left out; the catalog maps too", () => {
     assert.deepEqual(memberPairs(['XAUUSD', 'xauusd.m', 'EURUSD', 'AAPL', 'GER40']), [
-      { label: 'XAU/USD', currencies: ['USD'] }, { label: 'EUR/USD', currencies: ['EUR', 'USD'] }, { label: 'GER40', currencies: ['EUR'] }]);
+      { label: 'XAU/USD', currencies: ['USD'], market: 'metals' }, { label: 'EUR/USD', currencies: ['EUR', 'USD'], market: 'fx' }, { label: 'GER40', currencies: ['EUR'], market: 'fx' }]);
+    assert.equal(symbolMarket('USOIL'), 'energy'); assert.equal(symbolMarket('WTI.cash'), 'energy'); assert.equal(symbolMarket('BTCUSDT'), 'crypto');
+    assert.equal(symbolMarket('NAS100'), 'fx'); assert.equal(symbolMarket('XAGUSD'), 'metals');
     for (const l of PAIR_CATALOG) assert.ok(pairOf(l).currencies.length, l);
     assert.deepEqual(pairOf('GBP/JPY').currencies, ['GBP', 'JPY']);
+  });
+});
+
+const MOVES_CASES = [
+  // [pair, event currency, sites, expected]
+  ['EUR/USD', 'USD', ['ff'], true], ['XAU/USD', 'USD', ['ff'], true], ['USOIL', 'USD', ['ff'], true], ['GBP/USD', 'EUR', ['ff'], false],
+  ['USOIL', 'USD', ['ee'], true], ['EUR/USD', 'USD', ['ee'], false], ['XAU/USD', 'USD', ['ee'], false],
+  ['XAU/USD', 'GBP', ['mm'], false], ['XAU/USD', 'USD', ['mm'], true], ['BTC/USD', 'USD', ['cc'], true], ['EUR/USD', 'USD', ['cc'], false],
+  ['USOIL', 'ALL', ['ee'], true], ['EUR/USD', 'ALL', ['ee'], false], ['EUR/USD', 'ALL', ['ff'], true],
+  ['EUR/USD', 'USD', ['ff', 'ee'], true], ['USOIL', 'USD', ['ff', 'cc'], true],
+];
+const caseEvent = (cur, sites) => ({ id: 'x', title: 'x', currency: cur, impact: 'high', event_at: '2026-11-17T13:30:00.000Z', impacts: Object.fromEntries(sites.map((k) => [k, 'high'])) });
+
+describe('econ-calendar: which pairs an event moves', () => {
+  it('Forex Factory news by currency; the other sites only within their market', () => {
+    for (const [pair, cur, sites, want] of MOVES_CASES) assert.equal(moves(pairOf(pair), caseEvent(cur, sites)), want, `${pair} ${cur} ${sites}`);
+    assert.equal(moves(pairOf('EUR/USD'), { ...caseEvent('USD', []), impacts: undefined }), true);    // old rows: Forex Factory
   });
 });
 
@@ -86,7 +121,7 @@ describe('econ-calendar: the coach slice', () => {
   const now = Date.parse('2026-11-17T12:00:00Z');
   it('high (any currency) + medium in my currencies, local times, the pairs each event moves, no actual values', () => {
     const c = coachCalendar(ev, ['EURUSD', 'XAUUSD'], now, 'Europe/Istanbul', '2026-11-17T11:50:00Z');
-    assert.equal(c.source, 'Forex Factory');
+    assert.deepEqual(c.sources, ['Forex Factory', 'CryptoCraft', 'MetalsMine', 'EnergyExch']);
     assert.equal(c.now_local, '2026-11-17 15:00');
     assert.deepEqual(c.my_pairs, ['EUR/USD', 'XAU/USD']);
     assert.deepEqual(c.my_currencies, ['USD', 'EUR']);
@@ -102,6 +137,18 @@ describe('econ-calendar: the coach slice', () => {
     const r = c.events.find((e) => e.title === 'Retail Sales m/m');
     assert.equal(r.status, 'released'); assert.ok(r.minutes_from_now < 0);
     assert.equal(coachCalendar(ev, ['EURUSD'], Date.parse('2026-11-21T14:00:00Z'), 'UTC', 'x').events.some((e) => e.title === 'Retail Sales m/m'), false);
+  });
+  it('news of another market stays out unless the member trades it; global events read as "global"', () => {
+    const ee = parseFeed([{ title: 'Distillate Inventories', country: 'USD', date: '2026-11-18T10:30:00-05:00', impact: 'High' },
+      { title: 'IEA World Energy Outlook', country: 'All', date: '2026-11-18T11:00:00-05:00', impact: 'Medium' }], 'ee');
+    const all = mergeFeeds([parseFeed(FEED, 'ff'), ee]);
+    assert.equal(coachCalendar(all, ['EURUSD'], now, 'UTC', 'x').events.some((e) => e.title === 'Distillate Inventories'), false);
+    const oil = coachCalendar(all, ['USOIL', 'EURUSD'], now, 'UTC', 'x');
+    const d = oil.events.find((e) => e.title === 'Distillate Inventories');
+    assert.deepEqual([d.market, d.site, d.moves_my_pairs], ['energy', 'EnergyExch', ['USOIL']]);
+    const g = oil.events.find((e) => e.title === 'IEA World Energy Outlook');
+    assert.equal(g.currency, 'global'); assert.deepEqual(g.moves_my_pairs, ['USOIL']);
+    assert.deepEqual(oil.events.find((e) => e.title === 'Retail Sales m/m').moves_my_pairs, ['USOIL', 'EUR/USD']);
   });
   it('no symbols: all currencies; never loaded: a note; capped with my upcoming events first', () => {
     assert.equal(coachCalendar(ev, [], now, 'UTC', 'x').my_currencies, 'all');
@@ -120,20 +167,36 @@ describe('econ-calendar: the coach slice', () => {
 describe('econ-feed: cached refresh', () => {
   const realFetch = globalThis.fetch;
   let calls = 0, reply;
-  before(() => { globalThis.fetch = async () => { calls++; return reply(); }; });
+  before(() => { globalThis.fetch = async (url) => { calls++; return reply(String(url)); }; });
   after(() => { globalThis.fetch = realFetch; });
   const json = (v) => () => new Response(JSON.stringify(v), { status: 200 });
   const now = Date.parse('2026-11-17T12:00:00Z');
   const fresh = () => ({ econ_feed_state: [{ id: 1, last_attempt_at: '1970-01-01T00:00:00.000Z', last_success_at: null, last_status: null }], econ_events: [] });
 
-  it('first call loads the export; a second call within REFRESH_MS does not fetch', async () => {
+  it('first call loads the four exports (merged); a second call within REFRESH_MS does not fetch', async () => {
     const t = fresh(), db = makeDb(t); calls = 0; reply = json(FEED);
     const st = await ensureFresh(db, now);
-    assert.equal(calls, 1); assert.equal(st.last_status, 'ok');
+    assert.equal(calls, 4); assert.equal(st.last_status, 'ok');
     assert.equal(t.econ_events.length, 5);
+    assert.deepEqual(t.econ_events.find((e) => e.title === 'Retail Sales m/m').impacts, { ff: 'high', cc: 'high', mm: 'high', ee: 'high' });
     assert.equal(t.econ_feed_state[0].last_success_at, new Date(now).toISOString());
     await ensureFresh(db, now + REFRESH_MS - 1000);
-    assert.equal(calls, 1);
+    assert.equal(calls, 4);
+  });
+  it('a refused site keeps its stored events (partial = success); the others are replaced', async () => {
+    const t = fresh(), db = makeDb(t); calls = 0;
+    const EE = [{ title: 'Distillate Inventories', country: 'USD', date: '2026-11-18T10:30:00-05:00', impact: 'High', forecast: '', previous: '4.1M' }];
+    reply = (u) => new Response(JSON.stringify(u.includes('/ee_') ? EE : FEED), { status: 200 });
+    await ensureFresh(db, now);
+    assert.equal(t.econ_events.length, 6);
+    reply = (u) => (u.includes('/ee_') ? new Response('<html>Request Denied</html>', { status: 200 }) : new Response(JSON.stringify(FEED.slice(0, 2)), { status: 200 }));
+    const st = await ensureFresh(db, now + REFRESH_MS + 1000);
+    assert.equal(st.last_status, 'partial: ee not json');
+    assert.equal(st.last_success_at, new Date(now + REFRESH_MS + 1000).toISOString());
+    const titles = t.econ_events.map((e) => e.title).sort();
+    assert.ok(titles.includes('Distillate Inventories'), 'refused site keeps its event');
+    assert.ok(!titles.includes('Building Permits'), 'gone from the answering sites');
+    assert.deepEqual(t.econ_events.find((e) => e.title === 'Retail Sales m/m').impacts, { ff: 'high', cc: 'high', mm: 'high' });
   });
   it('a refused export ("Request Denied" HTML) keeps the rows and is not retried within CLAIM_MS', async () => {
     const t = fresh(), db = makeDb(t); calls = 0; reply = json(FEED);
@@ -141,13 +204,13 @@ describe('econ-feed: cached refresh', () => {
     reply = () => new Response('<html>Request Denied</html>', { status: 200 });
     const later = now + REFRESH_MS + 1000;
     const st = await ensureFresh(db, later);
-    assert.equal(calls, 2); assert.equal(st.last_status, 'not json'); assert.equal(st.last_success_at, new Date(now).toISOString());
+    assert.equal(calls, 8); assert.equal(st.last_status, 'ff not json, cc not json, mm not json, ee not json'); assert.equal(st.last_success_at, new Date(now).toISOString());
     assert.equal(t.econ_events.length, 5);
     await ensureFresh(db, later + CLAIM_MS - 1000);
-    assert.equal(calls, 2);                                    // the claim is still held
+    assert.equal(calls, 8);                                    // the claim is still held
     reply = () => new Response('busy', { status: 503 });
-    assert.equal((await ensureFresh(db, later + CLAIM_MS + 1000)).last_status, 'http 503');
-    assert.equal(calls, 3);
+    assert.equal((await ensureFresh(db, later + CLAIM_MS + 1000)).last_status, 'ff http 503, cc http 503, mm http 503, ee http 503');
+    assert.equal(calls, 12);
   });
   it('a new export removes events that are gone from its range and keeps older weeks', async () => {
     const t = fresh(), db = makeDb(t); calls = 0; reply = json(FEED);
@@ -174,8 +237,8 @@ describe('econ-calendar: navbar badge helpers', () => {
   const now = Date.parse('2026-11-17T12:00:00Z');
   const ev = (id, cur, imp, minutes) => ({ id, title: id, currency: cur, impact: imp, event_at: new Date(now + minutes * 60e3).toISOString() });
   const events = [ev('a', 'USD', 'high', -10), ev('b', 'USD', 'medium', 20), ev('c', 'EUR', 'high', 45), ev('d', 'EUR', 'low', 45), ev('e', 'GBP', 'high', 45)];
-  const mine = [{ label: 'EUR/USD', currencies: ['EUR', 'USD'] }, { label: 'XAU/USD', currencies: ['USD'] }];
-  const catalog = [{ label: 'GBP/USD', currencies: ['GBP', 'USD'] }, { label: 'USD/JPY', currencies: ['USD', 'JPY'] }];
+  const mine = [{ label: 'EUR/USD', currencies: ['EUR', 'USD'], market: 'fx' }, { label: 'XAU/USD', currencies: ['USD'], market: 'metals' }];
+  const catalog = [{ label: 'GBP/USD', currencies: ['GBP', 'USD'], market: 'fx' }, { label: 'USD/JPY', currencies: ['USD', 'JPY'], market: 'fx' }];
   it('prefs are cleaned (old currency filters dropped)', () => {
     assert.deepEqual(E.cleanPrefs(null), { impact: 'high', pairs: null, alert: true, minutes: 15, desktop: false });
     assert.deepEqual(E.cleanPrefs({ impact: 'x', ccys: ['EUR'], pairs: ['EUR/USD', 'bad pair!', 3], minutes: 7, alert: false, desktop: true }),
@@ -188,8 +251,14 @@ describe('econ-calendar: navbar badge helpers', () => {
     assert.deepEqual(E.togglePair(E.cleanPrefs({}), mine, 'GBP/USD'), ['EUR/USD', 'XAU/USD', 'GBP/USD']);
     assert.deepEqual(E.togglePair(E.cleanPrefs({}), mine, 'EUR/USD'), ['XAU/USD']);
     assert.deepEqual(E.togglePair(E.cleanPrefs({ pairs: ['GBP/USD'] }), mine, 'GBP/USD'), []);
-    assert.deepEqual(E.affects(mine, 'USD'), ['EUR/USD', 'XAU/USD']);
-    assert.deepEqual(E.affects(mine, 'GBP'), []);
+    assert.deepEqual(E.affects(mine, caseEvent('USD', ['ff'])), ['EUR/USD', 'XAU/USD']);
+    assert.deepEqual(E.affects(mine, caseEvent('GBP', ['ff'])), []);
+    assert.deepEqual(E.affects(mine, caseEvent('USD', ['mm'])), ['XAU/USD']);
+  });
+  it('the badge matches pairs exactly like the server (same cases)', () => {
+    for (const [pair, cur, sites, want] of MOVES_CASES) assert.equal(E.moves(pairOf(pair), caseEvent(cur, sites)), want, `${pair} ${cur} ${sites}`);
+    assert.equal(E.marketOf(caseEvent('USD', ['ee'])), 'energy');
+    assert.equal(E.marketOf(caseEvent('USD', ['ff', 'ee'])), null);
   });
   it('next event by impact and pairs; same-time events together; just released counts as now', () => {
     const p = E.cleanPrefs({}), all = [];

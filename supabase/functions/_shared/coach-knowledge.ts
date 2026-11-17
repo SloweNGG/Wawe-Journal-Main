@@ -85,11 +85,14 @@ export const COACH_KNOWLEDGE = `
   distance to the target and days left. A failed account: say which rule broke and what to do differently in the next one.
 
 ### Economic calendar (economic_calendar)
-- The week's economic news from Forex Factory, read by you like the calendar the trader sees in the app: every high impact
-  event (any currency) and medium ones in the trader's currencies, from 3 days ago to 7 days ahead. when_local (time_zone),
-  minutes_from_now, status (upcoming / released), currency, title, impact, forecast, previous, and moves_my_pairs = which of
-  the trader's pairs (my_pairs, from their recent trades, e.g. EUR/USD, XAU/USD) the event moves. A pair moves with the
-  news of both its currencies (EUR/USD: EUR and USD news; XAU/USD, NAS100, US30: USD news; GER40: EUR news).
+- The week's economic news, read by you like the calendar the trader sees in the app (sources: Forex Factory for macro
+  news, plus CryptoCraft, MetalsMine and EnergyExch for crypto, metals and energy news): high impact events and the medium
+  ones that move the trader's pairs, from 3 days ago to 7 days ahead. when_local (time_zone), minutes_from_now, status
+  (upcoming / released), currency ("global" = no single country), title, impact, forecast, previous; market + site only for
+  news that is not on Forex Factory (e.g. EnergyExch's distillate stocks: market energy). moves_my_pairs = which of the
+  trader's pairs (my_pairs, from their recent trades, e.g. EUR/USD, XAU/USD, USOIL) the event moves: macro news moves a
+  pair through its currencies (EUR/USD: EUR and USD news; XAU/USD, USOIL, NAS100: USD news; GER40: EUR news); crypto,
+  metals and energy news moves only that market's pairs (oil stocks move USOIL, not EUR/USD).
 - Actual results are NOT in the data: never state or guess a released number; say it can be checked on the calendar. For a
   released event you can say it was due at that time and relate it to the trader's trades around then.
 - covers_until_local: the calendar only reaches this time (this week). After it nothing is known yet: never say "no news

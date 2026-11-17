@@ -3067,7 +3067,7 @@ export default {
   "aiCoach.insight_q.prop_odds": "How can I raise my chance of passing the {journal} challenge?",
   "econ.title": "News",
   "econ.title_long": "Economic calendar",
-  "econ.sub": "Times: {tz} · Source: Forex Factory",
+  "econ.sub": "Times: {tz} · Source: Forex Factory, CryptoCraft, MetalsMine, EnergyExch",
   "econ.close": "Close",
   "econ.min": "{n} min",
   "econ.hm": "{h}h {m}m",
@@ -3112,4 +3112,8 @@ export default {
   "econ.pairs": "Pairs",
   "econ.my_pairs": "My pairs",
   "econ.all_pairs": "All pairs",
+  "econ.global": "Global",
+  "econ.market_energy": "Energy",
+  "econ.market_metals": "Metals",
+  "econ.market_crypto": "Crypto",
 };
