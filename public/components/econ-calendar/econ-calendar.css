@@ -78,13 +78,6 @@ body.light-theme .econ-src { color: var(--ac-d1); background: rgba(var(--ac-rgb)
 }
 .econ-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.15); }
 body.light-theme .econ-close { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); }
-.econ-ask-all {
-  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border-radius: 7px; cursor: pointer;
-  font: 600 11px/1 var(--font); color: var(--ac-l2); background: rgba(var(--ac-rgb), 0.1); border: 1px solid rgba(var(--ac-rgb), 0.3);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.econ-ask-all:hover { background: rgba(var(--ac-rgb), 0.18); border-color: rgba(var(--ac-rgb), 0.5); transform: translateY(-1px); }
-body.light-theme .econ-ask-all { color: var(--ac-d1); }
 
 /* tab rows = .bell-filter-tabs / .bell-tab-btn */
 .econ-tabs {
@@ -135,15 +128,6 @@ body.light-theme .econ-mkt-energy { color: #b45309; } body.light-theme .econ-mkt
 body.light-theme .econ-hits b { color: var(--ac-d1); }
 .econ-end { display: flex; align-items: center; gap: 4px; }
 .econ-row .econ-cd { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--econ-high); }
-.econ-ask {
-  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border-radius: 7px; cursor: pointer;
-  color: var(--ac-l2); background: rgba(var(--ac-rgb), 0.08); border: 1px solid rgba(var(--ac-rgb), 0.25);
-  opacity: 0; transition: opacity .15s ease, background .15s ease;
-}
-.econ-row:hover .econ-ask, .econ-ask:focus-visible, .econ-row.next .econ-ask { opacity: 1; }
-.econ-ask:hover { background: rgba(var(--ac-rgb), 0.18); }
-@media (hover: none) { .econ-ask { opacity: 1; } }
-body.light-theme .econ-ask { color: var(--ac-d1); }
 .econ-empty, .econ-note { padding: 1.4rem 1rem; text-align: center; font-size: 12px; color: var(--muted); }
 .econ-note { padding: 12px 10px 6px; font-size: 11px; }
 
@@ -192,7 +176,6 @@ body.light-theme .econ-card { background: rgba(255,255,255,0.99); box-shadow: 0 
   .econ-btn .econ-quiet, .econ-btn .econ-pair { display: none; }
   .econ-panel, .econ-alerts { position: fixed; top: 54px; right: 8px; left: 8px; width: auto; max-width: none; }
   .econ-card { width: auto; }
-  .econ-ask-all span { display: none; }
 }
 @media (max-width: 480px) {
   .econ-panel, .econ-alerts { top: 52px; }

@@ -13,8 +13,8 @@
 //   - Filters, alert settings: this browser (localStorage ww_econ_prefs). pairs null = my pairs, [] = all, [..] = picked.
 //   - Alerts while the app is open in any tab: `minutes` before an event an on-screen card (same-minute events grouped),
 //     plus a desktop notification when turned on and allowed. One tab claims each alert (localStorage ww_econ_alerted).
-//   - "Ask the coach" (panel header and each event): opens the AI coach with the question (window.WwAiCoach.ask); the
-//     coach reads the same calendar on the server (ai-coach economic_calendar).
+//   - "Ask the coach" lives on the trading calendar page (day modal, through the API below: ask(e) ->
+//     window.WwAiCoach.ask); the navbar panel has none. The coach reads the same calendar on the server.
 //   - The export has no actual results and only this week: the panel says so.
 // Pure helpers are exported on window.WWEcon._test for tests/econ-calendar.test.js.
 // ============================================================
@@ -31,7 +31,6 @@
   var SOURCE_NAMES = { ff: 'Forex Factory', cc: 'CryptoCraft', mm: 'MetalsMine', ee: 'EnergyExch' };
   var MARKET_FALLBACK = { energy: 'Enerji', metals: 'Metal', crypto: 'Kripto' };
   var SVG_X = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-  var SVG_SPARK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>';
 
   // ---------------------------------------------------------------- helpers
   function _t(key, fallback, params) {
@@ -244,7 +243,7 @@
   function renderPanel() {
     var p = document.getElementById('econ-panel');
     if (!p || !S.open) return;
-    var now = Date.now(), pr = S.prefs, ps = pairs(), shown = shownPairs(), ask = !!coach();
+    var now = Date.now(), pr = S.prefs, ps = pairs(), shown = shownPairs();
     var today = dayKey(now);
     var week = S.events.filter(function (e) { return dayKey(Date.parse(e.event_at)) >= today; });
     var list = week.filter(function (e) { return passes(e, pr, ps); });
@@ -253,7 +252,6 @@
 
     var h = '<div class="econ-panel-header"><div class="econ-title-wrap"><h3>' + esc(_t('econ.title_long', 'Ekonomik takvim')) + '</h3>' +
       '<span class="econ-src" title="' + esc(Object.keys(SOURCE_NAMES).map(function (k) { return SOURCE_NAMES[k]; }).join(' · ')) + '">Forex Factory +3</span></div><div class="econ-head-actions">' +
-      (ask ? '<button type="button" class="econ-ask-all" data-act="ask-week" title="' + esc(_t('econ.ask', 'Koça sor')) + '">' + SVG_SPARK + '<span>' + esc(_t('econ.ask', 'Koça sor')) + '</span></button>' : '') +
       '<button type="button" class="econ-close" data-act="close" aria-label="' + esc(_t('econ.close', 'Kapat')) + '" title="' + esc(_t('econ.close', 'Kapat')) + '">' + SVG_X + '</button></div></div>';
 
     h += '<div class="econ-tabs" role="tablist">' + [['high', _t('econ.f_high', 'Yüksek')], ['medium', _t('econ.f_medium', 'Yüksek + Orta')], ['all', _t('econ.f_all', 'Tümü')]].map(function (o) {
@@ -294,9 +292,7 @@
             (vals.length ? '<small>' + esc(vals.join(' · ')) + '</small>' : '') +
             (hit.length ? '<span class="econ-hits">' + hit.slice(0, 4).map(function (l) { return '<b>' + esc(l) + '</b>'; }).join('') + (hit.length > 4 ? '<b>+' + (hit.length - 4) + '</b>' : '') + '</span>' : '') +
           '</span>' +
-          '<span class="econ-end">' + (isNext ? '<span class="econ-cd">' + esc(countdown(t - now) || _t('econ.now', 'ŞİMDİ')) + '</span>' : '') +
-            (ask && e.impact !== 'holiday' ? '<button type="button" class="econ-ask" data-act="ask" data-id="' + esc(e.id) + '" title="' + esc(_t('econ.ask', 'Koça sor')) + '" aria-label="' + esc(_t('econ.ask', 'Koça sor')) + '">' + SVG_SPARK + '</button>' : '') +
-          '</span></div>';
+          '<span class="econ-end">' + (isNext ? '<span class="econ-cd">' + esc(countdown(t - now) || _t('econ.now', 'ŞİMDİ')) + '</span>' : '') + '</span></div>';
       });
       if (S.coversUntil && Date.parse(S.coversUntil) < now + 7 * 86400e3) h += '<div class="econ-note">' + esc(_t('econ.week_end', 'Gelecek haftanın takvimi henüz yayınlanmadı.')) + '</div>';
     }
@@ -349,12 +345,6 @@
     if (!t || t.tagName === 'INPUT' || t.tagName === 'SELECT') return;
     var act = t.getAttribute('data-act'), v = t.getAttribute('data-v');
     if (act === 'close') return toggle(false);
-    if (act === 'ask-week') return askCoach(_t('econ.ask_week', 'Bu haftaki ekonomik takvime göre paritelerim için nelere dikkat etmeliyim?'));
-    if (act === 'ask') {
-      var id = t.getAttribute('data-id'), e = S.events.filter(function (x) { return x.id === id; })[0];
-      if (e) askCoach(eventQuestion(e));
-      return;
-    }
     if (act === 'impact') S.prefs.impact = v;
     if (act === 'mine') S.prefs.pairs = null;
     if (act === 'allpairs') S.prefs.pairs = [];
