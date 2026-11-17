@@ -6,7 +6,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { runCoachAlerts } from '../_shared/coach-alerts.ts';
 import { loadPropContexts } from '../_shared/prop-context.ts';
 import {
-  ACCESS_LOST_MESSAGE, getAccessToken, isAccountAccessLost, supabaseTokenStore, syncErrorMessage,
+  ACCESS_LOST_MESSAGE, fetchPositionOrders, getAccessToken, isAccountAccessLost, protectionFromOrders, supabaseTokenStore,
+  syncErrorMessage,
 } from '../_shared/ctrader.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -429,6 +430,8 @@ serve(async (req: Request) => {
     let skippedInvalidVolume = 0;
     let minSkippedTs = Number.POSITIVE_INFINITY;
     const positionClosings = new Map<string, { swap: number; commission: number }[]>();
+    // SL/TP adımı için: bu senkronda görülen her pozisyonun satırları (import_hash), yönü, girişi, kapanış zamanı
+    const positionsSeen = new Map<string, { hashes: string[]; direction: 'LONG' | 'SHORT'; entry: number; digits: number; closeTs: number }>();
 
     // Zaman pencereleri döngüsü (6 günlük bloklar)
     while (currFrom < now) {
@@ -593,6 +596,14 @@ serve(async (req: Request) => {
             import_hash: `ctrader:${ctidTraderAccountId}:${deal.dealId}`,
             created_at: new Date().toISOString(),
           });
+
+          if (deal.positionId) {
+            const pk = String(deal.positionId);
+            const h = `ctrader:${ctidTraderAccountId}:${deal.dealId}`;
+            const seen = positionsSeen.get(pk);
+            if (seen) { seen.hashes.push(h); seen.closeTs = Math.max(seen.closeTs, execTime); }
+            else positionsSeen.set(pk, { hashes: [h], direction, entry: entryPrice, digits: symInfo!.digits, closeTs: execTime });
+          }
         }
 
         // Batch upsert (200'lük gruplar)
@@ -647,6 +658,108 @@ serve(async (req: Request) => {
       skippedCount += (pendingTradesToInsert.length - (upsertData?.length || 0));
     }
 
+    // SL/TP: kapanış deal'inde yok; pozisyonun emirlerinden (2183) okunur (_shared/ctrader.ts protectionFromOrders).
+    // Upsert'ten SONRA ayrı adım: hata ya da süre aşımı işlem aktarımını bozmaz. Yalnızca stop_loss VE take_profit'i
+    // boş satırlar doldurulur (elle girilen değer ezilmez).
+    //  1) bu senkronda görülen pozisyonlar (yeni satırlar + 2 günlük örtüşmede tekrar gelenler)
+    //  2) kalan sürede eski satırlar: v22 öncesi aktarılanlarda position_id dolu. Bakılan pozisyonun position_id'si NULL
+    //     yapılır (= "SL/TP'ye bakıldı" işareti; position_id başka hiçbir yerde okunmuyor), böylece her senkron azar azar
+    //     geçmişi tamamlar ve SL'siz pozisyon tekrar tekrar sorulmaz.
+    const PROTECTION_DEADLINE = startTime + 110 * 1000;   // deal döngüsü 90 sn; edge function duvar saati sınırının altında kal
+    const MAX_PROTECTION_LOOKUPS = 150;
+    const prot = { filled: 0, checked: 0, none: 0, failed: 0, pending: 0, backfilled: 0 };
+    let shapeLogs = 0;
+    const lookupProtection = async (positionId: number, ctx: { direction: 'LONG' | 'SHORT'; entry: number; digits: number; closeTs: number }) => {
+      await sleep(220);   // geçmiş verisi istekleri: ~5 istek/sn sınırı
+      prot.checked++;
+      const orders = await fetchPositionOrders(wsClient, ctidTraderAccountId, positionId, ctx.closeTs);
+      if (shapeLogs < 3) {
+        shapeLogs++;
+        console.log('SL/TP emir yapısı (pozisyon ' + positionId + '):', JSON.stringify(orders.slice(0, 6).map((o: any) => ({
+          type: o.orderType, status: o.orderStatus, closing: o.closingOrder, sl: o.stopLoss, tp: o.takeProfit,
+          relSl: o.relativeStopLoss, relTp: o.relativeTakeProfit, stopPrice: o.stopPrice, limitPrice: o.limitPrice,
+          exec: o.executionPrice, side: o.tradeData?.tradeSide, trailing: o.trailingStopLoss,
+        }))));
+      }
+      return protectionFromOrders(orders, { direction: ctx.direction, entryPrice: ctx.entry, digits: ctx.digits });
+    };
+    const budgetLeft = () => Date.now() < PROTECTION_DEADLINE && prot.checked < MAX_PROTECTION_LOOKUPS;
+
+    try {
+      const seenHashes = [...positionsSeen.values()].flatMap((p) => p.hashes);
+      const needHash = new Set<string>();
+      for (let i = 0; i < seenHashes.length; i += 200) {
+        const { data, error } = await admin.from('trades').select('import_hash')
+          .eq('user_id', user.id).eq('journal_id', targetJournalId)
+          .in('import_hash', seenHashes.slice(i, i + 200))
+          .is('stop_loss', null).is('take_profit', null);
+        if (error) throw error;
+        for (const r of data || []) needHash.add(r.import_hash);
+      }
+      const queue = [...positionsSeen.entries()]
+        .filter(([, p]) => p.hashes.some((h) => needHash.has(h)))
+        .sort((a, b) => b[1].closeTs - a[1].closeTs);   // en yeni işlemler önce
+      for (const [pid, p] of queue) {
+        if (!budgetLeft()) { prot.pending++; continue; }
+        try {
+          const r = await lookupProtection(Number(pid), p);
+          if (r.stopLoss == null && r.takeProfit == null) { prot.none++; continue; }
+          const { data: upd, error } = await admin.from('trades')
+            .update({ stop_loss: r.stopLoss, take_profit: r.takeProfit })
+            .eq('user_id', user.id).eq('journal_id', targetJournalId)
+            .in('import_hash', p.hashes.filter((h) => needHash.has(h)))
+            .is('stop_loss', null).is('take_profit', null)
+            .select('id');
+          if (error) throw error;
+          prot.filled += upd?.length || 0;
+        } catch (e) {
+          if (isAccountAccessLost(e)) throw e;
+          prot.failed++;
+          console.warn('SL/TP okunamadı (pozisyon ' + pid + '):', (e as any)?.description || (e as any)?.message || e);
+        }
+      }
+
+      // 2) geçmiş: v22 öncesi aktarılmış, SL/TP'si boş, position_id'si dolu satırlar (bu hesabın)
+      if (budgetLeft()) {
+        const { data: old, error } = await admin.from('trades')
+          .select('id, position_id, entry_price, direction, exit_date')
+          .eq('user_id', user.id).eq('journal_id', targetJournalId).eq('platform_source', 'ctrader')
+          .like('import_hash', `ctrader:${ctidTraderAccountId}:%`)
+          .not('position_id', 'is', null).is('stop_loss', null).is('take_profit', null)
+          .order('exit_date', { ascending: false }).limit(400);
+        if (error) throw error;
+        const groups = new Map<string, any[]>();
+        for (const r of old || []) {
+          const g = groups.get(r.position_id) || [];
+          g.push(r);
+          groups.set(r.position_id, g);
+        }
+        for (const [pid, rows] of groups) {
+          if (!budgetLeft()) { prot.pending++; continue; }
+          const dirn: 'LONG' | 'SHORT' = String(rows[0].direction).toUpperCase() === 'SHORT' || String(rows[0].direction).toUpperCase() === 'SELL' ? 'SHORT' : 'LONG';
+          const closeTs = Math.max(...rows.map((r: any) => Date.parse(r.exit_date) || 0)) || Date.now();
+          try {
+            const r = await lookupProtection(Number(pid), { direction: dirn, entry: Number(rows[0].entry_price), digits: 5, closeTs });
+            const patch: Record<string, any> = { position_id: null };
+            if (r.stopLoss != null || r.takeProfit != null) { patch.stop_loss = r.stopLoss; patch.take_profit = r.takeProfit; }
+            else prot.none++;
+            const { data: upd, error: ue } = await admin.from('trades').update(patch)
+              .in('id', rows.map((x: any) => x.id)).is('stop_loss', null).is('take_profit', null).select('id');
+            if (ue) throw ue;
+            if (r.stopLoss != null || r.takeProfit != null) { prot.filled += upd?.length || 0; prot.backfilled += upd?.length || 0; }
+          } catch (e) {
+            if (isAccountAccessLost(e)) throw e;
+            prot.failed++;
+            console.warn('SL/TP geçmiş doldurma hatası (pozisyon ' + pid + '):', (e as any)?.description || (e as any)?.message || e);
+          }
+        }
+      }
+    } catch (protErr) {
+      if (isAccountAccessLost(protErr)) throw protErr;
+      console.warn('SL/TP adımı atlandı:', (protErr as any)?.message || protErr);
+    }
+    console.log('SL/TP özeti:', JSON.stringify(prot));
+
     // Teşhis: aynı pozisyonun birden çok kapanışında aynı (sıfır olmayan) swap/komisyon tekrar ediyorsa bu değerler
     // büyük olasılıkla "pozisyon toplamı"dır ve her kısmi kapanış satırına tekrar yazılmış olabilir.
     const warnings: string[] = [];
@@ -667,6 +780,9 @@ serve(async (req: Request) => {
     }
     if (skippedInvalidVolume > 0) {
       warnings.push(`${skippedInvalidVolume} işlem geçersiz hacim nedeniyle atlandı.`);
+    }
+    if (prot.pending > 0) {
+      warnings.push(`${prot.pending} pozisyonun SL/TP bilgisi süre yetmediği için bu senkronda alınamadı; geçmiş işlemler sonraki senkronlarda tamamlanır.`);
     }
 
     // Senkron imleci:
@@ -730,8 +846,10 @@ serve(async (req: Request) => {
       inserted: insertedCount,
       skipped: skippedCount,
       fetched: totalFetched,
+      protection: prot,
       warnings,
       message: `${insertedCount} yeni işlem eklendi, ${skippedCount} mükerrer işlem atlandı.` +
+        (prot.filled > 0 ? ` ${prot.filled} işleme SL/TP eklendi.` : '') +
         (skippedUnknownLot > 0 ? ` ${skippedUnknownLot} işlem lot bilgisi alınamadığı için atlandı (sonraki senkronda yeniden denenecek).` : ''),
     }, 200, cors);
 

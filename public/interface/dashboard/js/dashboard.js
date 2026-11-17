@@ -3123,6 +3123,37 @@ function wwAccent() {
   // ============================================================
 
   var isDashboardInitialized = false;
+  var dashUserId = null;
+
+  // ⭐ YERİNDE TAZELEME: işlem eklendi/silindi ya da hesap senkronlandı → sayfa yenilenmeden veriyi yeniden çek ve çiz.
+  // Aynı anda gelen çağrılar (trade-saved olayı + window.loadTrades) tek isteğe birleşir; geç gelen eski yanıt yazılmaz.
+  var reloadTimer = null;
+  var reloadSeq = 0;
+  function reloadDashboardData() {
+    if (!isDashboardInitialized || !dashUserId) return;
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(async function () {
+      reloadTimer = null;
+      var seq = ++reloadSeq;
+      try {
+        if (window.wwCache) window.wwCache.invalidate('trades');
+        var data = await loadTrades(dashUserId);
+        if (seq !== reloadSeq || !PAGE.alive) return;
+        allTrades = data || [];
+        allTradesFullStats = allTrades.filter(function (t) { return t.exit_price; });
+        window._allDashboardTrades = allTrades;
+        await refresh(false);
+      } catch (e) {
+        console.error('Dashboard yerinde tazeleme hatası:', e);
+      }
+    }, 150);
+  }
+  PAGE.on(window, 'trade-saved', reloadDashboardData);
+  PAGE.on(window, 'trade-deleted', reloadDashboardData);
+  PAGE.onLeave(function () { if (reloadTimer) { clearTimeout(reloadTimer); reloadTimer = null; } });
+  // quick-add ve navbar senkronu window.loadTrades'i çağırır; yoksa sayfayı yeniliyorlardı
+  PAGE.expose('loadTrades', reloadDashboardData);
+
   async function initDashboard() {
     if (isDashboardInitialized) return;
     isDashboardInitialized = true;
@@ -3209,6 +3240,7 @@ function wwAccent() {
       }
 
       // Trades sorgusunu garantili journalId ile hemen başlat
+      dashUserId = user.id;
       var tradesPromise = loadTrades(user.id, activeJournalId);
 
       try {

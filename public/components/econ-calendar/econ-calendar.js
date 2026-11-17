@@ -16,6 +16,9 @@
 //   - "Ask the coach" lives on the trading calendar page (day modal, through the API below: ask(e) ->
 //     window.WwAiCoach.ask); the navbar panel has none. The coach reads the same calendar on the server.
 //   - The export has no actual results and only this week: the panel says so.
+//   - A click on an event (panel row, calendar day modal row) opens its detail below the row (detailHtml / WWEcon.detail):
+//     time and status, each site's impact, forecast / previous, what it is and how to read it (econ-info.js, loaded on
+//     the first click), the member's pairs it moves and a link to the source site's calendar day.
 // Pure helpers are exported on window.WWEcon._test for tests/econ-calendar.test.js.
 // ============================================================
 (function (global) {
@@ -29,7 +32,12 @@
   var IMPACT_RANK = { high: 3, medium: 2, low: 1, holiday: 0 };
   var MARKET_SOURCE = { fx: 'ff', crypto: 'cc', metals: 'mm', energy: 'ee' };
   var SOURCE_NAMES = { ff: 'Forex Factory', cc: 'CryptoCraft', mm: 'MetalsMine', ee: 'EnergyExch' };
+  var SOURCE_SITES = { ff: 'https://www.forexfactory.com', cc: 'https://www.cryptocraft.com', mm: 'https://www.metalsmine.com', ee: 'https://www.energyexch.com' };
+  var MONTHS_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  // the glossary of the detail (what an event is, how to read it): loaded on the first click
+  var INFO_URL = '/components/econ-calendar/econ-info.js?v=__WW_BUILD_ID__';
   var MARKET_FALLBACK = { energy: 'Enerji', metals: 'Metal', crypto: 'Kripto' };
+  var IMPACT_FALLBACK = { high: 'Yüksek etki', medium: 'Orta etki', low: 'Düşük etki', holiday: 'Tatil' };
   var SVG_X = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
   // ---------------------------------------------------------------- helpers
@@ -138,6 +146,16 @@
     });
     return Object.keys(groups).sort().map(function (k) { return { at: Date.parse(k), events: groups[k] }; });
   }
+  // the source site's calendar page of the event's day (the sites show New York days): Forex Factory when it lists it
+  function sourceDay(e) {
+    var src = sourcesOf(e), k = src.indexOf('ff') >= 0 ? 'ff' : src[0], ms = Date.parse(e.event_at), y, m, d;
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(ms));
+      parts.forEach(function (p) { if (p.type === 'year') y = +p.value; if (p.type === 'month') m = +p.value; if (p.type === 'day') d = +p.value; });
+    } catch (x) { /* no Intl time zones */ }
+    if (!y || !m || !d) { var u = new Date(ms - 5 * 3600e3); y = u.getUTCFullYear(); m = u.getUTCMonth() + 1; d = u.getUTCDate(); }
+    return { site: SOURCE_NAMES[k], url: SOURCE_SITES[k] + '/calendar?day=' + MONTHS_EN[m - 1] + d + '.' + y };
+  }
   function groupTop(g) { return g.events.slice().sort(function (a, b) { return IMPACT_RANK[b.impact] - IMPACT_RANK[a.impact]; })[0]; }
   function groupMore(g) { return g.events.length > 1 ? _t('econ.more', '+{n}', { n: g.events.length - 1 }) : ''; }
   function ccyText(c) { return c === 'ALL' ? _t('econ.global', 'Küresel') : c; }
@@ -151,7 +169,7 @@
 
   // ---------------------------------------------------------------- state
   var S = { events: [], mine: [], catalog: [], coversUntil: null, fetchedAt: 0, loading: false, error: false, open: false,
-    prefs: cleanPrefs(store(PREF_KEY)), timer: null, tickSig: '', listScroll: null };
+    prefs: cleanPrefs(store(PREF_KEY)), timer: null, tickSig: '', listScroll: null, openId: null };
   function savePrefs() { store(PREF_KEY, S.prefs); changed(); }
   function pairs() { return activePairs(S.prefs, S.mine, S.catalog); }
   // pairs shown under each event: the active filter, else the member's own
@@ -198,6 +216,10 @@
     h.querySelector('#econ-btn').addEventListener('click', function (ev) { ev.stopPropagation(); toggle(); });
     h.querySelector('#econ-panel').addEventListener('click', onPanelClick);
     h.querySelector('#econ-panel').addEventListener('change', onPanelChange);
+    h.querySelector('#econ-panel').addEventListener('keydown', function (ev) {
+      var r = ev.target.closest && ev.target.closest('.econ-row[data-act="detail"]');
+      if (r && ev.target === r && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); r.click(); }
+    });
     return true;
   }
   function renderBadge() {
@@ -250,6 +272,68 @@
     try { if (z) o.timeZone = z; return new Date(ms).toLocaleDateString(locale(), o); } catch (e) { return new Date(ms).toLocaleDateString(locale()); }
   }
 
+  // ---------------------------------------------------------------- detail (a clicked news row opens it below the row)
+  // Navbar panel and the trading calendar's day modal use the same html (WWEcon.detail). The exports have no description
+  // or actual: the detail shows the time and status, each site's impact, forecast / previous, what the indicator is and
+  // how to read it (econ-info.js glossary), the member's pairs it moves and a link to the source site's day.
+  var infoP = null, infoFailed = false;
+  function info() { return global.WWEconInfo && typeof global.WWEconInfo.explain === 'function' ? global.WWEconInfo : null; }
+  function loadInfo() {
+    if (info()) return Promise.resolve(true);
+    if (infoP) return infoP;
+    infoP = new Promise(function (res) {
+      var sc = document.createElement('script');
+      sc.src = INFO_URL; sc.async = true;
+      sc.onload = function () { res(!!info()); };
+      sc.onerror = function () { res(false); };
+      document.head.appendChild(sc);
+    }).then(function (ok) {
+      infoFailed = !ok;                                                // the detail then says "no description" (no retry loop)
+      render(); changed();                                             // open details get their texts (panel, calendar page)
+      return ok;
+    });
+    return infoP;
+  }
+  function detailHtml(e) {
+    var now = Date.now(), t = Date.parse(e.event_at), I = info(), ex = I ? I.explain(e, lang()) : null, link = sourceDay(e), hit = affects(shownPairs(), e);
+    if (!I && !infoFailed) loadInfo();
+    var cd = countdown(t - now);
+    var status = t > now ? _t('econ.d_in', '{t} sonra', { t: cd }) : t > now - NOW_WINDOW_MS ? _t('econ.now', 'ŞİMDİ') : _t('econ.d_released', 'Açıklandı');
+    var imps = e.impacts && typeof e.impacts === 'object' ? e.impacts : { ff: e.impact };
+    var h = '<div class="econ-detail imp-' + esc(e.impact) + '">';
+    h += '<div class="econ-d-head"><span class="econ-d-when">' + esc(dayLabel(t, now) + (e.impact === 'holiday' ? '' : ' · ' + fmtTime(t))) + '</span>' +
+      '<span class="econ-d-status' + (t > now ? '' : ' done') + '">' + esc(status) + '</span></div>';
+    h += '<div class="econ-d-imps">' + sourcesOf(e).map(function (k) {
+      var imp = IMPACT_RANK[imps[k]] != null ? imps[k] : e.impact;
+      return '<span class="econ-d-imp imp-' + esc(imp) + '"><span class="econ-dot" aria-hidden="true"></span>' + esc(SOURCE_NAMES[k] + ': ' + _t('econ.impact_' + imp, IMPACT_FALLBACK[imp] || imp)) + '</span>';
+    }).join('') + '</div>';
+    h += '<p class="econ-d-note">' + esc(_t('econ.d_imp_' + e.impact, '')) + '</p>';
+    if (e.forecast || e.previous) {
+      var stat = function (label, v, empty) { return '<div class="econ-d-stat"><span>' + esc(label) + '</span><b' + (v ? '' : ' class="none"') + '>' + esc(v || empty) + '</b></div>'; };
+      h += '<div class="econ-d-stats">' + stat(_t('econ.d_forecast', 'Beklenti'), e.forecast, '—') + stat(_t('econ.d_previous', 'Önceki'), e.previous, '—') +
+        stat(_t('econ.d_actual', 'Sonuç'), null, _t('econ.d_actual_none', 'Bu takvimde yok')) + '</div>';
+    }
+    if (ex) {
+      h += '<div class="econ-d-sec"><b>' + esc(_t('econ.d_what', 'Bu haber nedir?')) + '</b><p>' + esc(ex.what) + '</p></div>';
+      if (ex.read) h += '<div class="econ-d-sec"><b>' + esc(_t('econ.d_read', 'Nasıl okunur?')) + '</b><p>' + esc(ex.read) + '</p></div>';
+    } else {
+      h += '<p class="econ-d-note">' + esc(I || infoFailed ? _t('econ.d_no_info', 'Bu gösterge için hazır bir açıklama yok.') : _t('econ.loading', 'Yükleniyor…')) + '</p>';
+    }
+    if (hit.length) h += '<div class="econ-d-pairs"><span>' + esc(_t('econ.d_pairs', 'Etkileyebileceği pariteler')) + '</span>' + hit.map(function (l) { return '<b>' + esc(l) + '</b>'; }).join('') + '</div>';
+    h += '<a class="econ-d-link" href="' + esc(link.url) + '" target="_blank" rel="noopener noreferrer">' + esc(_t('econ.d_open', '{site} sayfasında aç', { site: link.site })) + ' ↗</a>';
+    return h + '</div>';
+  }
+  function toggleDetail(id) { S.openId = S.openId === id ? null : id; }
+  // scroll an opened detail into view, but never push its row under the sticky day header (`top`): the row stays clickable
+  function reveal(scroller, row, top) {
+    var det = row && row.nextElementSibling;
+    if (!scroller || !det || !det.classList.contains('econ-detail')) return;
+    var sr = scroller.getBoundingClientRect(), over = det.getBoundingClientRect().bottom - sr.bottom + 8;
+    if (over <= 0) return;
+    var room = row.getBoundingClientRect().top - sr.top - (top || 0) - 4;
+    if (room > 0) scroller.scrollTop += Math.min(over, room);
+  }
+
   function renderPanel() {
     var p = document.getElementById('econ-panel');
     if (!p || !S.open) return;
@@ -291,7 +375,8 @@
         var vals = [];
         if (e.forecast) vals.push(_t('econ.forecast', 'Bkl') + ' ' + e.forecast);
         if (e.previous) vals.push(_t('econ.previous', 'Önc') + ' ' + e.previous);
-        return '<div class="econ-row imp-' + e.impact + (past ? ' past' : '') + (isNext ? ' next' : '') + '">' +
+        var open = S.openId === e.id;
+        return '<div class="econ-row imp-' + e.impact + (past ? ' past' : '') + (isNext ? ' next' : '') + (open ? ' open' : '') + '" data-act="detail" data-v="' + esc(e.id) + '" role="button" tabindex="0" aria-expanded="' + open + '">' +
           '<span class="econ-time">' + (e.impact === 'holiday' ? esc(_t('econ.allday', 'Tatil')) : esc(fmtTime(t))) + '</span>' +
           '<span class="econ-dot" title="' + esc(_t('econ.impact_' + e.impact, e.impact)) + '"></span>' +
           '<span class="econ-ccy">' + esc(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
@@ -300,7 +385,8 @@
             (vals.length ? '<small>' + esc(vals.join(' · ')) + '</small>' : '') +
             (hit.length ? '<span class="econ-hits">' + hit.slice(0, 4).map(function (l) { return '<b>' + esc(l) + '</b>'; }).join('') + (hit.length > 4 ? '<b>+' + (hit.length - 4) + '</b>' : '') + '</span>' : '') +
           '</span>' +
-          '<span class="econ-end">' + (isNext ? '<span class="econ-cd">' + esc(countdown(t - now) || _t('econ.now', 'ŞİMDİ')) + '</span>' : '') + '</span></div>';
+          '<span class="econ-end">' + (isNext ? '<span class="econ-cd">' + esc(countdown(t - now) || _t('econ.now', 'ŞİMDİ')) + '</span>' : '') + '<span class="econ-chev" aria-hidden="true"></span></span></div>' +
+          (open ? detailHtml(e) : '');
       };
       var byDay = function (arr) {
         var lastDay = '';
@@ -342,7 +428,7 @@
     var p = document.getElementById('econ-panel'), b = document.getElementById('econ-btn');
     if (!p || !b) return;
     S.open = force != null ? force : !S.open;
-    S.listScroll = null; S.upCount = -1;
+    S.listScroll = null; S.upCount = -1; S.openId = null;
     if (S.open && typeof global.closeAllNavDropdowns === 'function') { try { global.closeAllNavDropdowns('econ'); } catch (e) { /* ignore */ } }
     p.classList.toggle('open', S.open);
     b.setAttribute('aria-expanded', S.open ? 'true' : 'false');
@@ -367,6 +453,17 @@
     if (!t || t.tagName === 'INPUT' || t.tagName === 'SELECT') return;
     var act = t.getAttribute('data-act'), v = t.getAttribute('data-v');
     if (act === 'close') return toggle(false);
+    if (act === 'detail') {
+      toggleDetail(v);
+      renderPanel();
+      var p = document.getElementById('econ-panel'), row = p && p.querySelector('.econ-row[data-v="' + v + '"]');
+      if (row) {
+        if (ev.detail === 0) row.focus({ preventScroll: true });       // keyboard: keep the focus on the row
+        var day = p.querySelector('.econ-day');
+        reveal(p.querySelector('.econ-panel-body'), row, day ? day.offsetHeight : 0);
+      }
+      return;
+    }
     if (act === 'impact') S.prefs.impact = v;
     if (act === 'mine') S.prefs.pairs = null;
     if (act === 'allpairs') S.prefs.pairs = [];
@@ -501,18 +598,20 @@
     canAsk: function () { return !!coach(); },
     dayKey: dayKey,
     split: function (list) { return splitByRelease(list || [], Date.now()); },
+    reveal: reveal,
     filterLabel: function () {
       var imp = { high: _t('econ.f_high', 'Yüksek'), medium: _t('econ.f_medium', 'Yüksek + Orta'), all: _t('econ.f_all', 'Tümü') }[S.prefs.impact];
       var ps = pairs();
       return imp + ' · ' + (S.prefs.pairs === null && S.mine.length ? _t('econ.my_pairs', 'Paritelerim') : ps.length ? ps.map(function (p) { return p.label; }).join(', ') : _t('econ.all_pairs', 'Tüm pariteler'));
     },
     openPanel: function () { toggle(true); },
+    detail: detailHtml,
   };
 
   global.WWEcon = { ready: true, reload: function () { return load(true); }, open: function () { toggle(true); },
-    range: api.range, visible: api.visible, describe: api.describe, ask: api.ask, canAsk: api.canAsk, dayKey: api.dayKey, split: api.split, filterLabel: api.filterLabel,
+    range: api.range, visible: api.visible, describe: api.describe, detail: api.detail, reveal: api.reveal, ask: api.ask, canAsk: api.canAsk, dayKey: api.dayKey, split: api.split, filterLabel: api.filterLabel,
     _test: { cleanPrefs: cleanPrefs, activePairs: activePairs, affects: affects, moves: moves, marketOf: marketOf, passes: passes, togglePair: togglePair, nextGroup: nextGroup,
-      countdown: countdown, dueAlerts: dueAlerts, splitByRelease: splitByRelease, groupTitle: groupTitle, groupMore: groupMore, groupPairs: groupPairs } };
+      countdown: countdown, sourceDay: sourceDay, dueAlerts: dueAlerts, splitByRelease: splitByRelease, groupTitle: groupTitle, groupMore: groupMore, groupPairs: groupPairs } };
   if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   try { global.dispatchEvent(new CustomEvent('ww:econ-ready')); } catch (e) { /* old browsers */ }

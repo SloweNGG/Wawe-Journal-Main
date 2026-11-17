@@ -1275,6 +1275,12 @@ body.light-theme .cal-day .day-news .dn { background: rgba(255,255,255,0.75); bo
 .cal-news-row { display: grid; grid-template-columns: 44px 8px 32px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; font-size: 12.5px; }
 .cal-news-row:hover { background: rgba(127,127,127,.07); }
 .cal-news-row.past { opacity: .5; }
+/* a click opens the news detail below the row (econ-calendar.css .econ-detail) */
+.cal-news-row[data-econ-detail] { cursor: pointer; }
+.cal-news-row[data-econ-detail]:focus-visible { outline: 2px solid rgba(var(--ac-rgb), .6); outline-offset: -2px; }
+.cal-news-row.open { background: rgba(127,127,127,.09); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.cal-news-row.open.past { opacity: 1; }
+.cal-news-list .econ-detail { margin: 0 0 4px; border-radius: 0 0 8px 8px; }
 .cal-news-sep { margin: 6px 8px 2px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 11px; font-weight: 700; color: var(--muted); }
 .cal-news-time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
 .cal-news-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }

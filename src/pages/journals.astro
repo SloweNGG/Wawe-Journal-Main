@@ -2704,9 +2704,9 @@ import Layout from '../layouts/Layout.astro';
   
   JOURNALS_PAGE.on(document, 'journal-changed', renderJournals);
 
-  // cTrader senkronu (navbar.js wwSyncCtrader) bittiğinde window.loadTrades() varsa onu çağırır, yoksa SAYFAYI YENİLER.
-  // Yenileme bildirimleri (bakiye, uyarılar) yarım saniyede yok ediyordu; bu sayfada kartları yerinde tazeliyoruz.
-  // (Takvim sayfası da aynı kalıbı kullanıyor: CAL_PAGE.expose('loadTrades', ...))
+  // cTrader senkronu (navbar.js wwSyncCtrader, otomatik senkron) sayfayı yenilemez: 'trade-saved' gönderir, diğer
+  // sayfalar onunla tazelenir. Bu sayfa o olayı dinlemez; senkron burada window.loadTrades()'i doğrudan çağırır
+  // (kartlardaki "son senkron" ve bakiye yeni işlem olmasa da değişir).
   JOURNALS_PAGE.expose('loadTrades', renderJournals);
   
 </script>

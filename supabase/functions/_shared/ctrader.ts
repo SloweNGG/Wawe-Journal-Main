@@ -413,3 +413,81 @@ export async function findFirstMinuteBar(client: { sendRequest: (t: number, p: a
   }
   return { firstMonth: hi, firstTMin: from / 60000, probes };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Kapanmış pozisyonun SL/TP'si. Kapanış deal'inde (ProtoOADeal / closePositionDetail) SL/TP YOK; pozisyonun emirlerinde
+// (2183 ProtoOAOrderListByPositionIdReq) bulunur:
+//   * açılış emri (closingOrder değil, tür STOP_LOSS_TAKE_PROFIT=4 değil): mutlak stopLoss/takeProfit ya da
+//     relativeStopLoss/relativeTakeProfit (1/100000 fiyat birimi; BUY: SL = giriş - rel, TP = giriş + rel; SELL tersi)
+//   * yoksa (SL pozisyon açıldıktan sonra konmuş) STOP_LOSS_TAKE_PROFIT emirlerinin stopLoss/takeProfit alanları
+// İlk (en eski) değer alınır: R hesabı için başlangıç riski önemli, sonradan başabaşa çekilen SL değil.
+// ---------------------------------------------------------------------------------------------------------------------
+export const ORDER_TYPE_SLTP = 4;
+const posNum = (v: any): number | null => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+const orderTs = (o: any): number => Number(o?.tradeData?.openTimestamp ?? o?.utcLastUpdateTimestamp ?? 0) || 0;
+
+export function protectionFromOrders(orders: any[], ctx: { direction: 'LONG' | 'SHORT'; entryPrice: number; digits?: number }):
+  { stopLoss: number | null; takeProfit: number | null; source: 'opening' | 'sltp' | 'mixed' | 'none' } {
+  const s = ctx.direction === 'LONG' ? 1 : -1;
+  const d = Math.min(5, Math.max(0, Number.isFinite(Number(ctx.digits)) ? Number(ctx.digits) : 5));   // trades: numeric(18,5)
+  const rnd = (v: number) => Number(v.toFixed(d));
+  const list = (Array.isArray(orders) ? orders : []).filter((o) => o && typeof o === 'object').sort((a, b) => orderTs(a) - orderTs(b));
+  let sl: number | null = null, tp: number | null = null, slFrom = '', tpFrom = '';
+
+  for (const o of list) {
+    if (o.closingOrder === true || Number(o.orderType) === ORDER_TYPE_SLTP) continue;
+    const fill = posNum(o.executionPrice) ?? posNum(ctx.entryPrice);
+    let osl = posNum(o.stopLoss), otp = posNum(o.takeProfit);
+    if (osl == null && fill != null && posNum(o.relativeStopLoss) != null) osl = fill - s * Number(o.relativeStopLoss) / 100000;
+    if (otp == null && fill != null && posNum(o.relativeTakeProfit) != null) otp = fill + s * Number(o.relativeTakeProfit) / 100000;
+    // açılış emrinde SL zarar, TP kâr tarafında olmalı; değilse (veri tutarsız) kullanılmaz
+    if (osl != null && fill != null && !(s * (fill - osl) > 0)) osl = null;
+    if (otp != null && fill != null && !(s * (otp - fill) > 0)) otp = null;
+    if (sl == null && osl != null && osl > 0) { sl = osl; slFrom = 'opening'; }
+    if (tp == null && otp != null && otp > 0) { tp = otp; tpFrom = 'opening'; }
+    if (sl != null && tp != null) break;
+  }
+  for (const o of list) {
+    if (sl != null && tp != null) break;
+    if (Number(o.orderType) !== ORDER_TYPE_SLTP) continue;
+    if (sl == null && posNum(o.stopLoss) != null) { sl = Number(o.stopLoss); slFrom = 'sltp'; }
+    if (tp == null && posNum(o.takeProfit) != null) { tp = Number(o.takeProfit); tpFrom = 'sltp'; }
+  }
+  const froms = new Set([slFrom, tpFrom].filter(Boolean));
+  const source = froms.size === 0 ? 'none' : froms.size === 2 ? 'mixed' : ([...froms][0] as 'opening' | 'sltp');
+  return { stopLoss: sl != null ? rnd(sl) : null, takeProfit: tp != null ? rnd(tp) : null, source };
+}
+
+// Pozisyonun tüm emirleri (2183). Yanıt utcLastUpdateTimestamp'e göre YENİDEN ESKİYE sıralı; açılış emri en eskisi olduğundan
+// hasMore varsa en eski kaydın zamanından geriye sayfalanır. Zaman aralığı vermeden istek reddedilirse kapanıştan geriye
+// pencerelerle yeniden denenir.
+export async function fetchPositionOrders(client: { sendRequest: (t: number, p: any, ms?: number) => Promise<any> },
+  ctidTraderAccountId: number, positionId: number, closeTs: number, opts: { maxPages?: number; pause?: (ms: number) => Promise<void> } = {}): Promise<any[]> {
+  const maxPages = opts.maxPages ?? 4;
+  const pause = opts.pause ?? sleep;
+  const to0 = Math.min(2147483646000, (Number(closeTs) || Date.now()) + 5 * 60 * 1000);
+  const run = async (from: number | null) => {
+    const out: any[] = [];
+    let to = to0;
+    for (let page = 0; page < maxPages; page++) {
+      const payload: Record<string, any> = { ctidTraderAccountId, positionId, toTimestamp: to };
+      if (from != null) payload.fromTimestamp = from;
+      const res = await client.sendRequest(2183, payload, 10000);
+      const orders: any[] = res?.payload?.order || [];
+      out.push(...orders);
+      if (res?.payload?.hasMore !== true || !orders.length) break;
+      const oldest = Math.min(...orders.map((o) => Number(o.utcLastUpdateTimestamp) || to));
+      if (!(oldest < to)) break;
+      to = oldest - 1;
+      await pause(220);
+    }
+    return out;
+  };
+  try {
+    return await run(0);
+  } catch (e) {
+    if (isAccountAccessLost(e)) throw e;
+    await pause(300);
+    return await run(Math.max(0, to0 - 6 * 24 * 60 * 60 * 1000));
+  }
+}

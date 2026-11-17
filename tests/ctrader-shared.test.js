@@ -289,3 +289,86 @@ describe('getAccessToken (kilitli, ortak yenileme)', () => {
     assert.equal(r.ok, true); assert.equal(st.row.refresh_token, 'R2');
   });
 });
+
+// ------------------------------------------------------------
+// Kapanmış pozisyonun SL/TP'si (2183 emirlerinden)
+// ------------------------------------------------------------
+describe('protectionFromOrders', () => {
+  const open = (o) => ({ orderType: 1, closingOrder: false, tradeData: { tradeSide: 1, openTimestamp: 1000 }, ...o });
+
+  it('açılış emrindeki mutlak SL/TP', () => {
+    const r = X.protectionFromOrders([open({ executionPrice: 1.1, stopLoss: 1.095, takeProfit: 1.11 })], { direction: 'LONG', entryPrice: 1.1, digits: 5 });
+    assert.deepEqual(r, { stopLoss: 1.095, takeProfit: 1.11, source: 'opening' });
+  });
+
+  it('relativeStopLoss / relativeTakeProfit: 1/100000 birim, BUY ve SELL yönü', () => {
+    const buy = X.protectionFromOrders([open({ executionPrice: 1.1, relativeStopLoss: 500, relativeTakeProfit: 1000 })], { direction: 'LONG', entryPrice: 1.1, digits: 5 });
+    assert.deepEqual([buy.stopLoss, buy.takeProfit], [1.095, 1.11]);
+    const sell = X.protectionFromOrders([open({ executionPrice: 2650.5, relativeStopLoss: 500000, relativeTakeProfit: 1000000, tradeData: { tradeSide: 2 } })], { direction: 'SHORT', entryPrice: 2650.5, digits: 2 });
+    assert.deepEqual([sell.stopLoss, sell.takeProfit], [2655.5, 2640.5]);
+  });
+
+  it('açılışta yoksa STOP_LOSS_TAKE_PROFIT emri; en eski değer alınır (sonradan başabaşa çekilen değil)', () => {
+    const r = X.protectionFromOrders([
+      { orderType: 4, stopLoss: 1.1, utcLastUpdateTimestamp: 3000 },             // sonradan başabaşa çekilmiş
+      open({ executionPrice: 1.1 }),
+      { orderType: 4, stopLoss: 1.094, takeProfit: 1.12, utcLastUpdateTimestamp: 2000 },
+      { orderType: 1, closingOrder: true, executionPrice: 1.12, utcLastUpdateTimestamp: 4000 },
+    ], { direction: 'LONG', entryPrice: 1.1, digits: 5 });
+    assert.deepEqual(r, { stopLoss: 1.094, takeProfit: 1.12, source: 'sltp' });
+  });
+
+  it('SL açılıştan, TP sonradan: mixed', () => {
+    const r = X.protectionFromOrders([open({ executionPrice: 1.1, stopLoss: 1.095 }), { orderType: 4, takeProfit: 1.13, utcLastUpdateTimestamp: 2000 }],
+      { direction: 'LONG', entryPrice: 1.1 });
+    assert.deepEqual(r, { stopLoss: 1.095, takeProfit: 1.13, source: 'mixed' });
+  });
+
+  it('yanlış taraftaki açılış SL/TP kullanılmaz; hiç yoksa null', () => {
+    const r = X.protectionFromOrders([open({ executionPrice: 1.1, stopLoss: 1.12, takeProfit: 1.05 })], { direction: 'LONG', entryPrice: 1.1 });
+    assert.deepEqual(r, { stopLoss: null, takeProfit: null, source: 'none' });
+    assert.deepEqual(X.protectionFromOrders([], { direction: 'SHORT', entryPrice: 1 }), { stopLoss: null, takeProfit: null, source: 'none' });
+    assert.deepEqual(X.protectionFromOrders(null, { direction: 'SHORT', entryPrice: 1 }), { stopLoss: null, takeProfit: null, source: 'none' });
+  });
+
+  it('JPY: kayan nokta gürültüsü yuvarlanır', () => {
+    const r = X.protectionFromOrders([open({ executionPrice: 151.234, relativeStopLoss: 30000 })], { direction: 'LONG', entryPrice: 151.234, digits: 3 });
+    assert.equal(r.stopLoss, 150.934);
+  });
+});
+
+describe('fetchPositionOrders', () => {
+  const noPause = async () => {};
+  it('hasMore: en eski kaydın zamanından geriye sayfalar', async () => {
+    const calls = [];
+    const client = { sendRequest: async (t, p) => {
+      calls.push({ t, ...p });
+      if (calls.length === 1) return { payload: { order: [{ orderId: 3, utcLastUpdateTimestamp: 900 }, { orderId: 2, utcLastUpdateTimestamp: 800 }], hasMore: true } };
+      return { payload: { order: [{ orderId: 1, utcLastUpdateTimestamp: 100 }], hasMore: false } };
+    } };
+    const out = await X.fetchPositionOrders(client, 7, 55, 1000, { pause: noPause });
+    assert.deepEqual(out.map((o) => o.orderId), [3, 2, 1]);
+    assert.equal(calls[0].t, 2183);
+    assert.equal(calls[0].positionId, 55);
+    assert.equal(calls[0].fromTimestamp, 0);
+    assert.equal(calls[1].toTimestamp, 799);
+  });
+
+  it('istek reddedilirse kapanıştan geriye 6 günlük pencereyle yeniden dener', async () => {
+    const calls = [];
+    const client = { sendRequest: async (t, p) => {
+      calls.push(p);
+      if (calls.length === 1) throw { errorCode: 'INVALID_REQUEST', description: 'range' };
+      return { payload: { order: [{ orderId: 1 }], hasMore: false } };
+    } };
+    const close = 10 * 24 * 3600 * 1000;
+    const out = await X.fetchPositionOrders(client, 7, 55, close, { pause: noPause });
+    assert.equal(out.length, 1);
+    assert.equal(calls[1].fromTimestamp, close + 5 * 60 * 1000 - 6 * 24 * 3600 * 1000);
+  });
+
+  it('hesap erişimi kaybı yeniden denenmez, yukarı fırlatılır', async () => {
+    const client = { sendRequest: async () => { throw { errorCode: 'ACCOUNT_NOT_AUTHORIZED', description: 'x' }; } };
+    await assert.rejects(X.fetchPositionOrders(client, 7, 55, 1000, { pause: noPause }));
+  });
+});

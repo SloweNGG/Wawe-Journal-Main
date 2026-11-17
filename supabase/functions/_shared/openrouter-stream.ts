@@ -7,7 +7,8 @@
 //     lines while waiting, a chunk with { error: {code, message} } when the upstream fails mid-stream, then "data: [DONE]".
 //   - Reasoning effort "low", excluded from the stream: ~11 s before the first word on the coach prompt (off: ~2 s, but
 //     Nemotron then misread small samples and wrote data field names). Only delta.content reaches the member.
-//   - Text only: a message with a chart screenshot never goes here (the caller leaves these models out of the chain).
+//   - A message with a chart screenshot goes only to the vision chain (OPENROUTER_VISION_MODELS in ai-coach/index.ts):
+//     chatMessages() then sends this message as [text, image_url (data URL)]. Earlier screenshots are never resent.
 // Pure (Node tests): no fetch here.
 
 export const OPENROUTER_PREFIX = 'openrouter:';
@@ -24,14 +25,19 @@ export function openRouterChain(env: string | undefined | null): string[] {
 const IMAGE_NOTE = '\n[The trader attached a chart screenshot to this message; it is no longer available.]';
 
 // system prompt + earlier turns as plain text (Gemini steps are not sent: another provider cannot use them) + this message
-export function chatMessages(system: string, msgs: { role: string; content: string; had_image?: boolean }[], message: string) {
-  const h: { role: string; content: string }[] = [];
+// (with its chart screenshot, when there is one)
+export function chatMessages(system: string, msgs: { role: string; content: string; had_image?: boolean }[], message: string,
+  image?: { mime_type: string; data: string } | null) {
+  const h: { role: string; content: unknown }[] = [];
   for (const m of msgs) {
     if (m.role === 'user') h.push({ role: 'user', content: m.content + (m.had_image ? IMAGE_NOTE : '') });
     else if (m.content) h.push({ role: 'assistant', content: m.content });
   }
   while (h.length && h[0].role !== 'user') h.shift();      // the cut may start inside a model turn
-  return [{ role: 'system', content: system }, ...h, { role: 'user', content: message }];
+  const last = image
+    ? [{ type: 'text', text: message }, { type: 'image_url', image_url: { url: `data:${image.mime_type};base64,${image.data}` } }]
+    : message;
+  return [{ role: 'system', content: system }, ...h, { role: 'user', content: last }];
 }
 
 export function chatRequest(model: string, messages: unknown[]) {

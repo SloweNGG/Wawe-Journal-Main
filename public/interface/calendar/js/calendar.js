@@ -898,6 +898,7 @@ async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
 // ============================================================
 
 var isCalendarInitialized = false;
+var calUserId = null;
 
 async function initCalendar() {
   if (isCalendarInitialized) return;
@@ -1071,6 +1072,7 @@ async function initCalendar() {
       hideCalendarSkeleton();
       return;
     }
+    calUserId = user.id;
 
     var jid = (window.journal && typeof window.journal.getActiveJournalId === 'function')
       ? window.journal.getActiveJournalId()
@@ -1121,7 +1123,7 @@ async function initCalendar() {
 // listesi ("Koça sor" ile). Filtreler navbar takvimindekiyle aynı (etki + pariteler). Saat ve gün: uygulamanın saat
 // dilimi ayarı (WwTime). Haberler sunucuda 2026-11-15'ten beri birikiyor; daha eski aylarda haber yok.
 // ============================================================
-var calNews = { key: '', events: [], loading: '' };
+var calNews = { key: '', events: [], loading: '', openId: null };   // openId: the news whose detail is open in the day modal
 
 function calNewsApi() { return window.WWEcon && typeof window.WWEcon.range === 'function' ? window.WWEcon : null; }
 
@@ -1191,7 +1193,8 @@ function dayNewsHtml(dateStr) {
     var d = api.describe(e), vals = [];
     if (e.forecast) vals.push(calT('econ.forecast', 'Bkl') + ' ' + e.forecast);
     if (e.previous) vals.push(calT('econ.previous', 'Önc') + ' ' + e.previous);
-    return '<div class="cal-news-row imp-' + e.impact + (past ? ' past' : '') + '">' +
+    var open = calNews.openId === e.id && typeof api.detail === 'function';
+    return '<div class="cal-news-row imp-' + e.impact + (past ? ' past' : '') + (open ? ' open' : '') + '" data-econ-detail="' + sanitizeHTML(e.id) + '" role="button" tabindex="0" aria-expanded="' + open + '">' +
       '<span class="cal-news-time">' + sanitizeHTML(d.time) + '</span>' +
       '<span class="cal-news-dot" title="' + sanitizeHTML(d.impactLabel) + '"></span>' +
       '<span class="cal-news-ccy">' + sanitizeHTML(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
@@ -1201,7 +1204,8 @@ function dayNewsHtml(dateStr) {
         (d.pairs.length ? '<span class="cal-news-pairs">' + d.pairs.slice(0, 4).map(function (l) { return '<b>' + sanitizeHTML(l) + '</b>'; }).join('') + '</span>' : '') +
       '</span>' +
       (ask && e.impact !== 'holiday' ? '<button type="button" class="cal-news-ask" data-econ-ask="' + sanitizeHTML(e.id) + '" title="' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '">' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '</button>' : '') +
-      '</div>';
+      '</div>' +
+      (open ? api.detail(e) : '');   // the detail (econ-calendar.js): what it is, how to read it, forecast/previous, source link
   };
   var rows = upcoming.map(function (e) { return row(e, false); }).join('') +
     (upcoming.length && released.length ? '<div class="cal-news-sep">' + calT('econ.released', 'Açıklananlar') + '</div>' : '') +
@@ -1212,6 +1216,7 @@ function dayNewsHtml(dateStr) {
 function appendDayNews(dateStr) {
   var body = document.getElementById('day-modal-body');
   if (!body || !calNewsApi()) return;
+  calNews.openId = null;   // a new day opens with every detail closed
   var box = document.createElement('div');
   box.className = 'cal-news';
   box.id = 'cal-day-news';
@@ -1224,7 +1229,7 @@ function appendDayNews(dateStr) {
   if (!body.__econBound) {
     body.__econBound = true;
     body.addEventListener('click', function (ev) {
-      var a = ev.target.closest('[data-econ-ask]'), f = ev.target.closest('[data-econ-panel]'), api = calNewsApi();
+      var a = ev.target.closest('[data-econ-ask]'), f = ev.target.closest('[data-econ-panel]'), r = ev.target.closest('[data-econ-detail]'), api = calNewsApi();
       if (!api) return;
       if (a) {
         var id = a.getAttribute('data-econ-ask'), e = calNews.events.filter(function (x) { return x.id === id; })[0];
@@ -1233,7 +1238,21 @@ function appendDayNews(dateStr) {
         closeDayModal();
         ev.stopPropagation();
         setTimeout(function () { if (window.WWEcon) window.WWEcon.open(); }, 0);
+      } else if (r && currentModalDateStr) {
+        // a click on a news row opens / closes its detail below the row
+        var did = r.getAttribute('data-econ-detail');
+        calNews.openId = calNews.openId === did ? null : did;
+        refreshDayNews(currentModalDateStr);
+        var row = body.querySelector('[data-econ-detail="' + did + '"]');
+        if (row) {
+          if (ev.detail === 0) row.focus({ preventScroll: true });    // keyboard: keep the focus on the row
+          if (typeof api.reveal === 'function') api.reveal(body, row, 0);   // the detail into view, the row stays visible
+        }
       }
+    });
+    body.addEventListener('keydown', function (ev) {
+      var r = ev.target.closest && ev.target.closest('[data-econ-detail]');
+      if (r && ev.target === r && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); r.click(); }
     });
   }
 }
@@ -1300,8 +1319,30 @@ window.renderCalendar = renderCalendar;
 window.calcTradePnL = calcTradePnL;
 window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;
-CAL_PAGE.expose('loadTrades', initCalendar);
-CAL_PAGE.expose('refresh', initCalendar);
+// ⭐ YERİNDE TAZELEME: işlem eklendi/silindi ya da hesap senkronlandı → sayfa yenilenmeden veriyi yeniden çek.
+// (Eskiden loadTrades/refresh = initCalendar idi; o da ikinci çağrıda hemen döndüğü için takvim hiç tazelenmiyordu.)
+// Aynı anda gelen çağrılar (trade-saved olayı + quick-add'in loadTrades/refresh çağrıları) tek isteğe birleşir.
+var calReloadTimer = null;
+function reloadCalendarData() {
+  if (!isCalendarInitialized || !calUserId) return;
+  if (calReloadTimer) clearTimeout(calReloadTimer);
+  calReloadTimer = setTimeout(function () {
+    calReloadTimer = null;
+    if (!CAL_PAGE.alive) return;
+    var jid = window.journal && typeof window.journal.getActiveJournalId === 'function'
+      ? window.journal.getActiveJournalId()
+      : localStorage.getItem('ww_active_journal_id');
+    if (!jid) return;
+    if (window.wwCache) window.wwCache.invalidate('trades');
+    // isInitialLoad=false: veri değiştiyse (imza karşılaştırması) takvimi yeniden çizer
+    fetchFreshCalendarTrades(calUserId, jid, false);
+  }, 150);
+}
+CAL_PAGE.on(window, 'trade-saved', reloadCalendarData);
+CAL_PAGE.on(window, 'trade-deleted', reloadCalendarData);
+CAL_PAGE.onLeave(function () { if (calReloadTimer) { clearTimeout(calReloadTimer); calReloadTimer = null; } });
+CAL_PAGE.expose('loadTrades', reloadCalendarData);
+CAL_PAGE.expose('refresh', reloadCalendarData);
 
 wwLog.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');
 CAL_PAGE.on(document, 'journal-changed', () => {

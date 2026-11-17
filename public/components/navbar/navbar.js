@@ -2490,10 +2490,10 @@ function maybeAutoSyncCtrader(status) {
       window.dispatchEvent(new CustomEvent('trade-saved'));
     }
     // Sessiz kalmalı: document üzerindeki 'journal-changed' pano/takvim/işlemler sayfasını YENİDEN YÜKLER, gönderilmez.
-    // Yerinde tazeleme yapan sayfalar window.loadTrades sunar (İşlemler listesi; Hesaplar sayfasında kartlar, orada
-    // yeni işlem olmasa da "son senkron" zamanı değiştiği için her seferinde).
+    // Veri gösteren sayfalar yukarıdaki 'trade-saved' ile yerinde tazelenir; Hesaplar sayfası o olayı dinlemez, kartlarını
+    // (yeni işlem olmasa da "son senkron" zamanı değiştiği için her seferinde) window.loadTrades ile tazeleriz.
     var onJournals = /\/journals(\.html)?$/.test(window.location.pathname);
-    if ((r.inserted > 0 || onJournals) && typeof window.loadTrades === 'function') window.loadTrades();
+    if (onJournals && typeof window.loadTrades === 'function') window.loadTrades();
   }).catch(function(e) {
     if (typeof wwLog !== 'undefined') wwLog.warn('[ctrader] auto sync error', e);
   }).finally(function() {
@@ -2677,25 +2677,18 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
       setTimeout(function() { toastFn(item[0], item[1]); }, 3400 * (i + 1));
     });
 
-    // ⚡ Önbellekleri temizle ve canlı güncelle
+    // ⚡ Sayfa YENİLENMEDEN canlı güncelle: önbellekleri düşür, 'trade-saved' gönder. Veri gösteren sayfalar bu olayla
+    // kendini yerinde tazeler (Pano, İşlemler, Takvim, Analitik, Stratejiler). 'journal-changed' GÖNDERİLMEZ: hesap
+    // değişmedi, o olay bazı sayfalarda tam yenileme demek.
     if (window.wwCache) {
       window.wwCache.invalidate('trades');
       window.wwCache.invalidate('trades_dashboard');
     }
-    window.dispatchEvent(new CustomEvent('trade-saved'));
-    window.dispatchEvent(new CustomEvent('journal-changed', { detail: { id: journalId } }));
-
-    // Sayfadaki işlem listesini yenile
-    setTimeout(function() {
-      if (typeof window.loadTrades === 'function') {
-        window.loadTrades();
-      } else {
-        // Sayfa yenilenecek (bu sayfanın yerinde yenilemesi yok): bildirimler yenilemeden sonra yeniden gösterilsin,
-        // yoksa bakiye/uyarılar yarım saniyede kaybolurdu.
-        try { sessionStorage.setItem('ww_pending_toasts', JSON.stringify({ ts: Date.now(), items: toastQueue })); } catch (e) {}
-        window.location.reload();
-      }
-    }, 600);
+    window.dispatchEvent(new CustomEvent('trade-saved', { detail: { source: 'ctrader-sync', journalId: journalId, inserted: totalInserted } }));
+    // Hesaplar sayfası 'trade-saved' dinlemez; kartlardaki "son senkron" ve bakiye yeni işlem olmasa da değişir
+    if (/\/journals(\.html)?$/.test(window.location.pathname) && typeof window.loadTrades === 'function') window.loadTrades();
+    // Navbar'daki hesap listesi (işlem sayısı, son senkron); otomatik senkron 30 dk kuralıyla tekrar tetiklenmez
+    if (typeof window.updateNavbarJournal === 'function') window.updateNavbarJournal(0);
 
   } catch(err) {
     console.error('Sync error:', err);
@@ -2708,19 +2701,3 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
   }
 };
 
-// Senkron sonrası sayfa yenilendiyse (bkz. wwSyncCtrader) bekleyen bildirimleri sırayla göster.
-(function showPendingSyncToasts() {
-  try {
-    var raw = sessionStorage.getItem('ww_pending_toasts');
-    if (!raw) return;
-    sessionStorage.removeItem('ww_pending_toasts');
-    var pending = JSON.parse(raw);
-    if (!pending || !Array.isArray(pending.items) || Date.now() - Number(pending.ts) > 30000) return;
-    pending.items.slice(0, 4).forEach(function(item, i) {
-      setTimeout(function() {
-        var fn = window.showToast || window.showMsg;
-        if (typeof fn === 'function') fn(item[0], item[1]);
-      }, 900 + 3400 * i);
-    });
-  } catch (e) {}
-})();

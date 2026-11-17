@@ -29,7 +29,7 @@
 // Security:
 //   - The member's JWT is required; every row is read for the caller only (journal and conversation ownership checked).
 //   - GEMINI_API_KEY and OPENROUTER_API_KEY live in the function secrets and never reach the browser or a log.
-//   - Daily message limit per plan (ai_take_message, refunded when Gemini fails). Images are sent to Gemini, never stored.
+//   - Daily message limit per plan (ai_take_message, refunded when Gemini fails). Images are sent to Gemini (or an OpenRouter vision model), never stored.
 // Gemini Interactions API, streamed (stateless: store=false; the model's output steps are rebuilt from the stream, kept in
 // ai_messages.steps and sent back unchanged to the same model, as the API requires for thought signatures; another model
 // gets the plain text). A model that is busy or failing before its first word hands over to the next one.
@@ -64,11 +64,15 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || '';
 // (free tier: 3.8/3.6 Flash allow 20 requests a day per project, 3.5 Flash Lite 500, so Lite goes first)
 const GEMINI_MODELS = (Deno.env.get('GEMINI_MODELS') || 'gemini-3.5-flash-lite,gemini-3.6-flash')
   .split(',').map((m) => m.trim()).filter(Boolean);
-// after every Gemini model: OpenRouter's free models (_shared/openrouter-stream.ts), only when OPENROUTER_API_KEY is set
-// and the message has no chart screenshot. OPENROUTER_MODELS = comma-separated OpenRouter model ids.
+// after every Gemini model: OpenRouter's free models (_shared/openrouter-stream.ts), only when OPENROUTER_API_KEY is set.
+// OPENROUTER_MODELS (text) and OPENROUTER_VISION_MODELS (a message with a chart screenshot) = comma-separated model ids.
+// Vision (2026-11-17, a known EURUSD chart + the real coach prompt): Particle-1 read every level right, good Turkish, first
+// word ~5 s; Nemotron 3.5 Super VL right but weaker Turkish, ~10 s; Gemma 4 was 429 upstream, dots mixed in Chinese.
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY') || '';
 const OPENROUTER_MODELS = OPENROUTER_API_KEY
   ? openRouterChain(Deno.env.get('OPENROUTER_MODELS') || 'nvidia/nemotron-3-ultra-550b-a55b:free') : [];
+const OPENROUTER_VISION_MODELS = OPENROUTER_API_KEY
+  ? openRouterChain(Deno.env.get('OPENROUTER_VISION_MODELS') || 'particle-ai/particle-1:free,nvidia/nemotron-3.5-super-vl:free') : [];
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse';
 const GEMINI_REVISION = '2026-05-20';
 // a model may accept the request and then stay silent (seen on the free tier: 100 s without a word): give up on it and
@@ -518,11 +522,11 @@ serve(async (req: Request) => {
 
       // model chain (_shared/model-chain.ts): busy models last, one more round after a pause on a short demand spike
       let tFirst = 0;
-      // OpenRouter models are text only: a message with a chart screenshot stays on Gemini
-      const models = image ? GEMINI_MODELS : [...GEMINI_MODELS, ...OPENROUTER_MODELS];
+      // a message with a chart screenshot falls back to OpenRouter models that can read images
+      const models = [...GEMINI_MODELS, ...(image ? OPENROUTER_VISION_MODELS : OPENROUTER_MODELS)];
       const onDelta = (t: string) => { if (!tFirst) tFirst = Date.now(); send('delta', { text: t }); };
       const chained = await runChain(models, (model, firstWordMs) => isOpenRouter(model)
-        ? streamOpenRouter(model, chatMessages(system, msgs, message), onDelta, firstWordMs)
+        ? streamOpenRouter(model, chatMessages(system, msgs, message, image), onDelta, firstWordMs)
         : streamGemini(model, {
           system_instruction: system,
           input: [...buildHistory(msgs, model), { type: 'user_input', content: userContent }],

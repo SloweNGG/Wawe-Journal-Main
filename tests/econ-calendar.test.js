@@ -345,11 +345,110 @@ describe('econ-calendar: wiring and texts', () => {
     const calSrc = fs.readFileSync('public/interface/calendar/js/calendar.js', 'utf8');
     for (const m of calSrc.matchAll(/calT\('((?:calendar\.news|econ)\.[a-z_]+)'/g)) keys.push(m[1]);
     for (const mk of ['energy', 'metals', 'crypto']) keys.push('econ.market_' + mk);
-    for (const imp of ['high', 'medium', 'low', 'holiday']) keys.push('econ.impact_' + imp);
+    for (const imp of ['high', 'medium', 'low', 'holiday']) keys.push('econ.impact_' + imp, 'econ.d_imp_' + imp);
     assert.ok(keys.length > 30);
     for (const l of ['tr', 'en', 'de']) {
       const loc = (await import('../public/i18n/locales/' + l + '.js')).default;
       for (const k of keys) assert.ok(typeof loc[k] === 'string' && loc[k], `${l}: ${k}`);
     }
+  });
+});
+
+describe('econ-calendar: news detail (click on an event)', () => {
+  // every distinct title of the Forex Factory week of 2026-11-16 (the export has no description: the glossary explains them)
+  const WEEK = ['ADP Weekly Employment Change', 'API Weekly Statistical Bulletin', 'Average Earnings Index 3m/y', 'BOE Gov Bailey Speaks', 'Building Permits',
+    'Business Inventories m/m', 'BusinessNZ Services Index', 'CB Leading Index m/m', 'CBI Industrial Order Expectations', 'CPI m/m', 'CPI y/y', 'Capacity Utilization Rate',
+    'Claimant Count Change', 'Cleveland Fed Inflation Expectations', 'Common CPI y/y', 'Consumer Confidence', 'Core CPI m/m', 'Core CPI y/y', 'Core Machinery Orders m/m',
+    'Core Retail Sales m/m', 'Credit Card Spending y/y', 'Crude Oil Inventories', 'Current Account', 'ECB Financial Stability Review', 'ECB President Lagarde Speaks',
+    'EU Economic Forecasts', 'Empire State Manufacturing Index', 'Employment Change', 'FOMC Meeting Minutes', 'FOMC Member Waller Speaks', 'FPI m/m', 'Fed Chairman Warsh Speaks',
+    'Final CPI y/y', 'Final Core CPI y/y', 'Fixed Asset Investment ytd/y', 'Foreign Direct Investment ytd/y', 'Foreign Securities Purchases', 'GDT Price Index',
+    'German Buba Monthly Report', 'German Buba President Nagel Speaks', 'German PPI m/m', 'German ZEW Economic Sentiment', 'GfK Consumer Confidence', 'Gov Council Member Gravelle Speaks',
+    'HPI y/y', 'Housing Starts', 'IPPI m/m', 'Import Prices m/m', 'Industrial Production m/m', 'Industrial Production y/y', 'Inflation Expectations q/q', 'MI Leading Index m/m',
+    'MPC Member Dhingra Speaks', 'Median CPI y/y', 'Monetary Policy Meeting Minutes', 'Mortgage Delinquencies', 'NAHB Housing Market Index', 'NBS Press Conference', 'NHPI m/m',
+    'National Core CPI y/y', 'Natural Gas Storage', 'New Home Prices m/m', 'PPI Input m/m', 'PPI Input q/q', 'PPI Output m/m', 'Pending Home Sales m/m', 'Philly Fed Manufacturing Index',
+    'Prelim GDP Price Index y/y', 'Prelim GDP q/q', 'Public Sector Net Borrowing', 'RBA Gov Bullock Speaks', 'RBNZ Financial Stability Report', 'RMPI m/m', 'RPI y/y',
+    'Retail Sales m/m', 'Retail Sales y/y', 'Revised Industrial Production m/m', 'Revised UoM Consumer Sentiment', 'Revised UoM Inflation Expectations', 'Rightmove HPI m/m',
+    'TIC Long-Term Purchases', 'Tertiary Industry Activity m/m', 'Trade Balance', 'Trimmed CPI y/y', 'Unemployment Claims', 'Unemployment Rate', 'Wage Price Index q/q',
+    'ZEW Economic Sentiment', '1-y Loan Prime Rate', '5-y Loan Prime Rate'];
+  let I, W;
+  before(async () => {
+    await import('../public/components/econ-calendar/econ-info.js');
+    await import('../public/components/econ-calendar/econ-calendar.js');
+    I = globalThis.WWEconInfo; W = globalThis.WWEcon;
+  });
+
+  it('the glossary explains every title of a real week, in all three languages', () => {
+    for (const title of WEEK) {
+      for (const l of ['tr', 'en', 'de']) {
+        const x = I.explain({ title, currency: 'USD', impact: 'medium' }, l);
+        assert.ok(x && x.what, `${l}: ${title}`);
+      }
+    }
+    const T = I._test;
+    for (const r of T.RULES) {
+      for (const l of ['tr', 'en', 'de']) assert.ok(T.WHAT[r[0]] && T.WHAT[r[0]][l], `what ${r[0]} ${l}`);
+      if (r[2]) for (const l of ['tr', 'en', 'de']) assert.match(T.READ[r[2]][l], /\S/, `read ${r[2]} ${l}`);
+    }
+  });
+  it('picks the specific family before the general one', () => {
+    const k = (title, impact) => I._test.find(title, impact || 'high').key;
+    const cases = {
+      'Non-Farm Employment Change': 'nfp', 'ADP Non-Farm Employment Change': 'adp', 'Unemployment Rate': 'unemp', 'Unemployment Claims': 'claims',
+      'Federal Funds Rate': 'rate', 'Official Bank Rate': 'rate', 'MPC Official Bank Rate Votes': 'rate', 'Cash Rate': 'rate', 'Main Refinancing Rate': 'rate', 'BOJ Policy Rate': 'rate',
+      'FOMC Statement': 'statement', 'BOC Rate Statement': 'statement', 'ECB Press Conference': 'presser', 'Capacity Utilization Rate': 'industry',
+      'Core PCE Price Index m/m': 'corecpi', 'PCE Price Index m/m': 'pce', 'Tokyo Core CPI y/y': 'corecpi', 'Prelim GDP Price Index y/y': 'deflator', 'Advance GDP q/q': 'gdp',
+      'Average Hourly Earnings m/m': 'wages', 'Employment Cost Index q/q': 'wages', 'JOLTS Job Openings': 'employment', 'Wage Price Index q/q': 'wages',
+      'ISM Manufacturing PMI': 'pmi', 'Flash Manufacturing PMI': 'pmi', 'German Ifo Business Climate': 'survey', 'Tankan Manufacturing Index': 'survey',
+      'Durable Goods Orders m/m': 'orders', 'Existing Home Sales': 'housing', 'New Home Prices m/m': 'houseprices', 'GDT Price Index': 'gdt',
+      '10-y Bond Auction': 'auction', 'Crude Oil Inventories': 'crude', 'Distillate Fuel Production': 'crude', 'Natural Gas Storage': 'natgas', 'Baker Hughes Oil Rig Count': 'rigs',
+      'Revised UoM Inflation Expectations': 'inflexp', 'Revised UoM Consumer Sentiment': 'sentiment', 'Federal Budget Balance': 'budget', 'Public Sector Net Borrowing': 'borrowing',
+      'M2 Money Supply y/y': 'money', 'Bank Holiday': 'holiday',
+    };
+    for (const [t, key] of Object.entries(cases)) assert.equal(k(t), key, t);
+  });
+  it('fills the currency into "how to read it"; global news and holidays read well; unknown = null', () => {
+    const x = I.explain({ title: 'CPI y/y', currency: 'GBP', impact: 'high' }, 'tr');
+    assert.equal(x.key, 'cpi'); assert.match(x.read, /GBP için olumlu/);
+    assert.match(I.explain({ title: 'Unemployment Rate', currency: 'AUD', impact: 'high' }, 'en').read, /Lower is better.*AUD/);
+    assert.match(I.explain({ title: 'Auction', currency: 'ALL', impact: 'low' }, 'en').read, /the market/);
+    assert.equal(I.explain({ title: 'Anything', currency: 'JPY', impact: 'holiday' }, 'en').key, 'holiday');   // impact wins
+    assert.equal(I.explain({ title: 'Some Unknown Release', currency: 'USD', impact: 'low' }, 'tr'), null);
+    assert.equal(I.explain({ title: 'CPI y/y', currency: 'USD', impact: 'high' }, 'xx').what, I._test.WHAT.cpi.tr);   // unknown language -> tr
+  });
+  it('links to the source site\'s calendar day (New York day; Forex Factory first)', () => {
+    const E = W._test;
+    assert.deepEqual(E.sourceDay({ event_at: '2026-11-18T13:30:00.000Z', impacts: { ff: 'high', cc: 'high' } }),
+      { site: 'Forex Factory', url: 'https://www.forexfactory.com/calendar?day=nov18.2026' });
+    // 03:00 UTC on the 18th is still the 17th in New York
+    assert.equal(E.sourceDay({ event_at: '2026-11-18T03:00:00.000Z', impacts: { ff: 'low' } }).url, 'https://www.forexfactory.com/calendar?day=nov17.2026');
+    assert.deepEqual(E.sourceDay({ event_at: '2026-09-02T14:00:00.000Z', impacts: { mm: 'medium' } }),
+      { site: 'MetalsMine', url: 'https://www.metalsmine.com/calendar?day=sep2.2026' });
+    assert.equal(E.sourceDay({ event_at: '2026-01-07T15:30:00.000Z', impacts: { ee: 'low' } }).url, 'https://www.energyexch.com/calendar?day=jan7.2026');
+  });
+  it('renders the detail: numbers, explanation, link; speeches without numbers; escapes the feed', () => {
+    const later = new Date(Date.now() + 3 * 3600e3).toISOString();
+    const h = W.detail({ id: 'a', title: 'CPI y/y', currency: 'GBP', impact: 'high', event_at: later, forecast: '3.6%', previous: '3.5%', impacts: { ff: 'high', cc: 'medium' } });
+    assert.match(h, /class="econ-detail imp-high"/);
+    assert.match(h, /3\.6%/); assert.match(h, /3\.5%/);
+    assert.match(h, /econ-d-stats/);
+    assert.match(h, /Forex Factory: /); assert.match(h, /CryptoCraft: /);
+    assert.match(h, new RegExp(I._test.WHAT.cpi.tr.slice(0, 30).replace(/[()]/g, '.')));
+    assert.match(h, /href="https:\/\/www\.forexfactory\.com\/calendar\?day=[a-z]{3}\d{1,2}\.\d{4}" target="_blank" rel="noopener noreferrer"/);
+    assert.match(h, /econ-d-status"/);                                                // still to come
+    const sp = W.detail({ id: 'b', title: 'Fed Chair <b>Speaks</b>', currency: 'USD', impact: 'medium', event_at: '2026-11-10T15:00:00.000Z', forecast: null, previous: null });
+    assert.doesNotMatch(sp, /econ-d-stats/);                                          // nothing to compare
+    assert.match(sp, /econ-d-status done/);                                           // released
+    assert.doesNotMatch(sp, /<b>Speaks<\/b>/);
+    const unk = W.detail({ id: 'c', title: 'Some Unknown Release', currency: 'USD', impact: 'low', event_at: later });
+    assert.match(unk, /econ-d-note/);
+  });
+  it('wiring: panel rows and the calendar day modal rows open the detail; the glossary file is loaded on demand', () => {
+    const src = fs.readFileSync('public/components/econ-calendar/econ-calendar.js', 'utf8');
+    assert.match(src, /data-act="detail" data-v="' \+ esc\(e\.id\)/);
+    assert.match(src, /INFO_URL = '\/components\/econ-calendar\/econ-info\.js\?v=__WW_BUILD_ID__'/);
+    assert.ok(fs.existsSync('public/components/econ-calendar/econ-info.js'));
+    const cal = fs.readFileSync('public/interface/calendar/js/calendar.js', 'utf8');
+    assert.match(cal, /data-econ-detail="' \+ sanitizeHTML\(e\.id\)/);
+    assert.match(cal, /\(open \? api\.detail\(e\) : ''\)/);
   });
 });

@@ -38,6 +38,17 @@ describe('openrouter messages', () => {
     assert.equal(m[2].content, 'a1');
     assert.equal(m[4].content, 'q3');
   });
+
+  it('this message carries its chart screenshot as a data URL, earlier ones only the note', () => {
+    const m = chatMessages('SYS', [{ role: 'user', content: 'q1', had_image: true }, { role: 'model', content: 'a1' }],
+      'q2', { mime_type: 'image/png', data: 'QUJD' });
+    assert.match(m[1].content, /^q1\n\[The trader attached a chart screenshot/);
+    assert.deepEqual(m[3].content, [
+      { type: 'text', text: 'q2' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,QUJD' } },
+    ]);
+    assert.equal(chatMessages('SYS', [], 'q', null)[1].content, 'q');
+  });
 });
 
 const sse = (...chunks) => chunks.map((c) => (typeof c === 'string' ? c : 'data: ' + JSON.stringify(c)) + '\n\n').join('');
