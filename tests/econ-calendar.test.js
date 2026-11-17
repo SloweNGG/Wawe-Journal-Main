@@ -272,6 +272,15 @@ describe('econ-calendar: navbar badge helpers', () => {
     assert.equal(E.nextGroup([ev('x', 'USD', 'high', -3)], p, all, now), null);
     assert.equal(E.groupTitle(g), 'EUR c +1');
   });
+  it('list order: still to come first (oldest first), released below (most recent first); an event moves down at its time', () => {
+    const list = [ev('r1', 'USD', 'high', -90), ev('u2', 'EUR', 'high', 60), ev('now', 'USD', 'high', -1), ev('r2', 'USD', 'medium', -30), ev('u1', 'USD', 'high', 20)];
+    const s = E.splitByRelease(list, now);
+    assert.deepEqual(s.upcoming.map((e) => e.id), ['now', 'u1', 'u2']);
+    assert.deepEqual(s.released.map((e) => e.id), ['r2', 'r1']);
+    const later = E.splitByRelease(list, now + 25 * 60e3);
+    assert.deepEqual(later.upcoming.map((e) => e.id), ['u2']);
+    assert.deepEqual(later.released.map((e) => e.id), ['u1', 'now', 'r2', 'r1']);
+  });
   it('countdown', () => {
     assert.equal(E.countdown(0), null);
     assert.equal(E.countdown(9 * 60e3 + 5e3), '09:05');
@@ -301,7 +310,7 @@ describe('econ-calendar: range requests (trading calendar page)', () => {
   it('the badge module offers the calendar page an API', async () => {
     await import('../public/components/econ-calendar/econ-calendar.js');
     const W = globalThis.WWEcon;
-    for (const k of ['range', 'visible', 'describe', 'ask', 'canAsk', 'dayKey', 'filterLabel', 'open']) assert.equal(typeof W[k], 'function', k);
+    for (const k of ['range', 'visible', 'describe', 'ask', 'canAsk', 'dayKey', 'split', 'filterLabel', 'open']) assert.equal(typeof W[k], 'function', k);
     const ev = [{ id: 'a', title: 'CPI', currency: 'USD', impact: 'high', event_at: '2026-11-17T13:30:00.000Z', impacts: { ff: 'high' } },
       { id: 'b', title: 'Copper', currency: 'GBP', impact: 'medium', event_at: '2026-11-17T09:00:00.000Z', impacts: { mm: 'medium' } }];
     assert.deepEqual(W.visible(ev).map((e) => e.id), ['a']);                       // default filter: high impact

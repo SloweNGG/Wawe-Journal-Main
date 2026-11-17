@@ -3064,4 +3064,6 @@ export default {
   "calendar.news.change_filter": "Filtreyi değiştir",
   "calendar.news.none": "Bu gün filtrene uyan haber yok.",
   "calendar.news.note": "Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Açıklanan sonuçlar (actual) yok; haberler 15 Kasım 2026'dan beri kaydediliyor.",
+  "econ.upcoming": "Yaklaşan",
+  "econ.released": "Açıklananlar",
 };

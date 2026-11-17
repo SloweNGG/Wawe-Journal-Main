@@ -1176,18 +1176,22 @@ function decorateNewsCells() {
 function dayNewsHtml(dateStr) {
   var api = calNewsApi();
   if (!api) return '';
-  var list = (newsOfDays()[dateStr] || []).slice().sort(function (a, b) { return a.event_at < b.event_at ? -1 : a.event_at > b.event_at ? 1 : 0; });
+  // önce açıklanacaklar (saat sırasıyla), sonra açıklananlar (o günün akışı gibi saat sırasıyla; geçmiş günlerde hepsi bu)
+  var dayList = newsOfDays()[dateStr] || [], parts = api.split ? api.split(dayList) : { upcoming: dayList, released: [] };
+  var asc = function (a, b) { return a.event_at < b.event_at ? -1 : a.event_at > b.event_at ? 1 : 0; };
+  var upcoming = parts.upcoming.slice().sort(asc), released = parts.released.slice().sort(asc);
+  var list = upcoming.concat(released);
   var title = calT('calendar.news.title', 'Ekonomik takvim');
   var head = '<div class="detail-section-title"><span>' + title + (list.length ? ' (' + list.length + ')' : '') + '</span>' +
     '<button type="button" class="cal-news-filter" data-econ-panel title="' + sanitizeHTML(calT('calendar.news.change_filter', 'Filtreyi değiştir')) + '">' + sanitizeHTML(api.filterLabel()) + '</button></div>';
   if (calNews.key !== currentYear + '-' + currentMonth && !list.length) return head + '<div class="cal-news-empty">' + calT('econ.loading', 'Yükleniyor…') + '</div>';
   if (!list.length) return head + '<div class="cal-news-empty">' + calT('calendar.news.none', 'Bu gün filtrene uyan haber yok.') + '</div>';
   var ask = api.canAsk();
-  var rows = list.map(function (e) {
+  var row = function (e, past) {
     var d = api.describe(e), vals = [];
     if (e.forecast) vals.push(calT('econ.forecast', 'Bkl') + ' ' + e.forecast);
     if (e.previous) vals.push(calT('econ.previous', 'Önc') + ' ' + e.previous);
-    return '<div class="cal-news-row imp-' + e.impact + '">' +
+    return '<div class="cal-news-row imp-' + e.impact + (past ? ' past' : '') + '">' +
       '<span class="cal-news-time">' + sanitizeHTML(d.time) + '</span>' +
       '<span class="cal-news-dot" title="' + sanitizeHTML(d.impactLabel) + '"></span>' +
       '<span class="cal-news-ccy">' + sanitizeHTML(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
@@ -1198,7 +1202,10 @@ function dayNewsHtml(dateStr) {
       '</span>' +
       (ask && e.impact !== 'holiday' ? '<button type="button" class="cal-news-ask" data-econ-ask="' + sanitizeHTML(e.id) + '" title="' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '">' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '</button>' : '') +
       '</div>';
-  }).join('');
+  };
+  var rows = upcoming.map(function (e) { return row(e, false); }).join('') +
+    (upcoming.length && released.length ? '<div class="cal-news-sep">' + calT('econ.released', 'Açıklananlar') + '</div>' : '') +
+    released.map(function (e) { return row(e, upcoming.length > 0); }).join('');
   return head + '<div class="cal-news-list">' + rows + '</div><div class="cal-news-note">' + calT('calendar.news.note', 'Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Açıklanan sonuçlar (actual) yok; haberler 15 Kasım 2026\'dan beri kaydediliyor.') + '</div>';
 }
 

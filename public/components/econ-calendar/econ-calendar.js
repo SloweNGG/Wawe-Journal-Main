@@ -116,6 +116,16 @@
     if (d >= 1) return _t('econ.dh', '{d}g {h}s', { d: d, h: h % 24 });
     return _t('econ.hm', '{h}s {m}dk', { h: h, m: m % 60 });
   }
+  // the list order: events still to come first (oldest first; "now" for NOW_WINDOW_MS after the time), then the released
+  // ones, the most recent first. An event moves from the top part to the bottom one as its time passes.
+  function splitByRelease(list, now) {
+    var up = [], done = [];
+    list.forEach(function (e) { (Date.parse(e.event_at) > now - NOW_WINDOW_MS ? up : done).push(e); });
+    var t = function (e) { return Date.parse(e.event_at); };
+    up.sort(function (a, b) { return t(a) - t(b) || (IMPACT_RANK[b.impact] - IMPACT_RANK[a.impact]); });
+    done.sort(function (a, b) { return t(b) - t(a) || (IMPACT_RANK[b.impact] - IMPACT_RANK[a.impact]); });
+    return { upcoming: up, released: done };
+  }
   // groups due for an alert now: start within `minutes`, not started, not alerted
   function dueAlerts(events, prefs, pairs, now, alerted) {
     if (!prefs.alert) return [];
@@ -275,15 +285,13 @@
     else if (!S.events.length) h += '<div class="econ-empty">' + esc(S.loading ? _t('econ.loading', 'Yükleniyor…') : _t('econ.empty', 'Takvim henüz yüklenmedi.')) + '</div>';
     else if (!list.length) h += '<div class="econ-empty">' + esc(_t('econ.none_filter', 'Bu filtrelere uyan haber yok.')) + '</div>';
     else {
-      var lastDay = '';
-      list.forEach(function (e) {
-        var t = Date.parse(e.event_at), dk = dayKey(t);
-        if (dk !== lastDay) { lastDay = dk; h += '<div class="econ-day">' + esc(dayLabel(t, now)) + '</div>'; }
-        var past = t < now - NOW_WINDOW_MS, isNext = next && next.at === t, hit = affects(shown, e), mk = marketOf(e);
+      var parts = splitByRelease(list, now);
+      var row = function (e) {
+        var t = Date.parse(e.event_at), past = t <= now - NOW_WINDOW_MS, isNext = next && next.at === t, hit = affects(shown, e), mk = marketOf(e);
         var vals = [];
         if (e.forecast) vals.push(_t('econ.forecast', 'Bkl') + ' ' + e.forecast);
         if (e.previous) vals.push(_t('econ.previous', 'Önc') + ' ' + e.previous);
-        h += '<div class="econ-row imp-' + e.impact + (past ? ' past' : '') + (isNext ? ' next' : '') + '">' +
+        return '<div class="econ-row imp-' + e.impact + (past ? ' past' : '') + (isNext ? ' next' : '') + '">' +
           '<span class="econ-time">' + (e.impact === 'holiday' ? esc(_t('econ.allday', 'Tatil')) : esc(fmtTime(t))) + '</span>' +
           '<span class="econ-dot" title="' + esc(_t('econ.impact_' + e.impact, e.impact)) + '"></span>' +
           '<span class="econ-ccy">' + esc(e.currency === 'ALL' ? '🌐' : e.currency) + '</span>' +
@@ -293,8 +301,23 @@
             (hit.length ? '<span class="econ-hits">' + hit.slice(0, 4).map(function (l) { return '<b>' + esc(l) + '</b>'; }).join('') + (hit.length > 4 ? '<b>+' + (hit.length - 4) + '</b>' : '') + '</span>' : '') +
           '</span>' +
           '<span class="econ-end">' + (isNext ? '<span class="econ-cd">' + esc(countdown(t - now) || _t('econ.now', 'ŞİMDİ')) + '</span>' : '') + '</span></div>';
-      });
+      };
+      var byDay = function (arr) {
+        var lastDay = '';
+        arr.forEach(function (e) {
+          var t = Date.parse(e.event_at), dk = dayKey(t);
+          if (dk !== lastDay) { lastDay = dk; h += '<div class="econ-day">' + esc(dayLabel(t, now)) + '</div>'; }
+          h += row(e);
+        });
+      };
+      h += '<div class="econ-sect">' + esc(_t('econ.upcoming', 'Yaklaşan')) + '<span class="econ-count">' + parts.upcoming.length + '</span></div>';
+      if (parts.upcoming.length) byDay(parts.upcoming);
+      else h += '<div class="econ-empty econ-empty-sm">' + esc(_t('econ.none_left', 'Bu hafta filtrene uyan haber kalmadı.')) + '</div>';
       if (S.coversUntil && Date.parse(S.coversUntil) < now + 7 * 86400e3) h += '<div class="econ-note">' + esc(_t('econ.week_end', 'Gelecek haftanın takvimi henüz yayınlanmadı.')) + '</div>';
+      if (parts.released.length) {
+        h += '<div class="econ-sect econ-sect-done">' + esc(_t('econ.released', 'Açıklananlar')) + '<span class="econ-count">' + parts.released.length + '</span></div>';
+        byDay(parts.released);
+      }
     }
     h += '</div>';
     var perm = global.Notification ? global.Notification.permission : 'unsupported';
@@ -310,9 +333,8 @@
     p.innerHTML = h;
     sc = p.querySelector('.econ-panel-body');
     if (!sc) return;
-    // first render after opening: the next event near the top; later renders (filters) keep the position
+    // first render after opening: the top (the next events are there); later renders (filters, an event released) keep it
     if (keep != null) sc.scrollTop = keep;
-    else { var nx = sc.querySelector('.econ-row.next'); if (nx) sc.scrollTop = Math.max(0, nx.offsetTop - sc.offsetTop - 34); }
     S.listScroll = sc.scrollTop;
     sc.addEventListener('scroll', function () { S.listScroll = sc.scrollTop; }, { passive: true });
   }
@@ -320,7 +342,7 @@
     var p = document.getElementById('econ-panel'), b = document.getElementById('econ-btn');
     if (!p || !b) return;
     S.open = force != null ? force : !S.open;
-    S.listScroll = null;
+    S.listScroll = null; S.upCount = -1;
     if (S.open && typeof global.closeAllNavDropdowns === 'function') { try { global.closeAllNavDropdowns('econ'); } catch (e) { /* ignore */ } }
     p.classList.toggle('open', S.open);
     b.setAttribute('aria-expanded', S.open ? 'true' : 'false');
@@ -411,6 +433,10 @@
     if (!mount()) return;
     renderBadge();
     if (S.open) {
+      // an event's time passed: it moves down to the released part
+      var n = Date.now(), up = 0;
+      for (var i = 0; i < S.events.length; i++) if (Date.parse(S.events[i].event_at) > n - NOW_WINDOW_MS) up++;
+      if (up !== S.upCount) { S.upCount = up; renderPanel(); }
       var p = document.getElementById('econ-panel'), cd = p && p.querySelector('.econ-row.next .econ-cd');
       if (cd) { var g = nextGroup(S.events, S.prefs, pairs(), Date.now()); cd.textContent = g ? (countdown(g.at - Date.now()) || _t('econ.now', 'ŞİMDİ')) : ''; }
     }
@@ -474,6 +500,7 @@
     ask: function (e) { if (!coach()) return false; askCoach(eventQuestion(e)); return true; },
     canAsk: function () { return !!coach(); },
     dayKey: dayKey,
+    split: function (list) { return splitByRelease(list || [], Date.now()); },
     filterLabel: function () {
       var imp = { high: _t('econ.f_high', 'Yüksek'), medium: _t('econ.f_medium', 'Yüksek + Orta'), all: _t('econ.f_all', 'Tümü') }[S.prefs.impact];
       var ps = pairs();
@@ -483,9 +510,9 @@
   };
 
   global.WWEcon = { ready: true, reload: function () { return load(true); }, open: function () { toggle(true); },
-    range: api.range, visible: api.visible, describe: api.describe, ask: api.ask, canAsk: api.canAsk, dayKey: api.dayKey, filterLabel: api.filterLabel,
+    range: api.range, visible: api.visible, describe: api.describe, ask: api.ask, canAsk: api.canAsk, dayKey: api.dayKey, split: api.split, filterLabel: api.filterLabel,
     _test: { cleanPrefs: cleanPrefs, activePairs: activePairs, affects: affects, moves: moves, marketOf: marketOf, passes: passes, togglePair: togglePair, nextGroup: nextGroup,
-      countdown: countdown, dueAlerts: dueAlerts, groupTitle: groupTitle, groupMore: groupMore, groupPairs: groupPairs } };
+      countdown: countdown, dueAlerts: dueAlerts, splitByRelease: splitByRelease, groupTitle: groupTitle, groupMore: groupMore, groupPairs: groupPairs } };
   if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   try { global.dispatchEvent(new CustomEvent('ww:econ-ready')); } catch (e) { /* old browsers */ }

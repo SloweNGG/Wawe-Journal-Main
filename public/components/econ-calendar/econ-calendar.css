@@ -109,6 +109,10 @@ body.light-theme .econ-count { background: rgba(0,0,0,0.05); }
 body.light-theme .econ-panel-body::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); }
 .econ-day { position: sticky; top: -4px; z-index: 1; padding: 9px 6px 5px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: rgba(13, 14, 24, 0.97); }
 body.light-theme .econ-day { background: rgba(255, 255, 255, 0.98); }
+.econ-sect { display: flex; align-items: center; gap: 6px; margin: 6px 4px 0; padding: 8px 2px 2px; font-size: 11px; font-weight: 700; color: var(--text); letter-spacing: .02em; }
+.econ-sect:first-child { margin-top: 0; }
+.econ-sect-done { margin-top: 12px; border-top: 1px solid rgba(127,127,127,.18); color: var(--muted); }
+.econ-empty-sm { padding: .8rem 1rem; }
 .econ-row { display: grid; grid-template-columns: 40px 8px 30px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 6px; border-radius: 9px; font-size: 12px; }
 .econ-row:hover { background: rgba(127,127,127,.07); }
 .econ-row.past { opacity: .45; }

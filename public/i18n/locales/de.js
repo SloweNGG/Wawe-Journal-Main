@@ -3085,4 +3085,6 @@ export default {
   "calendar.news.change_filter": "Filter ändern",
   "calendar.news.none": "An diesem Tag keine News passend zu deinem Filter.",
   "calendar.news.note": "Quelle: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Veröffentlichte Ergebnisse (Actual) fehlen; News werden seit dem 15. November 2026 gespeichert.",
+  "econ.upcoming": "Anstehend",
+  "econ.released": "Veröffentlicht",
 };
