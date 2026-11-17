@@ -16,7 +16,9 @@ BEGIN
   EXCEPTION WHEN check_violation THEN NULL; END;
   BEGIN INSERT INTO public.econ_feed_state (id) VALUES (2); RAISE EXCEPTION 'FAIL: second state row';
   EXCEPTION WHEN check_violation THEN NULL; END;
-  -- the refresh claim: only one of two claims inside the window wins
+  -- the refresh claim: only one of two claims inside the window wins (start from an old attempt: on live a real
+  -- refresh may have claimed it minutes ago; everything here is rolled back)
+  UPDATE public.econ_feed_state SET last_attempt_at = 'epoch' WHERE id = 1;
   UPDATE public.econ_feed_state SET last_attempt_at = now() WHERE id = 1 AND last_attempt_at < now() - interval '5 minutes';
   GET DIAGNOSTICS n = ROW_COUNT; IF n <> 1 THEN RAISE EXCEPTION 'FAIL: first claim'; END IF;
   UPDATE public.econ_feed_state SET last_attempt_at = now() WHERE id = 1 AND last_attempt_at < now() - interval '5 minutes';
