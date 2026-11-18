@@ -89,3 +89,12 @@
 @media (max-width:900px){.fp-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:640px){.fp-grid,.fp-grid.two,.fp-plans{grid-template-columns:1fr}}
 .fp-plans .plan{text-align:left}
+
+/* Sözlük (/glossary) */
+.gl-formula{display:grid;gap:10px;margin-top:20px}
+.gl-formula code{display:block;padding:16px 18px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;background:var(--card);font-family:var(--mono);font-size:clamp(14px,1.6vw,16px);color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.gl-example td:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.gl-example .gl-result td{color:var(--ink);font-weight:500;text-align:left;font-family:var(--mono);background:rgba(139,123,255,.08)}
+a.gl-card{display:block;color:inherit;transition:border-color .15s}
+a.gl-card:hover{border-color:var(--accent)}
+a.gl-card h3{margin-top:0}

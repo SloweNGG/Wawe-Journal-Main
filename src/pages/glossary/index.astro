@@ -1,0 +1,46 @@
+---
+// Sözlük ana sayfası: terimler src/data/glossary.ts'ten (DefinedTermSet).
+import PageLayout from '../../layouts/PageLayout.astro';
+import { GLOSSARY } from '../../data/glossary';
+
+const terms = [...GLOSSARY].sort((a, b) => a.term.localeCompare(b.term));
+const schema = [
+  {
+    '@type': 'DefinedTermSet',
+    '@id': 'https://wawejournal.com/glossary#set',
+    name: 'Wawe Journal trading glossary',
+    url: 'https://wawejournal.com/glossary',
+    hasDefinedTerm: terms.map((t) => ({ '@id': `https://wawejournal.com/glossary/${t.slug}#term` })),
+  },
+];
+---
+<PageLayout
+  title="Trading Glossary: Metrics Every Trader Should Know"
+  description="Plain-English definitions of trading metrics: win rate, profit factor, expectancy, max drawdown, R-multiple, risk-reward and more, each with its formula."
+  crumb="Glossary"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Glossary</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Trading glossary</h1>
+      <p class="page-lead anim" style="--d:.2s">The numbers that tell you whether your trading works, each with its formula, a worked example and what a good value looks like. They use the same definitions as Wawe Journal.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec">
+      <div class="fp-grid">
+        {terms.map((t) => (
+          <a class="fp-item gl-card" href={`/glossary/${t.slug}`}><h3>{t.term}</h3><p>{t.short}</p></a>
+        ))}
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>See all of them for your own trades.</h2>
+      <p>Import or sync your trades and Wawe Journal shows every metric on this page for you.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

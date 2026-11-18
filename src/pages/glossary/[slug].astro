@@ -1,0 +1,103 @@
+---
+// Sözlük terim sayfası: içerik src/data/glossary.ts'ten. Yeni terim = veriye bir kayıt eklemek.
+import PageLayout from '../../layouts/PageLayout.astro';
+import { GLOSSARY, glossaryBySlug, type GlossaryTerm } from '../../data/glossary';
+
+export function getStaticPaths() {
+  return GLOSSARY.map((t) => ({ params: { slug: t.slug }, props: { t } }));
+}
+
+const { t } = Astro.props as { t: GlossaryTerm };
+const url = `https://wawejournal.com/glossary/${t.slug}`;
+const related = t.related.map(glossaryBySlug).filter(Boolean) as GlossaryTerm[];
+const schema = [
+  {
+    '@type': 'DefinedTerm',
+    '@id': `${url}#term`,
+    name: t.term,
+    description: t.short,
+    url,
+    inDefinedTermSet: { '@id': 'https://wawejournal.com/glossary#set' },
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    mainEntity: t.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title={`${t.title} | Wawe Journal`}
+  description={t.description}
+  crumb={t.term}
+  crumbParent={{ name: 'Glossary', href: '/glossary' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/glossary">Glossary</a><span aria-hidden="true">/</span><span>{t.term}</span></nav>
+      <h1 class="anim wide" style="--d:.1s">{t.h1}</h1>
+      <p class="page-lead anim" style="--d:.2s">{t.short}</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec">
+      <h2>Formula</h2>
+      <div class="gl-formula">{t.formula.map((f) => <code>{f}</code>)}</div>
+      {t.formulaNote && <p class="lead">{t.formulaNote}</p>}
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Worked example</h2>
+      <p class="lead">{t.example.intro}</p>
+      <div class="fp-table-wrap">
+        <table class="fp-table gl-example">
+          <tbody>
+            {t.example.rows.map(([a, b]) => (<tr><td>{a}</td><td>{b}</td></tr>))}
+            <tr class="gl-result"><td colspan="2">{t.example.result}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>What is a good value?</h3><ul class="plan-feats">{t.good.map((x) => <li>{x}</li>)}</ul></div>
+        <div class="fp-item"><h3>Common mistakes</h3><ul class="plan-feats">{t.pitfalls.map((x) => <li>{x}</li>)}</ul></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>{t.term} in Wawe Journal</h2>
+      <p class="lead">{t.inWawe.text}</p>
+      <div class="fp-related">
+        <a href={t.inWawe.href} class="btn btn-line">{t.inWawe.label} →</a>
+        <a href="/register" class="btn btn-accent">Track it free</a>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Questions</h2>
+      <div class="fp-faq">
+        {t.faq.map((f) => (<details><summary>{f.q}</summary><div class="a">{f.a}</div></details>))}
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Related terms</h2>
+      <div class="fp-grid">
+        {related.map((r) => (
+          <a class="fp-item gl-card" href={`/glossary/${r.slug}`}><h3>{r.term}</h3><p>{r.short}</p></a>
+        ))}
+      </div>
+      <div class="fp-related"><a href="/glossary" class="btn btn-line">All terms →</a></div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Know your numbers.</h2>
+      <p>Wawe Journal tracks {t.slug === 'sharpe-ratio' ? 'the Sharpe ratio' : t.slug === 'r-multiple' ? 'R-multiples' : t.term.toLowerCase()} and the rest of your numbers from your own trades. Free to start.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>
