@@ -62,8 +62,8 @@ const schema = [
     <section class="fp-sec reveal">
       <h2>How to import Binance trades <span class="dim">in three steps.</span></h2>
       <div class="fp-grid">
-        <div class="fp-item"><span class="num">01</span><h3>Export your trade history</h3><p>Download your trade history from Binance as a CSV or Excel file. The column names must be on the first row: Date, Pair, Side, Price, Executed, Amount and Fee.</p></div>
-        <div class="fp-item"><span class="num">02</span><h3>Sort oldest first</h3><p>Fills are matched in the order they appear in the file. Sort the rows by date from oldest to newest so every buy meets the sell that really closed it.</p></div>
+        <div class="fp-item"><span class="num">01</span><h3>Export your trade history</h3><p>Download your trade history from Binance as a CSV or Excel file. Keep Binance’s column names: Date, Pair, Side, Price, Executed, Amount and Fee.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Any row order works</h3><p>Fills are sorted by time before buys and sells are matched, so every buy meets the sell that really closed it, even in a newest-first export.</p></div>
         <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. Binance’s format is detected, fills are paired, and you check the preview before importing.</p></div>
       </div>
     </section>

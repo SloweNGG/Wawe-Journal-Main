@@ -63,7 +63,7 @@ const schema = [
       <h2>How to import Bybit trades <span class="dim">in three steps.</span></h2>
       <div class="fp-grid">
         <div class="fp-item"><span class="num">01</span><h3>Export Closed P&amp;L</h3><p>For derivatives, download the Closed P&amp;L export from Bybit for the period you want. For spot, download your spot trade history.</p></div>
-        <div class="fp-item"><span class="num">02</span><h3>Keep the header row first</h3><p>Upload the file as CSV or Excel with the column names on the first row. Leave the columns as Bybit named them; that is how the format is recognised.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Keep Bybit’s columns</h3><p>Upload the file as CSV or Excel. Leave the columns as Bybit named them; that is how the format is recognised.</p></div>
         <div class="fp-item"><span class="num">03</span><h3>Import into your journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. Bybit’s layout is detected, you check the preview, and the trades are saved.</p></div>
       </div>
     </section>
@@ -91,7 +91,7 @@ const schema = [
       <h2>Good to know <span class="dim">before you import.</span></h2>
       <div class="fp-grid">
         <div class="fp-item"><h3>No auto-sync</h3><p>Bybit is imported from files. There is no API connection, so update the journal by uploading a newer export.</p></div>
-        <div class="fp-item"><h3>Spot rows in time order</h3><p>Spot fills are paired in file order. Sort them oldest first; coins still held at the end of the file are not imported.</p></div>
+        <div class="fp-item"><h3>Spot fills are matched by time</h3><p>Spot fills are sorted by time and matched oldest first, whatever the row order. Coins still held at the end of the file are not imported.</p></div>
         <div class="fp-item"><h3>Funding and transfers</h3><p>Only closed trades are imported. Deposits, transfers and other wallet entries are not trades and stay out of the journal.</p></div>
       </div>
     </section>

@@ -151,7 +151,11 @@
     var matrix = {};
     Dict.FIELD_ORDER.forEach(function (field) {
       matrix[field] = normHeaders.map(function (h) {
-        return bestMatchForHeader(h, Dict.FIELD_CANDIDATES[field]);
+        var m = bestMatchForHeader(h, Dict.FIELD_CANDIDATES[field]);
+        // SL/TP'de "aday başlığı içeriyor" (70) eşleşmesi tehlikeli: "Profit" ⊂ "takeprofit", "Loss" ⊂ "stoploss".
+        // XTB'nin brüt "Profit" sütunu take profit'e yazılıyordu. SL/TP yalnızca açık başlıkla eşleşir.
+        if ((field === 'sl' || field === 'tp') && m.score === 70) return { score: 0, rank: -1 };
+        return m;
       });
     });
 
@@ -400,6 +404,20 @@
       fills.push({ symbol: symbol, side: side, price: price, qty: qty, date: date, fee: fee, rowIndex: lineNo });
     });
 
+    // Eşleştirme FIFO ve sıraya bağlı: en yeniden eskiye dizili dosyalar (Binance/Bybit/TradingView çoğu zaman öyle)
+    // satışı alıştan önce görüp işlemi ters yönde (short) kurardı. Her fill'in tarihi okunabiliyorsa eskiden yeniye
+    // sıralanır (aynı anda olanlar dosyadaki sırasını korur). Tarihsiz fill varsa dosya sırasına dokunulmaz.
+    var fillTime = function (f) {
+      var d = f.date;
+      var t = d instanceof Date ? d.getTime() : (d == null ? NaN : Date.parse(String(d).replace(' ', 'T')));
+      return isNaN(t) ? null : t;
+    };
+    if (fills.length > 1 && fills.every(function (f) { return fillTime(f) !== null; })) {
+      fills = fills
+        .map(function (f, i) { return { f: f, t: fillTime(f), i: i }; })
+        .sort(function (a, b) { return a.t - b.t || a.i - b.i; })
+        .map(function (x) { return x.f; });
+    }
     var paired = Pairing.pairFills(fills);
     var rows = paired.trades.map(function (t) {
       return {
@@ -413,6 +431,59 @@
   }
 
   // =========================================================================
+  // Başlık satırı bulma (rapor biçimli dosyalar)
+  // =========================================================================
+  var HEADER_SCAN_ROWS = 60;
+
+  function filledCount(row) {
+    return (row || []).filter(function (c) { return c !== null && c !== undefined && String(c).trim() !== ''; }).length;
+  }
+
+  function rowAsHeaders(row) {
+    return (row || []).map(function (h) { return h == null ? '' : String(h); });
+  }
+
+  // Bilinen bir broker imzası (MT4/MT5/XTB/OANDA/...) ya da en az sembol + giriş fiyatı eşleyen genel başlık mı?
+  function headerQuality(row) {
+    if (filledCount(row) < 4) return 0;
+    var headers = rowAsHeaders(row);
+    var d = Detector.detect(headers);
+    if (d && d.broker !== 'generic') return 2 + d.confidence;
+    var m = matchHeaders(headers).mapping || {};
+    return (m.symbol !== undefined && m.symbol !== null && m.entry !== undefined && m.entry !== null) ? 1 : 0;
+  }
+
+  // 1. satır zaten iyi bir başlıksa ona dokunulmaz (normal CSV'ler eskisi gibi). Değilse ilk HEADER_SCAN_ROWS satırda
+  // en iyi başlık satırı aranır; hiçbiri uygun değilse 0 kalır (eski davranış, hata mesajları aynı).
+  function findHeaderRow(rows2d) {
+    var firstQ = headerQuality(rows2d[0]);
+    if (firstQ >= 2) return 0;
+    var best = 0, bestQ = firstQ;
+    var limit = Math.min(rows2d.length - 1, HEADER_SCAN_ROWS);
+    for (var i = 1; i < limit; i++) {
+      var q = headerQuality(rows2d[i]);
+      if (q > bestQ) { best = i; bestQ = q; }
+    }
+    return best;
+  }
+
+  // Başlıktan sonraki satırlar. Başlık 1. satır değilse (rapor) bölüm, tek hücreli bir ara başlıkta
+  // ("Orders", "Deals", "Open Trades:", "Summary:") ya da aynı başlığın tekrarında biter.
+  function sectionRows(rows2d, headerIdx) {
+    var rest = rows2d.slice(headerIdx + 1);
+    if (headerIdx === 0) return rest;
+    var headerKey = rowAsHeaders(rows2d[headerIdx]).join('|').toLowerCase();
+    var out = [];
+    for (var i = 0; i < rest.length; i++) {
+      var n = filledCount(rest[i]);
+      if (n === 0) continue;
+      if (out.length && (n === 1 || rowAsHeaders(rest[i]).join('|').toLowerCase() === headerKey)) break;
+      out.push(rest[i]);
+    }
+    return out;
+  }
+
+  // =========================================================================
   // Public entry point
   // =========================================================================
   function parse(input, options) {
@@ -422,8 +493,11 @@
       return { rows: [], errors: ['Dosya boş ya da sadece başlık satırı var.'], warnings: [], detected: null, confidence: 0, needsManualMapping: false };
     }
 
-    var rawHeaders = rows2d[0].map(function (h) { return h == null ? '' : String(h); });
-    var dataRows = rows2d.slice(1).filter(function (r) {
+    // Rapor biçimli dosyalarda (MT4 Detailed Statement, MT5 geçmiş raporu, XTB Excel...) başlık 1. satırda değil:
+    // üstte hesap bilgisi / rapor başlığı satırları var. Başlık satırı aranır, rapor bölümü bitince durulur.
+    var headerIdx = options.manualMapping ? 0 : findHeaderRow(rows2d);
+    var rawHeaders = rows2d[headerIdx].map(function (h) { return h == null ? '' : String(h); });
+    var dataRows = sectionRows(rows2d, headerIdx).filter(function (r) {
       return r.some(function (c) { return c !== null && c !== undefined && String(c).trim() !== ''; });
     });
     var fingerprint = headerFingerprint(rawHeaders);

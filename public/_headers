@@ -15,6 +15,12 @@
 # deploy sonrası herkes yeni sayfayı (ve onun yeni ?v= adreslerini) anında almalı.
 # ============================================================
 
+# GÜVENLİK: HSTS (tarayıcı siteye bundan sonra yalnızca HTTPS ile gelir). Tek catch-all kural budur ve
+# Cache-Control TAŞIMAZ (tests/cache-headers.test.js kontrol eder). includeSubDomains / preload bilerek yok:
+# geri alması zor; tüm alt alan adlarının HTTPS olduğundan emin olunca eklenebilir.
+/*
+  Strict-Transport-Security: max-age=15552000
+
 # Astro derlenmiş ve hash'lenmiş statik varlıklar (asla değişmez)
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable

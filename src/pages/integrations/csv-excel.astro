@@ -92,7 +92,7 @@ const schema = [
     <section class="fp-sec reveal">
       <h2>Good to know <span class="dim">before you import.</span></h2>
       <div class="fp-grid">
-        <div class="fp-item"><h3>Header on row one</h3><p>The first row is read as column names. Delete any title or account summary rows above them. From Excel files the first sheet is read; from HTML files, the largest table.</p></div>
+        <div class="fp-item"><h3>Title rows are fine</h3><p>Column names work best on the first row, but title or account summary rows above them are skipped as long as the headers include a symbol and an entry price. From Excel files the first sheet is read; from HTML files, the largest table.</p></div>
         <div class="fp-item"><h3>Rows that are skipped</h3><p>A row without a symbol, size, entry or exit price is skipped and listed. If a date cannot be read, that trade gets today’s date and you are warned.</p></div>
         <div class="fp-item"><h3>Times and time zones</h3><p>Choose under Settings whether the times in your files are in your own time zone, UTC or a fixed offset.</p></div>
       </div>

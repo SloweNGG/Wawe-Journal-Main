@@ -60,7 +60,7 @@ const schema = [
       <h2>How to import a TradingView trade list <span class="dim">in three steps.</span></h2>
       <div class="fp-grid">
         <div class="fp-item"><span class="num">01</span><h3>Export the trade list</h3><p>In the Strategy Tester, export the list of trades. A CSV file works best; if you save to Excel, make sure the trade list is the first sheet, because Wawe Journal reads only the first one.</p></div>
-        <div class="fp-item"><span class="num">02</span><h3>Add a Symbol column</h3><p>The export does not name the market. Add a column called “Symbol” with the chart’s symbol, for example BTCUSDT, and sort the rows from the oldest trade to the newest.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Add a Symbol column</h3><p>The export does not name the market. Add a column called “Symbol” with the chart’s symbol, for example BTCUSDT, on every row.</p></div>
         <div class="fp-item"><span class="num">03</span><h3>Import and check the preview</h3><p>Open Add Trade, switch to CSV Import and drop the file. TradingView’s format is detected, entries are paired with exits, and you confirm the preview before anything is saved.</p></div>
       </div>
     </section>
@@ -89,7 +89,7 @@ const schema = [
       <h2>Good to know <span class="dim">before you import.</span></h2>
       <div class="fp-grid">
         <div class="fp-item"><h3>File import only</h3><p>There is no TradingView auto-sync. Export a new trade list whenever you want to update the journal; trades already imported are skipped.</p></div>
-        <div class="fp-item"><h3>Row order matters</h3><p>Entries and exits are paired in the order they appear in the file, so keep the rows oldest first.</p></div>
+        <div class="fp-item"><h3>Row order does not matter</h3><p>Entries and exits are sorted by time before they are paired, so entries and exits of a newest-first Strategy Tester list are paired correctly.</p></div>
         <div class="fp-item"><h3>Check the numbers</h3><p>The Profit column of the export is not used; P&amp;L is recalculated. Compare the preview with the Strategy Tester before you confirm.</p></div>
       </div>
     </section>

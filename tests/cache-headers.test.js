@@ -45,7 +45,11 @@ const DEV_ONLY_HTML = new Set(['/interface/quick-add/js/test-broker-formats.html
 describe('_headers cache rules', () => {
   it('has no catch-all or extension rule (Cloudflare merges every matching rule)', () => {
     for (const r of rules) {
-      assert.notEqual(r.pattern, '/*', 'catch-all /* rule');
+      // /* yalnızca güvenlik başlıkları (HSTS) için serbest: Cache-Control taşırsa diğer kurallarla birleşip hepsini bozar
+      if (r.pattern === '/*') {
+        assert.ok(!('cache-control' in r.headers), 'catch-all /* rule must not set Cache-Control');
+        continue;
+      }
       assert.ok(!/^\*|\/\*\.[a-z]+$/i.test(r.pattern), 'extension rule ' + r.pattern);
     }
   });
@@ -62,7 +66,7 @@ describe('_headers cache rules', () => {
     const root = publicFiles.filter((p) => /^\/[^/]+\.(js|css)$/.test(p));
     assert.ok(root.length > 5);
     for (const p of root) {
-      if (p === '/sw.js') assert.ok(!rules.some((r) => matches(r.pattern, p)), '/sw.js must keep the default revalidation');
+      if (p === '/sw.js') assert.ok(!rules.some((r) => r.headers['cache-control'] && matches(r.pattern, p)), '/sw.js must keep the default revalidation');
       else assert.ok(immutableFor(p), p + ' needs an immutable rule in public/_headers');
     }
   });
