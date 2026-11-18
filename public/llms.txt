@@ -2,6 +2,8 @@
 
 > Wawe Journal is a web-based trading journal for forex, futures, stock and crypto traders. It combines trade logging, performance analytics, an AI coach, candle-by-candle backtest replay, cTrader auto-sync and prop firm rule tracking in one app. Available in English, Turkish and German. Free Starter plan; Pro costs $12 per month or $99 per year.
 
+The name is spelled Wawe (with a w) and pronounced like "wave". Wawe Journal is not affiliated with other products that have similar names.
+
 Wawe Journal is not a broker and never places or closes trades on a user's real accounts. Broker connections are read-only; the only orders placed in Wawe are simulated ones inside backtest practice accounts.
 
 ## Product

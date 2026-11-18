@@ -226,7 +226,9 @@
           "a6_link": "Read our privacy policy →",
           "q7": "What does the AI coach see, and where does my data go?",
           "a7": "When you send a message, the coach uses your question and a summary of your journal: statistics, strategies, recent and largest trades with their notes, prop challenges and backtests. Never your email, name, payment data or broker tokens. Don’t write personal details into your notes or chats. The coach is optional: if you don’t use it, none of your data goes to it. Its answers can be wrong and are not investment advice.",
-          "a7_link": "How the AI coach uses your data →"
+          "a7_link": "How the AI coach uses your data →",
+          "q8": "Is it Wawe Journal or Wave Journal?",
+          "a8": "It’s Wawe Journal: spelled with a w and pronounced like “wave”. The name is our take on the waves of the market. You’ll always find us at wawejournal.com; we are not connected to other products with similar names."
         },
         "cta": {
           "title_h": "Rewrite your destiny.<br><span class=\"soft\">Create your journal now.</span>",
@@ -440,7 +442,7 @@
         team_desc: 'To be completely candid, there is no large team — I built this project as a solo developer. No matter what happens, I will never stop building and trying.',
         team_desc: 'To be completely candid, there is no large corporation here — I built this project as a solo developer. No matter what happens, I will never stop building and trying.',
         why_title: 'Why "Wawe"?',
-        why_desc: '"Wawe" is a distinctive take on the word "wave". It symbolizes market cycles, the emotional fluctuations of traders, and the constantly moving financial landscape. Every wave is a new opportunity.'
+        why_desc: '"Wawe" is pronounced like "wave" and spelled with a w. It is our take on the word: it symbolizes market cycles, the emotional fluctuations of traders, and the constantly moving financial landscape. Every wave is a new opportunity.'
       },
       contact: {
         title: 'Contact',
@@ -685,7 +687,9 @@
           "a6_link": "Gizlilik politikamızı oku →",
           "q7": "AI koç neyi görüyor, verilerim nereye gidiyor?",
           "a7": "Bir mesaj gönderdiğinde koç sorunu ve günlüğünün bir özetini kullanır: istatistikler, stratejiler, notlarıyla birlikte son ve en büyük işlemlerin, prop challenge’ların ve backtest’lerin. E-postan, adın, ödeme bilgilerin ve broker anahtarların asla kullanılmaz. Notlarına ve sohbetlerine kişisel bilgi yazma. Koç isteğe bağlıdır: kullanmazsan hiçbir verin ona gitmez. Cevapları hatalı olabilir ve yatırım tavsiyesi değildir.",
-          "a7_link": "AI koç verilerini nasıl kullanıyor →"
+          "a7_link": "AI koç verilerini nasıl kullanıyor →",
+          "q8": "Wawe Journal mı, Wave Journal mı?",
+          "a8": "Doğrusu Wawe Journal: w ile yazılır, “wave” (dalga) gibi okunur. İsim, piyasadaki dalgalara bir göndermedir. Bizi her zaman wawejournal.com adresinde bulursun; benzer isimli diğer ürünlerle bir bağlantımız yok."
         },
         "cta": {
           "title_h": "Kaderini yeniden yaz.<br><span class=\"soft\">Günlüğünü şimdi oluştur.</span>",
@@ -893,7 +897,7 @@
         team_title: 'Ekibimiz',
         team_desc: 'Samimi olmak gerekirse bir ekibim yok tek kişi kurdum bu projeyi. Belki bu projede de öyle sonuçlanacak ama asla denemekten sıkılmam.',
         why_title: 'Neden "Wawe"?',
-        why_desc: '"Wawe", İngilizce "wave" (dalga) kelimesinin özel bir yazımıdır. Piyasalardaki dalgalanmaları, trader\'ların iniş çıkışlarını ve sürekli hareket halindeki finans dünyasını temsil eder. Her dalga yeni bir fırsattır.'
+        why_desc: '"Wawe", "wave" (dalga) gibi okunur ama w ile yazılır; bu kelimenin bize özel yazımıdır. Piyasalardaki dalgalanmaları, trader\'ların iniş çıkışlarını ve sürekli hareket halindeki finans dünyasını temsil eder. Her dalga yeni bir fırsattır.'
       },
       contact: {
         title: 'İletişim',
@@ -1138,7 +1142,9 @@
           "a6_link": "Lies unsere Datenschutzerklärung →",
           "q7": "Was sieht der KI-Coach, und wohin gehen meine Daten?",
           "a7": "Wenn du eine Nachricht sendest, nutzt der Coach deine Frage und eine Zusammenfassung deines Journals: Statistiken, Strategien, letzte und größte Trades mit ihren Notizen, Prop-Challenges und Backtests. Niemals deine E-Mail, deinen Namen, Zahlungsdaten oder Broker-Tokens. Schreib keine persönlichen Daten in deine Notizen oder Chats. Der Coach ist optional: Wenn du ihn nicht nutzt, gehen keine deiner Daten an ihn. Seine Antworten können falsch sein und sind keine Anlageberatung.",
-          "a7_link": "Wie der KI-Coach deine Daten nutzt →"
+          "a7_link": "Wie der KI-Coach deine Daten nutzt →",
+          "q8": "Heißt es Wawe Journal oder Wave Journal?",
+          "a8": "Richtig ist Wawe Journal: mit w geschrieben und wie „wave“ ausgesprochen. Der Name spielt auf die Wellen der Märkte an. Du findest uns immer unter wawejournal.com; mit anderen Produkten ähnlichen Namens haben wir nichts zu tun."
         },
         "cta": {
           "title_h": "Schreib dein Schicksal neu.<br><span class=\"soft\">Erstelle jetzt dein Journal.</span>",
@@ -1347,7 +1353,7 @@
         team_desc: 'Ehrlich gesagt gibt es kein großes Team – ich habe dieses Projekt als Solo-Entwickler aufgebaut. Egal wie es ausgeht: Ich höre nie auf zu bauen.',
         team_desc: 'Ehrlich gesagt gibt es kein großes Unternehmen – ich habe dieses Projekt als Solo-Entwickler aufgebaut. Egal wie es ausgeht: Ich höre nie auf zu bauen.',
         why_title: 'Warum "Wawe"?',
-        why_desc: '"Wawe" ist eine besondere Schreibweise von "Wave" (Welle). Es symbolisiert Marktzyklen, die emotionalen Höhen und Tiefen jedes Traders und die dynamische Finanzwelt. Jede Welle ist eine neue Chance.'
+        why_desc: '"Wawe" wird wie "Wave" (Welle) ausgesprochen und mit w geschrieben: unsere eigene Schreibweise. Es symbolisiert Marktzyklen, die emotionalen Höhen und Tiefen jedes Traders und die dynamische Finanzwelt. Jede Welle ist eine neue Chance.'
       },
       contact: {
         title: 'Kontakt',
