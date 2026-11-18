@@ -1,0 +1,151 @@
+---
+// Entegrasyonlar merkezi (/integrations). İçerik İngilizce ve sunucuda hazır.
+// Her iddia uygulamadaki gerçek davranışla aynı olmalı:
+//  - İçe aktarma: public/interface/quick-add/js/quick-add.js (dosya tipleri, önizleme, mükerrer atlama),
+//    broker-detector.js (tanınan formatlar), parser-v2.js, fill-pairing.js
+//  - cTrader otomatik senkron: en.js ctrader.* anahtarları
+//  - "Yakında" listesi landing SSS'si ile aynı olmalı (src/pages/index.astro: NinjaTrader + MetaTrader otomatik senkron)
+// MT5 senkron eklentisi sitede duyurulmadı: burada MetaTrader için yalnızca "otomatik senkron yakında" denir.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const imports = [
+  { href: '/integrations/metatrader', name: 'MetaTrader 4 & 5', text: 'Forex, gold and index CFD traders: import your MT4 or MT5 trade history with stop loss, take profit and profit.' },
+  { href: '/integrations/tradingview', name: 'TradingView', text: 'Bring a Strategy Tester trade list into your journal and compare a tested idea with your live results.' },
+  { href: '/integrations/binance', name: 'Binance', text: 'Crypto traders: upload your trade history and Wawe Journal pairs the buy and sell fills into closed trades.' },
+  { href: '/integrations/bybit', name: 'Bybit', text: 'Derivatives traders: import the Closed P&L export, one closed position per row, or your spot trade history.' },
+  { href: '/integrations/interactive-brokers', name: 'Interactive Brokers', text: 'Stock, ETF and options traders: import closed trades from IBKR with a file that has entry and exit prices.' },
+  { href: '/integrations/xtb', name: 'XTB', text: 'CFD and forex traders: import your closed positions with open and close price, volume and profit.' },
+  { href: '/integrations/oanda', name: 'OANDA', text: 'Forex traders: import closed trades by instrument and units, with your realized P/L kept as reported.' },
+  { href: '/integrations/csv-excel', name: 'CSV & Excel', text: 'Any broker, any exchange: upload a CSV or Excel file with one row per closed trade.' },
+];
+
+const faq = [
+  {
+    q: 'Which brokers and platforms work with Wawe Journal?',
+    a: 'cTrader connects directly and syncs automatically. For MetaTrader 4 and 5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and any other platform, you upload an exported trade history as a CSV, Excel (.xlsx or .xls) or HTML file.',
+  },
+  {
+    q: 'Is importing trades free?',
+    a: 'Yes. File imports and cTrader auto-sync are included in the free Starter plan, with unlimited trade logging. Pro adds more journals, more prop firm trackers, advanced analytics and more AI coach messages.',
+  },
+  {
+    q: 'What happens if I upload the same file twice?',
+    a: 'Trades that already exist in the journal are skipped. Wawe Journal compares symbol, direction, entry and exit price, size and date, and tells you how many new trades were added and how many duplicates were left out.',
+  },
+  {
+    q: 'Is MetaTrader auto-sync available?',
+    a: 'Not yet. Auto-sync for the MetaTrader series and NinjaTrader is on the way, and each integration is released only once it gives correct numbers. Until then, MetaTrader 4 and 5 traders import a statement or CSV file.',
+  },
+  {
+    q: 'Can Wawe Journal place trades on my account?',
+    a: 'No. Wawe Journal is not a broker and never places orders on your real accounts. File imports only read the file you upload, and the cTrader connection is read-only.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'ItemList',
+    '@id': 'https://wawejournal.com/integrations#list',
+    name: 'Wawe Journal integrations',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'cTrader', url: 'https://wawejournal.com/ctrader-trading-journal' },
+      ...imports.map((p, i) => ({ '@type': 'ListItem', position: i + 2, name: p.name, url: 'https://wawejournal.com' + p.href })),
+    ],
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Trading Journal Integrations: cTrader, MT5 & More"
+  description="Connect cTrader for automatic sync or import trades from MetaTrader 4/5, TradingView, Binance, Bybit, IBKR, XTB, OANDA or any CSV and Excel file. Free to start."
+  crumb="Integrations"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Integrations</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Trading journal integrations</h1>
+      <p class="page-lead anim" style="--d:.2s">Get your trades into Wawe Journal the way your platform allows: an automatic, read-only cTrader connection, or a statement and CSV import for MetaTrader, TradingView, crypto exchanges and brokers. Every option is on the free plan.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Start your journal free</a>
+        <a href="/pricing" class="btn btn-line btn-lg">See plans</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>Auto-sync. <span class="dim">Connect once, trades arrive on their own.</span></h2>
+      <div class="fp-grid two">
+        <div class="fp-item">
+          <span class="num">LIVE</span>
+          <h3>cTrader</h3>
+          <p>Authorize Wawe Journal on the cTrader screen and link an account to a journal. Its past trades are imported, and when auto-sync is on, newly closed trades are pulled in whenever you open the site and the last sync is more than 30 minutes old. The connection is read-only.</p>
+          <p><a href="/ctrader-trading-journal">cTrader trading journal →</a></p>
+        </div>
+        <div class="fp-item">
+          <span class="num">WHY ONLY ONE?</span>
+          <h3>Correct numbers first</h3>
+          <p>An automatic connection is only released once it gives the same numbers as your broker. Platforms without a direct connection work through file import, which already brings in entry, exit, size and P&amp;L.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Statement &amp; CSV import. <span class="dim">Export a file, drop it in.</span></h2>
+      <p class="lead">Wawe Journal recognises the column layouts of these platforms automatically. Each guide explains which export to use and what is imported.</p>
+      <div class="fp-grid">
+        {imports.map((p) => (
+          <div class="fp-item">
+            <h3>{p.name}</h3>
+            <p>{p.text}</p>
+            <p><a href={p.href}>{p.name} guide →</a></p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Coming soon <span class="dim">to auto-sync.</span></h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><span class="num">SOON</span><h3>MetaTrader auto-sync</h3><p>Automatic sync for the MetaTrader series is on the way. Today, MT4 and MT5 traders <a href="/integrations/metatrader">import their trade history</a> as a file.</p></div>
+        <div class="fp-item"><span class="num">SOON</span><h3>NinjaTrader</h3><p>NinjaTrader auto-sync is planned as well. It will be added only once it is error-free, because in trading there is no room for wrong numbers.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>How a file import works <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export your history</h3><p>Save your closed trades from your platform as CSV, Excel (.xlsx, .xls) or an HTML report. Text files (.txt) are accepted too.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to the CSV Import tab and choose or drag in the file. The format is detected automatically and you see a preview of the trades first.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Import and review</h3><p>Confirm, and the trades land in your active journal. Trades that are already there are skipped, so re-uploading a longer history is safe.</p></div>
+      </div>
+      <p class="fp-note">Times in your file can be read in your own time zone, UTC or a fixed offset. Set it once under Settings.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Integration questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/backtesting" class="btn btn-line">Backtesting →</a>
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
+        <a href="/#coach" class="btn btn-line">AI trading coach →</a>
+      </div>
+      <p class="fp-note">cTrader, MetaTrader, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and NinjaTrader are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Bring your trades. Find your edge.</h2>
+      <p>Create a free account, import your history and see your real numbers in minutes.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

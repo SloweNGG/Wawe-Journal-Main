@@ -1,0 +1,116 @@
+---
+// Entegrasyon sayfası: XTB kapalı pozisyon içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - XTB imzası (Open Price + Close Price zorunlu; Symbol, Type, Volume, Open/Close Time, Profit): broker-detector.js xtb
+//  - Başlık satırı ilk satır olmalı: parser-v2.js parse(); Excel'de yalnızca ilk sayfa: quick-add.js fileToCsvText
+//  - Kapalı işlem modu (sembol/giriş/çıkış zorunlu, K/Z dosyadan; yoksa çarpanla hesap): parser-v2.js buildClosedTradeRows
+// XTB menü yolları kodda yok: dışa aktarma adımları bilerek genel tutuldu. XTB bağlantısı / otomatik senkron YOK.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Which XTB file does Wawe Journal read?',
+    a: 'Your closed positions history, with one row per closed position. Wawe Journal recognises XTB’s layout by its Open Price and Close Price columns and also reads Symbol, Type, Volume, Open Time, Close Time and Profit.',
+  },
+  {
+    q: 'Can I journal XTB stock and ETF CFDs as well as forex?',
+    a: 'Yes. Any closed position with a symbol, an open price and a close price is imported, whether it is a currency pair, an index, a commodity or a share CFD. The Profit from your file is kept as the trade’s result.',
+  },
+  {
+    q: 'Does Wawe Journal sync with xStation automatically?',
+    a: 'No. There is no XTB connection or auto-sync. You export your closed positions and upload the file. Uploading a newer file later only adds trades that are not in the journal yet.',
+  },
+  {
+    q: 'My trades show on the wrong day. How do I fix it?',
+    a: 'Tell Wawe Journal which time zone the times in your file use. Under Settings you can choose your own time zone, UTC or a fixed offset for imported files.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/xtb#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="XTB Trading Journal: Import Closed Positions | Wawe Journal"
+  description="Import your XTB closed positions into Wawe Journal and analyze your forex, index and stock CFD trades with win rate, drawdown and an AI coach. Free to start."
+  crumb="XTB journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>XTB journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">XTB trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">XTB lets you trade currencies, indices, commodities and share CFDs from one account. That variety makes it hard to see where your profit really comes from. Import your XTB closed positions into Wawe Journal and find out which markets deserve your time.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import XTB trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import XTB trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export closed positions</h3><p>From your XTB account history, export your closed positions for the period you want, as an Excel or CSV file.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Check the first row</h3><p>The column names, such as Symbol, Type, Volume, Open Price and Close Price, must be on the first row of the first sheet. Delete any title or summary rows above them.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. The XTB layout is detected, you review the preview and confirm.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What comes across <span class="dim">from each XTB position.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Instrument and side</h3><p>The symbol exactly as XTB writes it, buy or sell, and the traded volume.</p></div>
+        <div class="fp-item"><h3>Prices and times</h3><p>Open and close price, with the close time used as the trade date in your calendar.</p></div>
+        <div class="fp-item"><h3>Profit as reported</h3><p>The Profit column is kept as the result, so your journal shows the same number XTB booked for the position.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>See which markets pay</h3><p>Win rate, profit factor, expectancy and drawdown across your XTB trades, and a P&amp;L calendar of your trading days. <a href="/pricing">Pro</a> adds strategy comparison and advanced analytics.</p></div>
+        <div class="fp-item"><h3>An AI coach that knows your trades</h3><p>Ask whether your index trades beat your forex trades, or what your worst habit costs. The <a href="/#coach">AI coach</a> answers from your journal.</p></div>
+        <div class="fp-item"><h3>Practise before you size up</h3><p>Replay EURUSD, GBPUSD, USDJPY or gold candle by candle in <a href="/backtesting">backtest replay</a> and test a setup without risking your XTB balance.</p></div>
+        <div class="fp-item"><h3>Prop firm rules</h3><p>Also trading a challenge elsewhere? The <a href="/prop-firm-tracker">prop firm tracker</a> keeps daily loss and drawdown in view for that journal.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Manual import</h3><p>There is no XTB auto-sync. Export and upload a new file when you want to update; duplicates are skipped.</p></div>
+        <div class="fp-item"><h3>Closed positions only</h3><p>Open positions have no close price yet and are not imported. Deposits, withdrawals and other cash operations are not trades.</p></div>
+        <div class="fp-item"><h3>One sheet per file</h3><p>From an Excel file only the first sheet is read. If your export has several sheets, put the closed positions first or save that sheet as CSV.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>XTB journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/metatrader" class="btn btn-line">MetaTrader journal →</a>
+        <a href="/integrations/oanda" class="btn btn-line">OANDA journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">XTB and xStation are trademarks of their owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Know where your XTB profit comes from.</h2>
+      <p>Create a free Wawe Journal account and import your closed positions in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

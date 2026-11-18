@@ -1,0 +1,124 @@
+---
+// Özellik sayfası: AI koç. İçerik İngilizce ve sunucuda hazır.
+// Karar: landing ve özellik sayfaları yapay zekâ sağlayıcısının adını VERMEZ; sağlayıcı ayrıntısı yalnızca
+// /privacy#ai-coach bölümünde. Koç özellikleri değişirse (persona, uyarı, plan, söz, aksiyon kartı) burayı da güncelle.
+import PageLayout from '../layouts/PageLayout.astro';
+
+const coaches = [
+  { n: 'Kai', r: 'All-round', d: 'Your month, your best days, your weakest setups. The default coach for a full picture.' },
+  { n: 'Mira', r: 'Psychology', d: 'Emotions in your notes and tags, revenge trades, sizing up after a loss.' },
+  { n: 'Rex', r: 'Overtrading', d: 'How many trades a day you can take before your results turn, and a cap that holds.' },
+  { n: 'Atlas', r: 'Discipline', d: 'Your trading plan: which rules you keep, which you break and what breaking them costs.' },
+  { n: 'Nova', r: 'Risk', d: 'Stops, R multiples and how much room is left on your prop challenge.' },
+];
+
+const faq = [
+  {
+    q: 'What data does the AI coach use?',
+    a: 'Only when you send a message, the coach receives your question and a summary of your journal: statistics, strategies, recent and largest trades with their notes, prop challenges and backtests. It never receives your email, name, payment data or broker tokens. If you never use the coach, none of your data goes to it.',
+  },
+  {
+    q: 'Is the AI coach free?',
+    a: 'Yes. Every plan includes the coach: the free Starter plan has a few messages a day and Pro has more messages every day.',
+  },
+  {
+    q: 'Does the coach give trading signals or investment advice?',
+    a: 'No. It analyzes your own journal and habits. It does not predict prices or tell you what to buy or sell, its answers can be wrong, and nothing it says is investment advice.',
+  },
+  {
+    q: 'Can I send a chart screenshot?',
+    a: 'Yes. Drop in a chart screenshot with your question and the coach reads it together with your journal data. You can also dictate your question instead of typing.',
+  },
+  {
+    q: 'Which languages does it speak?',
+    a: 'English, Turkish and German, the same languages as the app.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/ai-trading-coach#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="AI Trading Coach That Knows Your Trades | Wawe Journal"
+  description="Wawe Journal's AI trading coach answers from your own journal: win rate by hour, the cost of trades without a stop, overtrading and prop limits. Free on every plan."
+  crumb="AI trading coach"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>AI trading coach</span></nav>
+      <h1 class="anim wide" style="--d:.1s">An AI trading coach that knows your trades.</h1>
+      <p class="page-lead anim" style="--d:.2s">Ask anything about your trading. Wawe Journal’s coach answers from your own journal, your trades, strategies, notes, prop challenges and backtests, with numbers, tables and charts instead of generic tips.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Meet your coach free</a>
+        <a href="/#coach" class="btn btn-line btn-lg">See example chats</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>Questions it answers <span class="dim">from your own data.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>“When does my day start going wrong?”</h3><p>Win rate and P&amp;L by trade number of the day, so you see whether your 4th or 5th trade is where the losses begin.</p></div>
+        <div class="fp-item"><h3>“Which emotions cost me money?”</h3><p>Trades tagged or noted with FOMO, revenge or boredom compared with your calm trades, in money and win rate.</p></div>
+        <div class="fp-item"><h3>“Which strategy should I drop?”</h3><p>Every strategy’s win rate, profit factor and expectancy side by side, including what your backtests say about it.</p></div>
+        <div class="fp-item"><h3>“What do trades without a stop cost me?”</h3><p>Trades without a stop loss and losses that went beyond −1R, and the total they cost you.</p></div>
+        <div class="fp-item"><h3>“How much room is left on my challenge?”</h3><p>Daily loss and max drawdown used on each active prop challenge, and how many average losses you can still afford.</p></div>
+        <div class="fp-item"><h3>“Any news I should know about?”</h3><p>The coach knows this week’s economic calendar for the pairs you trade, so you can ask which high-impact releases are coming up.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Pick the coach <span class="dim">for what holds you back.</span></h2>
+      <p class="lead">Five coaches share the same data and differ in focus and tone. Switch at any time.</p>
+      <div class="fp-grid">
+        {coaches.map((c) => (
+          <div class="fp-item"><span class="num">{c.r.toUpperCase()}</span><h3>{c.n}</h3><p>{c.d}</p></div>
+        ))}
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>More than a chat. <span class="dim">A coach that follows up.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Live alerts</h3><p>Right after a trade is imported, the coach warns you about a losing streak, a bigger size after a loss, a broken plan rule or a prop limit getting close.</p></div>
+        <div class="fp-item"><h3>Your trading plan</h3><p>Write your own rules, like a daily trade cap or a stop on every trade. Every trade is scored against them and broken rules are flagged.</p></div>
+        <div class="fp-item"><h3>Daily promises</h3><p>Commit to one concrete promise for the day, such as “no more than 3 trades”. The coach checks it against your trades and keeps the record.</p></div>
+        <div class="fp-item"><h3>Weekly review</h3><p>Each week: what worked, what cost you, and one goal to focus on next week.</p></div>
+        <div class="fp-item"><h3>One-click actions</h3><p>When the coach suggests a plan rule, a goal or a new strategy, you can apply it with one click after you review it. Nothing changes without your OK.</p></div>
+        <div class="fp-item"><h3>Screenshots and voice</h3><p>Send a chart screenshot with your question or dictate it instead of typing.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Your data, <span class="dim">used only when you ask.</span></h2>
+      <p class="lead">The coach is optional. Your data goes to it only when you send a message, and it never receives your email, name, payment data or broker tokens. Don’t write personal details into notes or chats. Read exactly <a href="/privacy#ai-coach">how the AI coach uses your data</a>. AI answers can be wrong and are not investment advice.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>AI coach questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
+        <a href="/backtesting" class="btn btn-line">Backtest replay →</a>
+        <a href="/pricing" class="btn btn-line">Plans →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Stop guessing what works.</h2>
+      <p>Create a free Wawe Journal account, import your trades and ask your first question.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

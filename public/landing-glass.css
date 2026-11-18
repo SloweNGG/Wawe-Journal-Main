@@ -438,7 +438,7 @@ main section:not(.hero-scene) .g:hover { transform: translateY(-3px); border-col
 
 /* responsive */
 @media (max-width: 900px) {
-  .hero-scene { background: linear-gradient(180deg, #000 0%, rgba(0,0,0,.4) 18%, rgba(0,0,0,0) 34%, rgba(0,0,0,0) 85%, #000 100%), url("/images/brand/hero-peak.webp") 50% bottom / auto 540px no-repeat, #000; }
+  .hero-scene { background: linear-gradient(180deg, #000 0%, rgba(0,0,0,.4) 18%, rgba(0,0,0,0) 34%, rgba(0,0,0,0) 85%, #000 100%), url("/images/brand/hero-peak-m.webp") 50% bottom / auto 540px no-repeat, #000; }
   .hero-scene::after { bottom: 235px; width: 340px; height: 240px; }
   .showcase { height: 470vh; padding: 0 12px; }
   .lp-foot { padding-bottom: 290px; background-size: auto, 920px auto, auto; }
@@ -467,3 +467,11 @@ main section:not(.hero-scene) .g:hover { transform: translateY(-3px); border-col
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* "Ayrıntılar" bağlantıları: bölümden ilgili özellik sayfasına (/backtesting, /prop-firm-tracker, /pricing) */
+.more-link { display: inline-block; align-self: flex-start; margin-top: 20px; color: var(--v-l); font-size: 15px; font-weight: 500; text-decoration: none; border-bottom: 1px solid rgba(167,139,250,.35); padding-bottom: 2px; transition: color .2s, border-color .2s; }
+.more-link:hover { color: #fff; border-color: #fff; }
+.more-link.center { align-self: center; display: table; margin-left: auto; margin-right: auto; }
+.prop-copy .more-link { margin-top: 0; }
+.sec-in > .more-link { margin-top: -16px; }
+.platforms-box .more-link { align-self: center; margin-top: 0; font-size: 14px; }

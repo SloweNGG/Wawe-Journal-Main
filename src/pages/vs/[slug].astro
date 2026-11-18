@@ -1,0 +1,199 @@
+---
+// Karşılaştırma sayfaları: /vs/tradezella, /vs/tradervue, /vs/edgewonk
+// Rakip bilgileri YALNIZCA kendi fiyat sayfalarından alındı (CHECKED tarihinde). Rakip hakkında doğrulanmamış
+// "yok / yapamaz" iddiası yazma: fiyat sayfasında geçmeyen özellik "Not listed on their pricing page" olarak kalır.
+// Fiyatlar değişir: bu sayfaları birkaç ayda bir yeniden kontrol et ve CHECKED'i güncelle.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const CHECKED = 'November 18, 2026';
+
+type Row = [string, string, string];
+interface Comp {
+  slug: string;
+  name: string;
+  pricingUrl: string;
+  title: string;
+  description: string;
+  lead: string;
+  rows: Row[];
+  theyWin: string[];
+  weWin: string[];
+  faq: { q: string; a: string }[];
+}
+
+
+export function getStaticPaths() {
+  // getStaticPaths ayrı derlenir: dışarıdaki sabitleri göremez, Wawe satırları burada
+  const WAWE = {
+    price: 'Free Starter plan; Pro $12/month or $99/year',
+    free: 'Yes, no time limit, no card',
+    sync: 'cTrader auto-sync (read-only); statement/CSV import for MetaTrader 4/5, TradingView, Binance, Bybit, IBKR, XTB, OANDA and Excel; MetaTrader auto-sync coming soon',
+    replay: 'Candle-by-candle backtest replay on every plan (1 account free, up to 10 on Pro)',
+    ai: 'AI coach on every plan, with five coach personas, live alerts, a trading plan and weekly reviews',
+    prop: 'Prop firm rule tracker on every plan (1 free, up to 10 on Pro) with Monte Carlo pass probability',
+  };
+  const comps: Comp[] = [
+    {
+      slug: 'tradezella',
+      name: 'TradeZella',
+      pricingUrl: 'https://www.tradezella.com/pricing',
+      title: 'Wawe Journal vs TradeZella: Free Alternative Compared',
+      description: 'Compare Wawe Journal and TradeZella: pricing, free plan, broker sync, backtest replay, AI coach and prop firm tracking. Wawe Journal Pro is $12/month.',
+      lead: 'TradeZella is one of the most complete trading journals, with plans from $35 a month. Wawe Journal covers the core of journaling, backtest replay, an AI coach and prop firm tracking with a free plan and a $12 Pro plan.',
+      rows: [
+        ['Price', WAWE.price, 'Essential $35/month ($315/year), Pro $59/month ($531/year), Ultra $99/month ($891/year)'],
+        ['Free plan', WAWE.free, 'Not listed on their pricing page'],
+        ['Broker import & sync', WAWE.sync, '500+ broker and prop firm integrations (auto-sync, upload and manual)'],
+        ['Backtesting / replay', WAWE.replay, 'Manual backtesting on all plans; trade replay and automated AI backtests on Pro and Ultra'],
+        ['AI features', WAWE.ai, 'AI credits on all plans (500 / 1,500 / 3,000 a month); AI agents on Pro and Ultra'],
+        ['Prop firm tracking', WAWE.prop, 'PropFirm Sync dashboard on all plans'],
+        ['Accounts', 'Multiple journals for live, prop and practice accounts', '1 (Essential), up to 50 (Pro), unlimited (Ultra)'],
+      ],
+      theyWin: [
+        'Far more broker and prop firm integrations with automatic sync (500+).',
+        'Automated AI backtests and AI agents on the higher plans.',
+        'A larger company with a big education library and community.',
+      ],
+      weWin: [
+        'A free plan with no time limit that already includes backtest replay, prop firm tracking, cTrader sync and the AI coach.',
+        'Pro costs $12 a month or $99 a year, less than TradeZella’s entry plan.',
+        'Candle-by-candle replay with drawing tools, multi-chart layouts, spread and commission on the free plan.',
+        'Prop challenge pass probability from a Monte Carlo simulation of your own trades.',
+      ],
+      faq: [
+        { q: 'Is Wawe Journal a free TradeZella alternative?', a: 'Yes. Wawe Journal’s Starter plan is free with no time limit and includes trade logging, imports, cTrader auto-sync, core analytics, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.' },
+        { q: 'Can I move my trades from TradeZella to Wawe Journal?', a: 'Wawe Journal imports CSV and Excel files, and statements from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB and OANDA. The simplest route is to export your history from your broker or platform and import it, or connect cTrader for automatic sync.' },
+        { q: 'When is TradeZella the better choice?', a: 'If you need automatic sync with a broker Wawe Journal does not support yet, or TradeZella’s AI agents and automated AI backtests, TradeZella is the better fit. If price, a free plan and built-in replay, prop tracking and an AI coach matter most, try Wawe Journal.' },
+      ],
+    },
+    {
+      slug: 'tradervue',
+      name: 'Tradervue',
+      pricingUrl: 'https://www.tradervue.com/site/pricing/',
+      title: 'Wawe Journal vs Tradervue: Trading Journal Comparison',
+      description: 'Compare Wawe Journal and Tradervue: pricing, free plan, broker sync, backtest replay, AI coach and prop firm tracking for forex, crypto and prop firm traders.',
+      lead: 'Tradervue is a long-running trading journal known for detailed reports and mentor sharing, with paid plans from $29.95 a month. Wawe Journal focuses on forex, crypto and prop firm traders, with backtest replay, an AI coach and prop rule tracking on a free plan.',
+      rows: [
+        ['Price', WAWE.price, 'Silver $29.95/month, Gold $49.95/month; yearly prices not listed'],
+        ['Free plan', WAWE.free, 'Yes (limits are described on their site)'],
+        ['Broker import & sync', WAWE.sync, 'Broker sync and unlimited imports on paid plans'],
+        ['Backtesting / replay', WAWE.replay, 'Not listed on their pricing page'],
+        ['AI features', WAWE.ai, 'Not listed on their pricing page'],
+        ['Prop firm tracking', WAWE.prop, 'Not listed on their pricing page'],
+        ['Sharing', 'Personal journal', 'Mentor and mentee sharing on paid plans'],
+      ],
+      theyWin: [
+        'A long track record and support for stocks, ETFs, futures, forex and options.',
+        'Mentor and mentee sharing for trading groups.',
+        'Exit analysis and max potential P&L reports on the Gold plan.',
+      ],
+      weWin: [
+        'Backtest replay, an AI coach and prop firm rule tracking, none of which appear on Tradervue’s pricing page.',
+        'Pro costs $12 a month or $99 a year.',
+        'Built for forex, crypto and prop firm traders: daily loss and drawdown rules per firm, with your firm’s reset time zone.',
+      ],
+      faq: [
+        { q: 'Is Wawe Journal a good Tradervue alternative for forex traders?', a: 'Yes, if you trade forex, gold or crypto, often with prop firms. Wawe Journal adds candle-by-candle backtest replay, prop firm rule tracking and an AI coach, and its free plan includes all three.' },
+        { q: 'Does Wawe Journal support stocks?', a: 'You can import trades from Interactive Brokers or any CSV/Excel file and analyze them, but the product is designed mainly around forex, crypto and prop firm trading. Stock-focused traders may prefer Tradervue’s reports.' },
+        { q: 'Can I import my Tradervue history?', a: 'If you can export your trades as CSV or Excel, you can import them into Wawe Journal. You can also import the original statements from your broker or platform.' },
+      ],
+    },
+    {
+      slug: 'edgewonk',
+      name: 'Edgewonk',
+      pricingUrl: 'https://edgewonk.com/pricing',
+      title: 'Wawe Journal vs Edgewonk: Trading Journal Comparison',
+      description: 'Compare Wawe Journal and Edgewonk: pricing, free plan, broker sync, backtest replay, AI coach, psychology tools and prop firm tracking. Wawe Journal starts free.',
+      lead: 'Edgewonk is known for its psychology tools and costs $35 a month or $197 a year, with a 14-day money-back guarantee. Wawe Journal offers a free plan with backtest replay, an AI coach that looks at emotions in your notes, and prop firm rule tracking.',
+      rows: [
+        ['Price', WAWE.price, '$35/month or $197/year'],
+        ['Free plan', WAWE.free, 'No free plan listed; 14-day money-back guarantee'],
+        ['Broker import & sync', WAWE.sync, 'Automated trade imports, unlimited broker accounts'],
+        ['Backtesting / replay', WAWE.replay, 'Strategy testing and a performance simulator; replay not listed'],
+        ['AI features', WAWE.ai, 'Not listed on their pricing page'],
+        ['Prop firm tracking', WAWE.prop, 'Unlimited prop firm accounts'],
+        ['Psychology', 'Emotion tags on trades and a psychology-focused AI coach (Mira)', 'Psychology tracking and analysis, Tiltmeter'],
+      ],
+      theyWin: [
+        'Dedicated psychology tools such as the Tiltmeter.',
+        'Unlimited broker and prop firm accounts on one plan.',
+        'Strategy testing and a performance simulator.',
+      ],
+      weWin: [
+        'A free plan with no time limit.',
+        'Candle-by-candle backtest replay on real cTrader data or synthetic data.',
+        'An AI coach that answers from your own journal and sends live alerts.',
+        'Pro costs $12 a month or $99 a year.',
+      ],
+      faq: [
+        { q: 'Is there a free Edgewonk alternative?', a: 'Wawe Journal’s Starter plan is free with no time limit. It includes journaling, imports, core analytics, emotion tags, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.' },
+        { q: 'Which is better for trading psychology?', a: 'Edgewonk has dedicated psychology tools like the Tiltmeter. Wawe Journal approaches it through emotion tags, notes and an AI coach persona (Mira) that shows what each emotion costs you. Try both if psychology is your main focus.' },
+        { q: 'Can I move from Edgewonk to Wawe Journal?', a: 'Export your trades as CSV or Excel, or export statements from your broker, and import them. cTrader accounts can be connected for automatic sync.' },
+      ],
+    },
+  ];
+  return comps.map((c) => ({ params: { slug: c.slug }, props: { c } }));
+}
+
+const { c } = Astro.props as { c: Comp };
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': `https://wawejournal.com/vs/${c.slug}#faq`,
+    mainEntity: c.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout title={c.title} description={c.description} crumb={`Wawe Journal vs ${c.name}`} schema={schema}>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>vs {c.name}</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Wawe Journal vs {c.name}</h1>
+      <p class="page-lead anim" style="--d:.2s">{c.lead}</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Try Wawe Journal free</a>
+        <a href="/pricing" class="btn btn-line btn-lg">See plans</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>Side by side</h2>
+      <div class="fp-table-wrap">
+        <table class="fp-table">
+          <thead><tr><th></th><th>Wawe Journal</th><th>{c.name}</th></tr></thead>
+          <tbody>
+            {c.rows.map(([k, w, t]) => (<tr><td>{k}</td><td class="yes">{w}</td><td>{t}</td></tr>))}
+          </tbody>
+        </table>
+      </div>
+      <p class="fp-note">{c.name} information comes from <a href={c.pricingUrl} rel="nofollow noopener" target="_blank">their pricing page</a>, checked on {CHECKED}. Prices and features change; check their site for the current offer. {c.name} is a trademark of its owner; Wawe Journal is not affiliated with it.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Where {c.name} is stronger</h3><ul class="plan-feats">{c.theyWin.map((x) => <li>{x}</li>)}</ul></div>
+        <div class="fp-item"><h3>Where Wawe Journal is stronger</h3><ul class="plan-feats">{c.weWin.map((x) => <li>{x}</li>)}</ul></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Questions</h2>
+      <div class="fp-faq">
+        {c.faq.map((f) => (<details><summary>{f.q}</summary><div class="a">{f.a}</div></details>))}
+      </div>
+      <div class="fp-related">
+        <a href="/backtesting" class="btn btn-line">Backtest replay →</a>
+        <a href="/ai-trading-coach" class="btn btn-line">AI coach →</a>
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>See if it fits your trading.</h2>
+      <p>Wawe Journal’s Starter plan is free with no time limit. No card needed.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

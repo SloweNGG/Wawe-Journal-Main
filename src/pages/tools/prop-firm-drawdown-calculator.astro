@@ -1,0 +1,361 @@
+---
+// Ücretsiz araç: prop firma günlük kayıp + maksimum drawdown hesaplayıcı. İçerik İngilizce ve sunucuda hazır.
+// Hesap uygulamadaki prop takipçisiyle aynı motordan gelir: public/src/utils/prop-calculator.js (calculatePropStatus)
+// ve public/src/core/prop-templates.js (firma şablonları). Sayfa yalnızca bu motorun verdiği seviyelerin üstüne
+// "bugün kalan alan" farklarını hesaplar. Firma adları ve kurallar değişirse burası şablon dosyasından kendiliğinden güncellenir.
+import PageLayout from '../../layouts/PageLayout.astro';
+import PropRuleFields from '../../components/tools/PropRuleFields.astro';
+import { loadPropTemplates, presetLabel, fmtTz } from '../../components/tools/prop-presets';
+
+const URL_SELF = 'https://wawejournal.com/tools/prop-firm-drawdown-calculator';
+const templates = loadPropTemplates().filter((t) => t.key !== 'custom');
+const lastChecked = templates.map((t) => t.last_verified || '').sort().pop() || '';
+const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v + '%');
+const maxType = (p: { max_loss_type?: string; max_loss_trail_lock?: string }) =>
+  p.max_loss_type === 'eod_trailing' || p.max_loss_type === 'trailing_eod'
+    ? (p.max_loss_trail_lock === 'at_starting_balance' ? 'trailing EOD, locks at start' : 'trailing EOD')
+    : 'static';
+const dailyBase = (p: { daily_loss_amount_base?: string }) => (p.daily_loss_amount_base === 'day_start_balance' ? 'of day-start balance' : 'of starting balance');
+
+const faq = [
+  {
+    q: 'What is the difference between static and trailing drawdown?',
+    a: 'A static max drawdown is a fixed floor: on a $100,000 account with a 10% limit you fail if equity drops below $90,000, no matter how much you made before. A trailing end-of-day drawdown follows your highest closing balance: if your best day closed at $104,000 the floor moves up to $94,000 and never moves back down. Some firms stop the trailing floor once it reaches the starting balance.',
+  },
+  {
+    q: 'Is the daily loss limit measured on balance or equity?',
+    a: 'Most firms check the daily loss on equity, which includes open trades, against the balance the day started with. That is why this calculator asks for your current equity. The limit amount itself is either a fixed share of the starting balance (the FTMO preset uses 5% of $100,000 = $5,000 every day) or a share of the day’s starting balance (the FundingPips presets).',
+  },
+  {
+    q: 'When does the daily loss limit reset?',
+    a: 'At the firm’s daily reset, usually midnight in the firm’s or the trading server’s time zone. The presets use midnight Prague time for FTMO, UTC+3 for FundingPips and your platform’s server time for FundedNext. The calculator shows the reset for the preset you pick.',
+  },
+  {
+    q: 'Do I need an account to use the calculator?',
+    a: 'No. The calculator runs in your browser and nothing you type is sent or stored. If you want the same numbers updated automatically from your trades, the Wawe Journal prop firm tracker calculates them from your journal with the same rule engine.',
+  },
+  {
+    q: 'Why could my firm’s dashboard show a different number?',
+    a: 'Firms differ in details such as commissions and swaps, intraday versus end-of-day trailing and the exact reset time, and they update their rules. Use the result as a planning number and confirm the limits with your firm. Rules change; confirm the numbers with your firm.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'WebApplication',
+    '@id': URL_SELF + '#app',
+    name: 'Prop Firm Drawdown Calculator',
+    url: URL_SELF,
+    description: 'Free calculator for prop firm daily loss limits and static or trailing max drawdown, with presets for FTMO, FundedNext and FundingPips challenges.',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    isAccessibleForFree: true,
+    inLanguage: 'en',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': URL_SELF + '#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Prop Firm Drawdown & Daily Loss Calculator | Wawe Journal"
+  description="Free prop firm drawdown calculator: your daily loss limit, static or trailing max drawdown level and room left today. FTMO, FundedNext and FundingPips presets."
+  crumb="Prop firm drawdown calculator"
+  crumbParent={{ name: 'Tools', href: '/tools' }}
+  schema={schema}
+>
+  <Fragment slot="head"><link rel="stylesheet" href="/tools.css" /></Fragment>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/tools">Tools</a><span aria-hidden="true">/</span><span>Drawdown calculator</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Prop firm drawdown calculator</h1>
+      <p class="page-lead anim" style="--d:.2s">Pick your firm, phase and account size, enter today’s numbers and see exactly where your daily loss limit and max drawdown sit, and how much you can still lose today before a rule breaks.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="tl-calc anim" style="--d:.3s">
+      <form class="tl-panel" id="dd-form" novalidate onsubmit="return false">
+        <h2>Your challenge</h2>
+        <PropRuleFields />
+        <fieldset class="tl-fs">
+          <legend>Today</legend>
+          <div class="tl-grid">
+            <label class="tl-f tl-span2"><span>Current equity (balance + open P&amp;L)</span>
+              <input id="dd-equity" type="number" inputmode="decimal" step="any" value="99500" />
+            </label>
+            <label class="tl-f tl-span2"><span>Balance at the start of today</span>
+              <input id="dd-daystart" type="number" inputmode="decimal" step="any" value="101000" />
+            </label>
+            <label class="tl-f tl-span2" id="dd-peak-wrap"><span>Highest end-of-day balance so far</span>
+              <input id="dd-peak" type="number" inputmode="decimal" step="any" value="101000" />
+              <small>Trailing drawdown follows your best daily close, not intraday highs.</small>
+            </label>
+          </div>
+        </fieldset>
+      </form>
+
+      <section class="tl-panel tl-sticky tl-out" aria-live="polite" aria-label="Results">
+        <div class="tl-kpi">
+          <div class="tl-kpi-label">You can lose today</div>
+          <div class="tl-kpi-val" id="dd-room">—</div>
+          <div class="tl-kpi-sub" id="dd-room-sub">Fill in your numbers to see the room left before a rule breaks.</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Daily loss limit</h3><span class="tl-badge" id="dd-daily-badge">—</span></div>
+          <div class="tl-big" id="dd-daily-room">—</div>
+          <div class="tl-meter" id="dd-daily-meter" role="progressbar" aria-label="Daily loss limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+          <div class="tl-rows">
+            <span>Limit today</span><b id="dd-daily-limit">—</b>
+            <span>Equity must stay above</span><b id="dd-daily-floor">—</b>
+            <span>Lost so far today</span><b id="dd-daily-used">—</b>
+          </div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Max drawdown</h3><span class="tl-badge" id="dd-max-badge">—</span></div>
+          <div class="tl-big" id="dd-max-room">—</div>
+          <div class="tl-meter" id="dd-max-meter" role="progressbar" aria-label="Max drawdown used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+          <div class="tl-rows">
+            <span>Type</span><b id="dd-max-type">—</b>
+            <span>Stop level (account fails below)</span><b id="dd-max-stop">—</b>
+            <span>Distance in % of start</span><b id="dd-max-pct">—</b>
+            <span id="dd-next-label" hidden>Stop tomorrow if today closes here</span><b id="dd-next" hidden>—</b>
+          </div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Profit target</h3><span class="tl-badge" id="dd-target-badge">—</span></div>
+          <div class="tl-big" id="dd-target-prog">—</div>
+          <div class="tl-meter good" id="dd-target-meter" role="progressbar" aria-label="Profit target progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+          <div class="tl-rows">
+            <span>Target balance</span><b id="dd-target-bal">—</b>
+            <span>Still needed</span><b id="dd-target-left">—</b>
+          </div>
+        </div>
+        <div class="tl-msg" id="dd-msg" hidden></div>
+        <p class="tl-disc">An estimate for planning, not investment advice. Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them. Rules change; confirm the numbers with your firm.</p>
+      </section>
+    </div>
+
+    <section class="fp-sec reveal">
+      <h2>Two loss rules decide every challenge. <span class="dim">Here is how each one is measured.</span></h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><span class="num">01</span><h3>Daily loss limit</h3><p>The most you may lose in one trading day, counted from the balance the day started with and usually checked on equity, so open trades count. The amount is either fixed from the starting balance (5% of $100,000 is $5,000 every day) or a share of the day’s starting balance, which grows after winning days. It resets at the firm’s daily reset.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Max drawdown</h3><p>The lowest level your account may ever reach. With a 10% static limit on $100,000 the stop sits at $90,000 for the whole challenge. With a trailing limit the stop follows your best result, so profits you give back count against you.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Static vs trailing drawdown, <span class="dim">on a $100,000 account with a 10% limit.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Static</h3><p>The stop is $90,000 from day one to the end. Making $4,000 and giving it back does not move it. You always know the worst-case number in advance.</p></div>
+        <div class="fp-item"><h3>Trailing end of day</h3><p>The stop is your highest daily closing balance minus $10,000. Close a day at $104,000 and the stop rises to $94,000; it never moves down again. Intraday highs do not count, only the balance at the daily reset.</p></div>
+        <div class="fp-item"><h3>Trailing with a lock</h3><p>Some firms stop trailing once the stop reaches the starting balance. After that your floor is $100,000 for good, which works like a static limit above break-even. Pick “The starting balance” under the rules to model it.</p></div>
+      </div>
+      <p class="fp-note">The calculator moves a trailing stop only at the end of the day, the same way the Wawe Journal prop tracker does. If your firm trails intraday on equity, your real stop can be higher.</p>
+    </section>
+
+    {templates.length > 0 && (
+      <section class="fp-sec reveal">
+        <h2>Preset rules <span class="dim">used by the calculator.</span></h2>
+        <p class="lead">These are the presets of the Wawe Journal prop tracker{lastChecked ? `, last checked ${lastChecked}` : ''}. Rules change; confirm the numbers with your firm. For any other firm, choose “Custom rules” and enter its limits.</p>
+        <div class="fp-table-wrap">
+          <table class="fp-table">
+            <thead><tr><th>Preset</th><th>Phase</th><th>Target</th><th>Daily loss</th><th>Max loss</th><th>Daily reset</th></tr></thead>
+            <tbody>
+              {templates.flatMap((t) => t.phases.map((p) => (
+                <tr>
+                  <td>{presetLabel(t)}</td>
+                  <td>{p.phase_name}</td>
+                  <td>{pct(p.profit_target_pct)}</td>
+                  <td>{pct(p.daily_loss_limit_pct)} {dailyBase(p)}</td>
+                  <td>{pct(p.max_loss_limit_pct)} {maxType(p)}</td>
+                  <td>{fmtTz(t.reset_tz)}</td>
+                </tr>
+              )))}
+            </tbody>
+          </table>
+        </div>
+        <p class="fp-note">Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them.</p>
+      </section>
+    )}
+
+    <section class="fp-sec reveal">
+      <h2>Drawdown calculator questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/tools/prop-firm-pass-probability" class="btn btn-line">Pass probability calculator →</a>
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm rule tracker →</a>
+        <a href="/pricing" class="btn btn-line">Plans and pricing →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Let the journal do this math.</h2>
+      <p>Wawe Journal’s prop firm tracker recalculates your daily loss and drawdown from every trade you log or sync. Free to start.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+
+  <script src="/src/core/prop-templates.js" is:inline defer></script>
+  <script src="/src/utils/prop-calculator.js" is:inline defer></script>
+  <script is:inline>
+  // Drawdown hesaplayıcı. Seviyeler PropCalculator.calculatePropStatus'tan gelir: kullanıcının girdiği bakiyeler
+  // sentetik bir geçmişe çevrilir (gün 1: en yüksek gün sonu bakiyesi, gün 2: bugünün açılış bakiyesi) ve motor
+  // bugünün limitini ve stop seviyesini uygulamadaki gibi hesaplar. Bugünkü özsermaye (equity) bu seviyelere göre okunur.
+  (function () {
+    'use strict';
+    function boot() {
+      var F = window.WWPropRuleForm;
+      if (!F) return;
+      var PC = window.PropCalculator || null;
+      var num = F.num, money = F.money;
+      function $(id) { return document.getElementById(id); }
+      function r2(v) { return Math.round(v * 100) / 100; }
+      function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+      var eqEl = $('dd-equity'), dsEl = $('dd-daystart'), pkEl = $('dd-peak'), pkWrap = $('dd-peak-wrap');
+      var form = F.init({ onChange: run });
+
+      function setText(id, v) { var el = $(id); if (el) el.textContent = v; }
+      function meter(id, pctUsed, cls) {
+        var el = $(id); if (!el) return;
+        var v = isFinite(pctUsed) ? clamp(pctUsed, 0, 100) : 0;
+        el.firstElementChild.style.width = v + '%';
+        el.setAttribute('aria-valuenow', String(Math.round(v)));
+        if (cls !== undefined) el.className = 'tl-meter' + (cls ? ' ' + cls : '');
+      }
+      function badge(id, text, cls) { var el = $(id); if (!el) return; el.textContent = text; el.className = 'tl-badge' + (cls ? ' ' + cls : ''); }
+      function level(roomFrac) { return roomFrac <= 0 ? 'bad' : roomFrac < 0.25 ? 'warn' : ''; }
+      function msg(text) { var el = $('dd-msg'); if (!el) return; el.hidden = !text; el.textContent = text || ''; }
+
+      // Motor yüklenemezse aynı kuralların basit hali (yalnızca yedek; normalde PropCalculator kullanılır)
+      function fallbackStatus(acc, ds, peak) {
+        var r = acc.rules, S = Number(acc.starting_balance);
+        var base = r.daily_loss_amount_base === 'day_start_balance' ? ds : S;
+        var stop = S * (1 - r.max_loss_limit_pct / 100);
+        if (r.max_loss_type === 'eod_trailing') {
+          var c = peak - S * r.max_loss_limit_pct / 100;
+          if (r.max_loss_trail_lock === 'at_starting_balance' && c > S) c = S;
+          stop = Math.max(stop, c);
+        }
+        var target = r.profit_target_pct ? r2(S * r.profit_target_pct / 100) : null;
+        return { overall_status: 'in_progress', daily_loss: { limit_amount: r2(base * r.daily_loss_limit_pct / 100) },
+          max_loss: { hard_stop_level: r2(stop) }, profit_target: { target_amount: target, target_balance: target === null ? null : r2(S + target) } };
+      }
+
+      // Kullanıcının bakiyelerini motorun anlayacağı kapanmış işlem geçmişine çevirir (tarih-only, saat yok)
+      function status(acc, ds, peak, today) {
+        if (!PC) return fallbackStatus(acc, ds, peak);
+        var S = Number(acc.starting_balance), trades = [], bal = S;
+        if (acc.rules.max_loss_type === 'eod_trailing' && peak > S) { trades.push({ trade_date: '2026-01-05', pnl: r2(peak - S) }); bal = peak; }
+        if (r2(ds - bal) !== 0) trades.push({ trade_date: '2026-01-06', pnl: r2(ds - bal) });
+        var current = '2026-01-07';
+        if (today !== undefined && r2(today - ds) !== 0) { trades.push({ trade_date: '2026-01-07', pnl: r2(today - ds) }); current = '2026-01-08'; }
+        return PC.calculatePropStatus({ account: acc, trades: trades, currentDate: current });
+      }
+
+      function blank(text) {
+        ['dd-room', 'dd-daily-room', 'dd-daily-limit', 'dd-daily-floor', 'dd-daily-used', 'dd-max-room', 'dd-max-type', 'dd-max-stop', 'dd-max-pct', 'dd-target-prog', 'dd-target-bal', 'dd-target-left']
+          .forEach(function (id) { setText(id, '—'); });
+        ['dd-daily-badge', 'dd-max-badge', 'dd-target-badge'].forEach(function (id) { badge(id, '—', ''); });
+        meter('dd-daily-meter', 0, ''); meter('dd-max-meter', 0, ''); meter('dd-target-meter', 0, 'good');
+        setText('dd-room-sub', 'Fill in your numbers to see the room left before a rule breaks.');
+        msg(text);
+      }
+
+      function run() {
+        var acc = form.account(), r = acc.rules;
+        var trailing = r.max_loss_type === 'eod_trailing';
+        if (pkWrap) pkWrap.hidden = !trailing;
+        var S = Number(acc.starting_balance);
+        if (!(S > 0)) return blank('Enter an account size above zero.');
+        var ds = num(dsEl.value); if (!isFinite(ds)) ds = S;
+        var eq = num(eqEl.value); if (!isFinite(eq)) eq = ds;
+        if (ds <= 0) return blank('Enter today’s starting balance.');
+        var pkIn = num(pkEl.value);
+        var peak = trailing ? Math.max(S, ds, isFinite(pkIn) ? pkIn : 0) : S;
+
+        var st;
+        try { st = status(acc, ds, peak); } catch (e) { return blank('Could not calculate: ' + (e && e.message ? e.message : 'check the rules')); }
+        if (!st || st.overall_status === 'invalid_rules') return blank((st && st.error_message ? st.error_message.replace(/_/g, ' ') : 'Check the rules') + '.');
+
+        // Günlük kayıp: limit motordan, zemin = gün başı bakiye - limit, kalan = equity - zemin
+        var dLimit = Number(st.daily_loss.limit_amount);
+        var dFloor = r2(ds - dLimit);
+        var dRoom = r2(eq - dFloor);
+        var dUsed = Math.max(0, r2(ds - eq));
+        setText('dd-daily-room', dRoom > 0 ? money(dRoom) + ' left' : 'Limit reached');
+        setText('dd-daily-limit', money(dLimit) + ' (' + r.daily_loss_limit_pct + '% of ' + (r.daily_loss_amount_base === 'day_start_balance' ? 'day start' : 'start') + ')');
+        setText('dd-daily-floor', money(dFloor));
+        setText('dd-daily-used', money(dUsed));
+        var dFrac = dLimit > 0 ? dRoom / dLimit : 0;
+        meter('dd-daily-meter', dLimit > 0 ? dUsed / dLimit * 100 : 0, level(dFrac));
+        badge('dd-daily-badge', dRoom <= 0 ? 'Breached' : dFrac < 0.25 ? 'Close' : 'OK', dRoom <= 0 ? 'bad' : dFrac < 0.25 ? 'warn' : 'ok');
+
+        // Maksimum kayıp: stop motordan (statik ya da gün sonu takipli + kilit)
+        var stop = Number(st.max_loss.hard_stop_level);
+        var span = S * r.max_loss_limit_pct / 100;
+        var mRoom = r2(eq - stop);
+        var mFrac = span > 0 ? mRoom / span : 0;
+        setText('dd-max-room', mRoom > 0 ? money(mRoom) + ' left' : 'Stop reached');
+        setText('dd-max-type', r.max_loss_limit_pct + '% ' + (trailing ? 'trailing (EOD)' + (r.max_loss_trail_lock === 'at_starting_balance' ? ', locks at start' : '') : 'static'));
+        setText('dd-max-stop', money(stop));
+        setText('dd-max-pct', (Math.round(mRoom / S * 10000) / 100).toFixed(2) + '%');
+        meter('dd-max-meter', (1 - mFrac) * 100, level(mFrac));
+        badge('dd-max-badge', mRoom <= 0 ? 'Breached' : mFrac < 0.25 ? 'Close' : 'OK', mRoom <= 0 ? 'bad' : mFrac < 0.25 ? 'warn' : 'ok');
+
+        // Takipli stop: bugün bu equity ile kapanırsa yarınki stop (motor bugünü de bir gün olarak işler)
+        var nextLabel = $('dd-next-label'), nextEl = $('dd-next');
+        var showNext = trailing && mRoom > 0 && dRoom > 0;
+        if (nextLabel) nextLabel.hidden = !showNext;
+        if (nextEl) nextEl.hidden = !showNext;
+        if (showNext) {
+          try { var st2 = status(acc, ds, peak, eq); nextEl.textContent = money(Number(st2.max_loss.hard_stop_level)); } catch (e) { nextEl.textContent = '—'; }
+        }
+
+        // Kâr hedefi
+        var tAmt = st.profit_target ? st.profit_target.target_amount : null;
+        if (tAmt === null || tAmt === undefined) {
+          setText('dd-target-prog', 'No target');
+          setText('dd-target-bal', '—');
+          setText('dd-target-left', '—');
+          meter('dd-target-meter', 0, 'good');
+          badge('dd-target-badge', 'Funded', '');
+        } else {
+          var tBal = Number(st.profit_target.target_balance);
+          var prog = tAmt > 0 ? clamp((eq - S) / tAmt * 100, 0, 100) : 0;
+          setText('dd-target-prog', prog.toFixed(1) + '%' );
+          setText('dd-target-bal', money(tBal) + ' (+' + r.profit_target_pct + '%)');
+          setText('dd-target-left', money(Math.max(0, r2(tBal - eq))));
+          meter('dd-target-meter', prog, 'good');
+          badge('dd-target-badge', prog >= 100 ? 'Reached' : 'In progress', prog >= 100 ? 'ok' : '');
+        }
+
+        // Başlık: hangi kural önce kırılır
+        var room = Math.min(dRoom, mRoom);
+        setText('dd-room', room > 0 ? money(room) : money(0));
+        var first = dRoom <= mRoom ? 'daily loss limit' : 'max drawdown';
+        setText('dd-room-sub', room > 0
+          ? 'before the ' + first + ' breaks. Equity must stay above ' + money(Math.max(dFloor, stop)) + ' today.'
+          : 'The ' + first + ' is already broken at this equity.');
+        msg('');
+      }
+
+      [eqEl, dsEl, pkEl].forEach(function (el) { if (el) el.addEventListener('input', run); });
+      run();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+  </script>
+</PageLayout>

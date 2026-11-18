@@ -16,6 +16,7 @@
           "pricing": "Pricing",
           "faq": "FAQ",
           "coach": "AI Coach",
+          "prop": "Prop firms",
           "signin": "Sign in",
           "start": "Start for free"
         },
@@ -23,11 +24,12 @@
           "new": "NEW",
           "new_text": "Meet your AI coach →",
           "title_h": "Never make the same<br><span class=\"shine\">mistake twice.</span>",
-          "sub": "Journal, analytics, an AI coach, prop firm tracking and backtest replay. All in one place.",
+          "sub": "Wawe Journal is a free trading journal with analytics, an AI coach, prop firm tracking and backtest replay. All in one place.",
           "start": "Start for free",
           "signin": "Sign in"
         },
         "plat": {
+          "more": "See every integration →",
           "label": "IMPORT FROM YOUR BROKER OR PLATFORM",
           "note": "cTrader syncs automatically. For the others, import a statement or CSV.",
           "auto": "AUTO-SYNC",
@@ -49,6 +51,7 @@
           "tab_analytics": "Analytics"
         },
         "j": {
+          "ct_more": "How cTrader sync works →",
           "title_h": "An easy way to journal your trades. <span class=\"dim\">Import a statement or connect cTrader and you're done.</span>",
           "cta": "Try for free",
           "dash_tag": "DASHBOARD",
@@ -85,6 +88,7 @@
           "c4_d": "Learn from the outliers instead of forgetting them."
         },
         "b": {
+          "more": "How backtest replay works →",
           "title_h": "Go back in time, candle by candle. <span class=\"dim\">Practice on synthetic data or replay your own cTrader charts.</span>",
           "cta": "Try a backtest",
           "s1_t": "Pick your data",
@@ -95,6 +99,7 @@
           "s3_d": "Every trade is saved to the linked journal. See its stats separately or combined with live trading."
         },
         "c": {
+          "more": "Everything the AI coach can do →",
           "tag": "NEW · AI COACH",
           "title_h": "An AI coach that knows your trades. <span class=\"dim\">Not just the market.</span>",
           "d": "Ask anything about your trading. The coach answers from your own journal: your trades, strategies, notes, prop challenges and backtests. Type, speak or drop in a chart screenshot.",
@@ -152,6 +157,7 @@
           "note": "On every plan: a few messages a day on Starter, more on Pro. AI answers can be wrong and are not investment advice."
         },
         "p": {
+          "more": "How prop firm tracking works →",
           "title_h": "Pass the challenge. <span class=\"dim\">Watch every prop firm rule in real time.</span>",
           "d": "Daily loss, max drawdown and profit target, tracked against your firm's rule set. Overtrade alerts stop the spiral before it starts.",
           "example": "example",
@@ -174,6 +180,7 @@
           "priv_btn": "Privacy policy"
         },
         "pr": {
+          "more": "Compare plans in detail →",
           "title_h": "Fair pricing. <span class=\"dim\">Backtest, prop tracking, cTrader sync and the AI coach on every plan.</span>",
           "monthly": "Monthly",
           "yearly": "Yearly · save 31%",
@@ -226,6 +233,12 @@
           "btn": "Start for free →"
         },
         "ft": {
+          "resources": "RESOURCES",
+          "integrations": "Integrations",
+          "tools": "Free tools",
+          "disclaimer": "Risk disclosure",
+          "backtesting": "Backtesting",
+          "prop": "Prop firm tracker",
           "desc_h": "Trading journal, analytics, AI coach and backtest replay.",
           "product": "PRODUCT",
           "company": "COMPANY",
@@ -403,8 +416,8 @@
       },
       about: {
         title: 'About Us',
-        founder_title: 'WaweDev',
-        founder_desc: 'WaweDev was founded by a technology enthusiast passionate about financial markets and software.',
+        founder_title: 'Wawe Journal',
+        founder_desc: 'Wawe Journal (WaweJournal) was founded by a developer passionate about financial markets and software, who wanted one place to journal, review and practice trades.',
         mission_title: 'Our Mission',
         mission_desc: 'To empower traders to track their executions with data-driven clarity, support disciplined decision-making, and improve financial literacy.',
         vision_title: 'Our Vision',
@@ -461,6 +474,7 @@
           "pricing": "Fiyatlandırma",
           "faq": "SSS",
           "coach": "AI Koç",
+          "prop": "Prop firmalar",
           "signin": "Giriş yap",
           "start": "Ücretsiz başla"
         },
@@ -468,11 +482,12 @@
           "new": "YENİ",
           "new_text": "AI koçunla tanış →",
           "title_h": "Aynı hatayı<br><span class=\"shine\">bir daha asla yapma.</span>",
-          "sub": "Günlük, analiz, AI koç, prop firm takibi ve backtest replay. Hepsi tek bir yerde.",
+          "sub": "Wawe Journal; analiz, AI koç, prop firma takibi ve backtest replay içeren ücretsiz bir işlem günlüğü. Hepsi tek bir yerde.",
           "start": "Ücretsiz başla",
           "signin": "Giriş yap"
         },
         "plat": {
+          "more": "Tüm entegrasyonları gör →",
           "label": "BROKER VEYA PLATFORMUNDAN İÇE AKTAR",
           "note": "cTrader otomatik senkronize olur. Diğerleri için ekstre veya CSV içe aktar.",
           "auto": "OTOMATİK",
@@ -494,6 +509,7 @@
           "tab_analytics": "Analiz"
         },
         "j": {
+          "ct_more": "cTrader senkronu nasıl çalışır →",
           "title_h": "İşlemlerini günlüğe almanın kolay yolu. <span class=\"dim\">Bir ekstre içe aktar ya da cTrader'ı bağla, gerisi tamam.</span>",
           "cta": "Ücretsiz dene",
           "dash_tag": "PANEL",
@@ -530,6 +546,7 @@
           "c4_d": "Aykırı işlemleri unutma, onlardan öğren."
         },
         "b": {
+          "more": "Backtest tekrarı nasıl çalışır →",
           "title_h": "Zamanda geri git, mum mum. <span class=\"dim\">Sentetik veride pratik yap ya da kendi cTrader grafiklerini tekrar oynat.</span>",
           "cta": "Backtest dene",
           "s1_t": "Verini seç",
@@ -540,6 +557,7 @@
           "s3_d": "Her işlem bağlı günlüğe kaydedilir. İstatistiklerini ayrı ya da canlı işlemlerle birleşik gör."
         },
         "c": {
+          "more": "AI koçun yapabildiği her şey →",
           "tag": "YENİ · AI KOÇ",
           "title_h": "İşlemlerini tanıyan bir AI koç. <span class=\"dim\">Sadece piyasayı değil.</span>",
           "d": "Trading’in hakkında ne istersen sor. Koç cevabını kendi günlüğünden verir: işlemlerin, stratejilerin, notların, prop challenge’ların ve backtest’lerin. Yaz, sesli sor ya da bir grafik görüntüsü ekle.",
@@ -597,6 +615,7 @@
           "note": "Her planda var: Başlangıç’ta günde birkaç mesaj, Pro’da daha fazlası. AI cevapları hatalı olabilir ve yatırım tavsiyesi değildir."
         },
         "p": {
+          "more": "Prop firma takibi nasıl çalışır →",
           "title_h": "Challenge’ı geç. <span class=\"dim\">Her prop firma kuralını gerçek zamanlı izle.</span>",
           "d": "Günlük zarar, maksimum düşüş ve kâr hedefi, firmanın kural setine göre takip edilir. Aşırı işlem uyarıları kötü gidişi başlamadan durdurur.",
           "example": "örnek",
@@ -619,6 +638,7 @@
           "priv_btn": "Gizlilik politikası"
         },
         "pr": {
+          "more": "Planları ayrıntılı karşılaştır →",
           "title_h": "Adil fiyatlandırma. <span class=\"dim\">Backtest, prop takibi, cTrader senkronizasyonu ve AI koç her planda.</span>",
           "monthly": "Aylık",
           "yearly": "Yıllık · %31 tasarruf",
@@ -671,6 +691,12 @@
           "btn": "Ücretsiz başla →"
         },
         "ft": {
+          "resources": "KAYNAKLAR",
+          "integrations": "Entegrasyonlar",
+          "tools": "Ücretsiz araçlar",
+          "disclaimer": "Risk açıklaması",
+          "backtesting": "Backtest",
+          "prop": "Prop firma takibi",
           "desc_h": "Trading günlüğü, analiz, AI koç ve backtest replay.",
           "product": "ÜRÜN",
           "company": "ŞİRKET",
@@ -843,8 +869,8 @@
       },
       about: {
         title: 'Biz Kimiz?',
-        founder_title: 'WaweDev',
-        founder_desc: 'WaweDev, Bir teknoloji meraklısı tarafından kuruldu.',
+        founder_title: 'Wawe Journal',
+        founder_desc: 'Wawe Journal (WaweJournal), finansal piyasalara ve yazılıma tutkuyla bağlı bir geliştirici tarafından; işlemleri tek yerde kaydetmek, incelemek ve pratik yapmak için kuruldu.',
         mission_title: 'Misyonumuz',
         mission_desc: 'Trader\'ların işlemlerini daha bilinçli bir şekilde takip etmelerini sağlamak, karar alma süreçlerini veriyle desteklemek ve finansal okuryazarlığı artırmak.',
         vision_title: 'Vizyonumuz',
@@ -900,6 +926,7 @@
           "pricing": "Preise",
           "faq": "FAQ",
           "coach": "KI-Coach",
+          "prop": "Prop-Firmen",
           "signin": "Anmelden",
           "start": "Kostenlos starten"
         },
@@ -907,11 +934,12 @@
           "new": "NEU",
           "new_text": "Dein KI-Coach ist da →",
           "title_h": "Mach denselben Fehler<br><span class=\"shine\">nie wieder.</span>",
-          "sub": "Journal, Analyse, KI-Coach, Prop-Firm-Tracking und Backtest-Replay. Alles an einem Ort.",
+          "sub": "Wawe Journal ist ein kostenloses Trading-Journal mit Analyse, KI-Coach, Prop-Firm-Tracking und Backtest-Replay. Alles an einem Ort.",
           "start": "Kostenlos starten",
           "signin": "Anmelden"
         },
         "plat": {
+          "more": "Alle Integrationen ansehen →",
           "label": "IMPORT VON DEINEM BROKER ODER DEINER PLATTFORM",
           "note": "cTrader synchronisiert automatisch. Für alle anderen importierst du einen Kontoauszug oder eine CSV.",
           "auto": "AUTO-SYNC",
@@ -933,6 +961,7 @@
           "tab_analytics": "Analyse"
         },
         "j": {
+          "ct_more": "So funktioniert der cTrader-Sync →",
           "title_h": "Der einfache Weg, deine Trades zu journalen. <span class=\"dim\">Kontoauszug importieren oder cTrader verbinden, fertig.</span>",
           "cta": "Kostenlos testen",
           "dash_tag": "DASHBOARD",
@@ -969,6 +998,7 @@
           "c4_d": "Lerne aus den Ausreißern, statt sie zu vergessen."
         },
         "b": {
+          "more": "So funktioniert das Backtest-Replay →",
           "title_h": "Reise zurück in der Zeit, Kerze für Kerze. <span class=\"dim\">Übe mit synthetischen Daten oder spiele deine eigenen cTrader-Charts ab.</span>",
           "cta": "Backtest ausprobieren",
           "s1_t": "Wähle deine Daten",
@@ -979,6 +1009,7 @@
           "s3_d": "Jeder Trade wird im verknüpften Journal gespeichert. Sieh die Statistiken getrennt oder zusammen mit dem Live-Trading."
         },
         "c": {
+          "more": "Alles, was der KI-Coach kann →",
           "tag": "NEU · KI-COACH",
           "title_h": "Ein KI-Coach, der deine Trades kennt. <span class=\"dim\">Nicht nur den Markt.</span>",
           "d": "Frag alles über dein Trading. Der Coach antwortet aus deinem eigenen Journal: deine Trades, Strategien, Notizen, Prop-Challenges und Backtests. Tippe, sprich oder füge einen Chart-Screenshot ein.",
@@ -1036,6 +1067,7 @@
           "note": "In jedem Plan: ein paar Nachrichten pro Tag mit Starter, mehr mit Pro. KI-Antworten können falsch sein und sind keine Anlageberatung."
         },
         "p": {
+          "more": "So funktioniert das Prop-Firmen-Tracking →",
           "title_h": "Bestehe die Challenge. <span class=\"dim\">Behalte jede Prop-Firm-Regel in Echtzeit im Blick.</span>",
           "d": "Tagesverlust, maximaler Drawdown und Gewinnziel, verfolgt gegen das Regelwerk deiner Firma. Overtrade-Warnungen stoppen die Abwärtsspirale, bevor sie beginnt.",
           "example": "Beispiel",
@@ -1058,6 +1090,7 @@
           "priv_btn": "Datenschutzerklärung"
         },
         "pr": {
+          "more": "Pläne im Detail vergleichen →",
           "title_h": "Faire Preise. <span class=\"dim\">Backtest, Prop-Tracking, cTrader-Sync und der KI-Coach in jedem Plan.</span>",
           "monthly": "Monatlich",
           "yearly": "Jährlich · 31 % sparen",
@@ -1110,10 +1143,16 @@
           "btn": "Kostenlos starten →"
         },
         "ft": {
+          "resources": "RESSOURCEN",
+          "integrations": "Integrationen",
+          "tools": "Kostenlose Tools",
+          "disclaimer": "Risikohinweis",
+          "backtesting": "Backtesting",
+          "prop": "Prop-Firmen-Tracker",
           "desc_h": "Trading-Journal, Analysen, KI-Coach und Backtest-Replay.",
           "product": "PRODUKT",
           "company": "UNTERNEHMEN",
-          "social": "SOCIAL",
+          "social": "SOZIALE MEDIEN",
           "about": "Über uns",
           "privacy": "Datenschutz",
           "terms": "AGB",
@@ -1282,8 +1321,8 @@
       },
       about: {
         title: 'Über uns',
-        founder_title: 'WaweDev',
-        founder_desc: 'WaweDev wurde von einem passionierten Technologie-Enthusiasten gegründet.',
+        founder_title: 'Wawe Journal',
+        founder_desc: 'Wawe Journal (WaweJournal) wurde von einem Entwickler mit Leidenschaft für Finanzmärkte und Software gegründet, der Trades an einem Ort festhalten, auswerten und üben wollte.',
         mission_title: 'Unsere Mission',
         mission_desc: 'Trader dabei zu unterstützen, ihre Trades datenbasiert und bewusst zu protokollieren, disziplinierte Entscheidungen zu treffen und Finanzkompetenz aufzubauen.',
         vision_title: 'Unsere Vision',
@@ -1340,9 +1379,17 @@
     }
   }
 
-  // first visit is always English; only a language the visitor picked is remembered
-  let currentLang = getSavedLang() || 'en';
+  // /tr/ ve /de/ sayfalarında (scripts/localize.mjs) dil URL'den gelir: <html data-locale-page="tr">.
+  // Diğer sayfalarda ilk ziyaret hep İngilizce; yalnızca ziyaretçinin seçtiği dil hatırlanır.
+  const pageLang = document.documentElement.getAttribute('data-locale-page');
+  let currentLang = pageLang || getSavedLang() || 'en';
   if (!translations[currentLang]) currentLang = 'en';
+
+  // Sayfanın o dilde ayrı bir adresi varsa (hreflang) dil seçici oraya gider; yoksa metinler yerinde değişir.
+  function altPathFor(lang) {
+    const link = document.querySelector('link[rel="alternate"][hreflang="' + lang + '"]');
+    return link ? link.getAttribute('href').replace(/^https?:\/\/[^/]+/, '') : null;
+  }
   const listeners = [];
 
   function getNested(obj, path) {
@@ -1385,11 +1432,16 @@
 
   function setLanguage(lang) {
     if (!translations[lang]) return;
-    currentLang = lang;
     try {
       localStorage.setItem(STORAGE_KEY, lang);
       localStorage.setItem(ALT_STORAGE_KEY, lang);
     } catch (e) { }
+    const target = altPathFor(lang);
+    if (target && target !== location.pathname) {
+      location.assign(target + location.search + location.hash);
+      return;
+    }
+    currentLang = lang;
     apply();
     listeners.forEach(cb => { try { cb(lang); } catch (e) { } });
   }

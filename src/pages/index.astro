@@ -28,14 +28,14 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "@id": "https://wawejournal.com/#website",
         "url": "https://wawejournal.com/",
         "name": "Wawe Journal",
-        "alternateName": ["WaweJournal", "Wawe Journal Trading"],
+        "alternateName": ["WaweJournal", "wawejournal", "wawejournal.com", "Wawe Journal Trading"],
         "publisher": { "@id": "https://wawejournal.com/#organization" }
       },
       {
         "@type": "Organization",
         "@id": "https://wawejournal.com/#organization",
         "name": "Wawe Journal",
-        "alternateName": ["WaweJournal"],
+        "alternateName": ["WaweJournal", "wawejournal"],
         "url": "https://wawejournal.com/",
         "logo": "https://wawejournal.com/images/brand/logo-512.png",
         "email": "support@wawejournal.com",
@@ -53,7 +53,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "@type": "SoftwareApplication",
         "@id": "https://wawejournal.com/#app",
         "name": "Wawe Journal",
-        "alternateName": ["WaweJournal"],
+        "alternateName": ["WaweJournal", "wawejournal"],
         "description": "Wawe Journal is a trading journal with performance analytics, an AI coach that answers from your own trades, built-in candle-by-candle backtest replay, cTrader sync and prop firm rule tracking.",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "Web",
@@ -138,7 +138,11 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
     }
   </style>
 
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
+  <!-- LCP = hero arka planı (CSS'te geç keşfedilir): erken ve yüksek öncelikle iner. Mobil/masaüstü ayrımı
+       landing-glass.css'teki @media (max-width: 900px) kuralıyla AYNI olmalı, yoksa iki görsel birden iner.
+       Supabase SDK'sı burada preload EDİLMEZ: ilk ekran için gerekmiyor ve LCP görseliyle bant genişliği yarışıyordu. -->
+  <link rel="preload" as="image" href="/images/brand/hero-peak.webp" media="(min-width: 901px)" fetchpriority="high" />
+  <link rel="preload" as="image" href="/images/brand/hero-peak-m.webp" media="(max-width: 900px)" fetchpriority="high" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
   <script src="/index-i18n.js" is:inline defer></script>
@@ -159,8 +163,8 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   <!-- NAV: floating glass pill -->
   <header class="lp-head">
     <div class="g navbar" id="navbar">
-      <a href="index.html" class="brand" aria-label="Wawe Journal home">
-        <img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="30" height="20" />
+      <a href="/" class="brand" aria-label="Wawe Journal home">
+        <img class="logo-glow" src="/images/brand/logo-mark-48.webp" srcset="/images/brand/logo-mark-48.webp 1x, /images/brand/logo-mark-96.webp 2x" alt="" width="30" height="20" />
         <span class="navword">Wawe <span class="brand-accent">Journal</span></span>
       </a>
       <nav class="navlinks" aria-label="Primary">
@@ -180,8 +184,8 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <div class="lang-option" data-lang="de" data-flag="DE"><span>Deutsch</span><span class="mono lang-code">DE</span></div>
         </div>
       </div>
-      <a href="login.html" class="navsignin" data-i18n="lp.nav.signin">Sign in</a>
-      <a href="register.html" class="b bp bs" data-i18n="lp.nav.start">Start for free</a>
+      <a href="/login" class="navsignin" data-i18n="lp.nav.signin">Sign in</a>
+      <a href="/register" class="b bp bs" data-i18n="lp.nav.start">Start for free</a>
     </div>
   </header>
 
@@ -195,10 +199,10 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <span data-i18n="lp.hero.new_text">Meet your AI coach →</span>
         </a>
         <h1 data-i18n-html="lp.hero.title_h">Never make the same<br><span class="shine">mistake twice.</span></h1>
-        <p class="hero-sub" data-i18n="lp.hero.sub">Journal, analytics, an AI coach, prop firm tracking and backtest replay. All in one place.</p>
+        <p class="hero-sub" data-i18n="lp.hero.sub">Wawe Journal is a free trading journal with analytics, an AI coach, prop firm tracking and backtest replay. All in one place.</p>
         <div class="hero-actions">
-          <a href="register.html" class="b bp b-lg" data-i18n="lp.hero.start">Start for free</a>
-          <a href="login.html" class="b b-lg" data-i18n="lp.hero.signin">Sign in</a>
+          <a href="/register" class="b bp b-lg" data-i18n="lp.hero.start">Start for free</a>
+          <a href="/login" class="b b-lg" data-i18n="lp.hero.signin">Sign in</a>
         </div>
       </div>
 
@@ -234,7 +238,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
                   </div>
                 </div>
                 <div class="sc-view">
-                  <img class="sc-shot is-on" data-path="/dashboard" src="/images/landing/screen-dashboard.webp" alt="Wawe Journal Dashboard screen" width="1800" height="947" fetchpriority="high" decoding="async" />
+                  <img class="sc-shot is-on" data-path="/dashboard" src="/images/landing/screen-dashboard.webp" alt="Wawe Journal Dashboard screen" width="1800" height="947" decoding="async" />
                   <img class="sc-shot" data-path="/trades" src="/images/landing/screen-trades.webp" alt="Wawe Journal Trades screen" width="1800" height="947" loading="lazy" decoding="async" />
                   <img class="sc-shot" data-path="/strategies" src="/images/landing/screen-strategies.webp" alt="Wawe Journal Strategies screen" width="1800" height="947" loading="lazy" decoding="async" />
                   <img class="sc-shot" data-path="/calendar" src="/images/landing/screen-calendar.webp" alt="Wawe Journal Calendar screen" width="1800" height="947" loading="lazy" decoding="async" />
@@ -242,9 +246,9 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
                   <img class="sc-shot" data-path="/analytics" src="/images/landing/screen-analytics.webp" alt="Wawe Journal Analytics screen" width="1800" height="947" loading="lazy" decoding="async" />
                 </div>
               </div>
-              <img class="mbp-frame" src="/images/landing/mba-lid.webp" alt="" width="2080" height="1192" aria-hidden="true" />
+              <img class="mbp-frame" src="/images/landing/mba-lid.webp" alt="" width="2080" height="1192" aria-hidden="true" loading="lazy" decoding="async" />
             </div>
-            <img class="mbp-base" src="/images/landing/mba-base.webp" alt="" width="2080" height="63" aria-hidden="true" />
+            <img class="mbp-base" src="/images/landing/mba-base.webp" alt="" width="2080" height="63" aria-hidden="true" loading="lazy" decoding="async" />
           </div>
         </div>
         <div class="sc-tabs" role="tablist" aria-label="App screens">
@@ -266,6 +270,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <span class="chip chip-soon">MetaTrader 4/5 <span class="mono chip-tag" data-i18n="lp.plat.soon">AUTO-SYNC SOON</span></span><span class="chip chip-live"><span class="dot-live" aria-hidden="true"></span>cTrader <span class="mono chip-tag" data-i18n="lp.plat.auto">AUTO-SYNC</span></span><span class="chip">Binance</span><span class="chip">Bybit</span><span class="chip">Interactive Brokers</span><span class="chip">XTB</span><span class="chip">OANDA</span><span class="chip">CSV &amp; Excel</span>
         </div>
         <p class="platforms-note" data-i18n="lp.plat.note">cTrader syncs automatically. For the others, import a statement or CSV.</p>
+        <a href="/integrations" class="more-link" data-i18n="lp.plat.more">See every integration →</a>
       </div>
     </section>
 
@@ -274,7 +279,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       <div class="sec-in">
         <div class="sec-head">
           <h2 data-i18n-html="lp.j.title_h">An easy way to journal your trades. <span class="dim">Import a statement or connect cTrader and you're done.</span></h2>
-          <a href="register.html" class="b" data-i18n="lp.j.cta">Try for free</a>
+          <a href="/register" class="b" data-i18n="lp.j.cta">Try for free</a>
         </div>
         <div class="journal-grid">
           <div class="g shot-card">
@@ -289,6 +294,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
             <div class="mono tag" data-i18n="lp.j.ct_tag">CTRADER SYNC</div>
             <div class="sync-status"><span class="dot-live"></span><span data-i18n="lp.j.ct_status">Connected · read-only</span></div>
             <p data-i18n="lp.j.ct_d">Closed positions land in your journal automatically. We never place or close orders.</p>
+            <a href="/ctrader-trading-journal" class="more-link" data-i18n="lp.j.ct_more">How cTrader sync works →</a>
           </div>
         </div>
         <div class="cards4">
@@ -305,7 +311,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       <div class="sec-in">
         <div class="sec-head">
           <h2 data-i18n-html="lp.a.title_h">Analytics to understand what works. <span class="dim">And to drop what only feels right.</span></h2>
-          <a href="register.html" class="b" data-i18n="lp.a.cta">View all metrics</a>
+          <a href="/register" class="b" data-i18n="lp.a.cta">View all metrics</a>
         </div>
         <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/screen-analytics.webp" alt="Performance analytics with profit factor, Sharpe ratio, prop firm rules, insights and cumulative P&amp;L" width="1800" height="947" loading="lazy" decoding="async" /></div></div>
         <div class="analytics-row">
@@ -346,7 +352,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
                 <button type="button" class="g persona" data-coach="nova" aria-pressed="false"><span class="wwc-av wwc-av-nova" style="--av:26px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span><b>Nova</b><span data-i18n="lp.c.nova">Risk</span><span class="persona-bar" aria-hidden="true"></span></button>
               </div>
             </div>
-            <div><a href="register.html" class="b bp" data-i18n="lp.c.cta">Meet your coach</a></div>
+            <div><a href="/register" class="b bp" data-i18n="lp.c.cta">Meet your coach</a></div>
           </div>
           <div class="g chat" data-coach="kai">
             <div class="chat-orb" aria-hidden="true"></div>
@@ -466,6 +472,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <div class="g card18"><div class="card-t" data-i18n="lp.c.c4_t">Weekly review</div><div class="card-d" data-i18n="lp.c.c4_d">Each week: what worked, what cost you, and one goal to focus on next.</div></div>
         </div>
         <p class="coach-note" data-i18n="lp.c.note">On every plan: a few messages a day on Starter, more on Pro. AI answers can be wrong and are not investment advice.</p>
+        <a href="/ai-trading-coach" class="more-link center" data-i18n="lp.c.more">Everything the AI coach can do →</a>
       </div>
     </section>
 
@@ -474,7 +481,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       <div class="sec-in">
         <div class="sec-head">
           <h2 class="wide" data-i18n-html="lp.b.title_h">Go back in time, candle by candle. <span class="dim">Practice on synthetic data or replay your own cTrader charts.</span></h2>
-          <a href="register.html" class="b bp" data-i18n="lp.b.cta">Try a backtest</a>
+          <a href="/register" class="b bp" data-i18n="lp.b.cta">Try a backtest</a>
         </div>
         <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/screen-backtest.webp" alt="Wawe backtest workspace replaying EURUSD H1 candles from cTrader with balance, equity and buy/sell panel" width="1800" height="947" loading="lazy" decoding="async" /></div></div>
         <div class="steps">
@@ -482,6 +489,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <div class="g stepcard"><span class="mono num">02</span><div class="step-t" data-i18n="lp.b.s2_t">Replay and trade</div><div class="step-d" data-i18n="lp.b.s2_d">Step candle by candle or play at up to 10×. Place simulated buy and sell orders with lot size, stop loss and take profit. Nothing is sent to your broker.</div></div>
           <div class="g stepcard"><span class="mono num">03</span><div class="step-t" data-i18n="lp.b.s3_t">Review in your journal</div><div class="step-d" data-i18n="lp.b.s3_d">Every trade is saved to the linked journal. See its stats separately or combined with live trading.</div></div>
         </div>
+        <a href="/backtesting" class="more-link" data-i18n="lp.b.more">How backtest replay works →</a>
       </div>
     </section>
 
@@ -491,6 +499,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         <div class="prop-copy">
           <h2 data-i18n-html="lp.p.title_h">Pass the challenge. <span class="dim">Watch every prop firm rule in real time.</span></h2>
           <p class="soft-p" data-i18n="lp.p.d">Daily loss, max drawdown and profit target, tracked against your firm's rule set. Overtrade alerts stop the spiral before it starts.</p>
+          <a href="/prop-firm-tracker" class="more-link" data-i18n="lp.p.more">How prop firm tracking works →</a>
           <div class="props">
             <span class="g prop-chip">FTMO</span><span class="g prop-chip">FundedNext</span><span class="g prop-chip">Topstep</span><span class="g prop-chip">Funding Pips</span><span class="g prop-chip">The 5%ers</span><span class="g prop-chip">E8 Markets</span><span class="g prop-chip">Apex Trader</span><span class="g prop-chip">Alpha Capital</span>
           </div>
@@ -520,7 +529,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
             <div class="privacy-t" data-i18n="lp.w.priv_t">Your trading data stays yours.</div>
             <div class="privacy-d" data-i18n="lp.w.priv_d">We never sell your data or share it for advertising. Wawe is not a broker and never trades on your accounts. Your trades are stored only on the secure infrastructure we run Wawe on. The optional AI coach uses a summary of your journal only when you use it.</div>
           </div>
-          <a href="privacy.html" class="b">
+          <a href="/privacy" class="b">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
             <span data-i18n="lp.w.priv_btn">Privacy policy</span></a>
         </div>
@@ -547,7 +556,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f6">cTrader auto-sync</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f7">AI coach with a daily message allowance</span></div>
             </div>
-            <a href="register.html" class="b" data-i18n="lp.pr.free_btn">Start for free</a>
+            <a href="/register" class="b" data-i18n="lp.pr.free_btn">Start for free</a>
           </div>
           <div class="g plan plan-pro">
             <div>
@@ -567,6 +576,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
             <a href="#" class="b bp" id="upgrade-pro-home" data-i18n="lp.pr.pro_btn">Go Pro</a>
           </div>
         </div>
+        <a href="/pricing" class="more-link center" data-i18n="lp.pr.more">Compare plans in detail →</a>
       </div>
     </section>
 
@@ -582,8 +592,8 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <details class="g faq"><summary><span data-i18n="lp.f.q5">Which brokers and platforms are supported?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a5">Automatic sync is live for cTrader today.
 You can also import statements from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA or any CSV/Excel file.
 Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add each integration only once it is error-free, because in trading there is no room for wrong numbers.</span></div></details>
-          <details class="g faq"><summary><span data-i18n="lp.f.q6">Is my data private?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a6">Yes. We never sell your data or share it for advertising. Your trades, broker connections and account data are stored only with the secure infrastructure providers we run Wawe on. The one exception is the optional AI coach, and only when you use it (see the next question).</span> <a href="privacy.html" data-i18n="lp.f.a6_link">Read our privacy policy →</a></div></details>
-          <details class="g faq"><summary><span data-i18n="lp.f.q7">What does the AI coach see, and where does my data go?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a7">When you send a message, the coach uses your question and a summary of your journal: statistics, strategies, recent and largest trades with their notes, prop challenges and backtests. Never your email, name, payment data or broker tokens. Don’t write personal details into your notes or chats. The coach is optional: if you don’t use it, none of your data goes to it. Its answers can be wrong and are not investment advice.</span> <a href="privacy.html#ai-coach" data-i18n="lp.f.a7_link">How the AI coach uses your data →</a></div></details>
+          <details class="g faq"><summary><span data-i18n="lp.f.q6">Is my data private?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a6">Yes. We never sell your data or share it for advertising. Your trades, broker connections and account data are stored only with the secure infrastructure providers we run Wawe on. The one exception is the optional AI coach, and only when you use it (see the next question).</span> <a href="/privacy" data-i18n="lp.f.a6_link">Read our privacy policy →</a></div></details>
+          <details class="g faq"><summary><span data-i18n="lp.f.q7">What does the AI coach see, and where does my data go?</span><span class="plus" aria-hidden="true">+</span></summary><div class="faq-a"><span data-i18n="lp.f.a7">When you send a message, the coach uses your question and a summary of your journal: statistics, strategies, recent and largest trades with their notes, prop challenges and backtests. Never your email, name, payment data or broker tokens. Don’t write personal details into your notes or chats. The coach is optional: if you don’t use it, none of your data goes to it. Its answers can be wrong and are not investment advice.</span> <a href="/privacy#ai-coach" data-i18n="lp.f.a7_link">How the AI coach uses your data →</a></div></details>
         </div>
       </div>
     </section>
@@ -592,7 +602,7 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
     <section class="sec sec-cta">
       <div class="g cta">
         <h2 data-i18n-html="lp.cta.title_h">Rewrite your destiny.<br><span class="soft">Create your journal now.</span></h2>
-        <a href="register.html" class="b bp b-xl" data-i18n="lp.cta.btn">Start for free →</a>
+        <a href="/register" class="b bp b-xl" data-i18n="lp.cta.btn">Start for free →</a>
       </div>
     </section>
   </main>
@@ -601,15 +611,16 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
     <div class="foot-in">
       <div class="foot-top">
         <div class="foot-brand">
-          <div class="foot-logo"><img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="36" height="24" />Wawe Journal</div>
+          <div class="foot-logo"><img class="logo-glow" src="/images/brand/logo-mark-48.webp" srcset="/images/brand/logo-mark-48.webp 1x, /images/brand/logo-mark-96.webp 2x" alt="" width="36" height="24" />Wawe Journal</div>
           <div class="foot-desc" data-i18n-html="lp.ft.desc_h">Trading journal, analytics, AI coach and backtest replay.</div>
         </div>
-        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="#journal" data-i18n="lp.nav.journal">Journal</a><a href="#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="#coach" data-i18n="lp.nav.coach">AI Coach</a><a href="#backtest" data-i18n="lp.nav.backtest">Backtest</a><a href="#pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
-        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="about.html" data-i18n="lp.ft.about">About</a><a href="privacy.html" data-i18n="lp.ft.privacy">Privacy</a><a href="terms.html" data-i18n="lp.ft.terms">Terms</a><a href="contact.html" data-i18n="lp.ft.contact">Contact</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="#journal" data-i18n="lp.nav.journal">Journal</a><a href="#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="/ai-trading-coach" data-i18n="lp.nav.coach">AI Coach</a><a href="/backtesting" data-i18n="lp.ft.backtesting">Backtesting</a><a href="/prop-firm-tracker" data-i18n="lp.ft.prop">Prop firm tracker</a><a href="/pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="/about" data-i18n="lp.ft.about">About</a><a href="/privacy" data-i18n="lp.ft.privacy">Privacy</a><a href="/terms" data-i18n="lp.ft.terms">Terms</a><a href="/disclaimer" data-i18n="lp.ft.disclaimer">Risk disclosure</a><a href="/contact" data-i18n="lp.ft.contact">Contact</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.resources">RESOURCES</div><a href="/integrations" data-i18n="lp.ft.integrations">Integrations</a><a href="/ctrader-trading-journal">cTrader journal</a><a href="/tools" data-i18n="lp.ft.tools">Free tools</a><a href="/vs/tradezella">vs TradeZella</a><a href="/vs/tradervue">vs Tradervue</a><a href="/vs/edgewonk">vs Edgewonk</a></div>
         <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.social">SOCIAL</div><div class="foot-social"><a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Wawe Journal on Instagram" class="social-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="0.9" fill="currentColor" stroke="none"></circle></svg></a></div><a href="mailto:support@wawejournal.com">support@wawejournal.com</a></div>
       </div>
       <LegalDisclosures />
-      <div class="copy"><span data-i18n="lp.ft.tm">MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</span><br />© 2026 Wawe Journal · wawedev</div>
+      <div class="copy"><span data-i18n="lp.ft.tm">MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</span><br />© 2026 Wawe Journal (WaweJournal) · wawejournal.com</div>
     </div>
   </footer>
 </div>

@@ -1,0 +1,104 @@
+---
+// Özellik sayfası: cTrader otomatik senkron. İçerik İngilizce ve sunucuda hazır.
+// İddialar ctrader-connect / ctrader-sync davranışıyla aynı olmalı (salt okunur OAuth, hesap seçici,
+// 30 dk kuralıyla arka planda otomatik senkron, SL/TP, kısmi kapanış, backtest için gerçek mumlar).
+import PageLayout from '../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Is the cTrader connection read-only?',
+    a: 'Yes. Wawe Journal connects through cTrader’s official authorization screen with read-only access. It can read your accounts and closed trades, and it can never place, change or close an order.',
+  },
+  {
+    q: 'Is cTrader auto-sync free?',
+    a: 'Yes. cTrader auto-sync is included in the free Starter plan, together with unlimited trade logging, core analytics, one backtest account and one prop firm tracker.',
+  },
+  {
+    q: 'How often are new trades imported?',
+    a: 'With auto-sync on, newly closed trades are imported in the background whenever you open Wawe Journal and the last sync is more than 30 minutes old. You can also press Sync at any time.',
+  },
+  {
+    q: 'Can I connect several cTrader accounts?',
+    a: 'Yes. On the cTrader authorization screen you tick the accounts to share, then link each one to its own journal, for example one for your live account and one for each prop challenge.',
+  },
+  {
+    q: 'What happens if I remove access in cTrader?',
+    a: 'Accounts you no longer authorize stop syncing and are marked as having no access. Your already imported trades stay in your journal. Authorize again and tick the account to resume.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/ctrader-trading-journal#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="cTrader Trading Journal with Free Auto-Sync | Wawe Journal"
+  description="Connect cTrader to Wawe Journal in a minute: read-only auto-sync of every closed trade, analytics, prop firm tracking, an AI coach and real-candle backtests."
+  crumb="cTrader trading journal"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>cTrader trading journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">The cTrader trading journal that fills itself.</h1>
+      <p class="page-lead anim" style="--d:.2s">Connect your cTrader account once and Wawe Journal imports every closed trade automatically: entries, exits, lot size, stop loss, take profit, commission and swap. No statements to export, no spreadsheets.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Connect cTrader free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>Connected in a minute, <span class="dim">synced from then on.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Authorize on cTrader</h3><p>Press Connect cTrader on the Accounts page, sign in on cTrader’s own authorization screen and tick the accounts you want to share. Access is read-only.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Pick a journal for each account</h3><p>Link each cTrader account to a journal, a new one or an existing one, and your trade history is imported.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Trade as usual</h3><p>Turn on “Sync automatically when I open the site” and new closed trades arrive in the background. Press Sync whenever you want them right away.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get <span class="dim">once your trades are in.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Analytics that read cTrader data right</h3><p>Every closing deal, partial closes included, is imported with its own net P&amp;L after commission and swap, so win rate, profit factor, expectancy and drawdown come from real fills.</p></div>
+        <div class="fp-item"><h3>Prop firm rules in real time</h3><p>Trading a challenge on cTrader? Link the account to a <a href="/prop-firm-tracker">prop firm tracker</a> and watch daily loss and max drawdown after every sync.</p></div>
+        <div class="fp-item"><h3>An AI coach on your history</h3><p>The <a href="/ai-trading-coach">AI coach</a> answers from your synced trades and sends live alerts after new ones, like a losing streak or a bigger size after a loss.</p></div>
+        <div class="fp-item"><h3>Backtest on real cTrader candles</h3><p>Use your connection to <a href="/backtesting">replay real price history</a> of your broker’s symbols, up to the previous day, candle by candle.</p></div>
+        <div class="fp-item"><h3>Notes, tags and screenshots</h3><p>Synced trades are normal journal entries: add strategies, emotions, mistakes, notes and chart screenshots to each one.</p></div>
+        <div class="fp-item"><h3>Several accounts, one place</h3><p>Live, demo and prop accounts each in their own journal, with stats per account or combined.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Safe by design.</h2>
+      <p class="lead">Wawe Journal is not a broker. The cTrader connection is read-only: it cannot place, modify or close trades, and you can withdraw access at any time from cTrader. Your trades are never sold or shared for advertising. See the <a href="/privacy">privacy policy</a> for details.</p>
+      <p class="fp-note">cTrader is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>cTrader journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
+        <a href="/pricing" class="btn btn-line">Plans →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Your cTrader journal, on autopilot.</h2>
+      <p>Create a free Wawe Journal account and connect cTrader in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

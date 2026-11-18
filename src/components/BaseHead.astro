@@ -315,8 +315,34 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
 </script>
 
 <!-- DİL ÖN YÜKLEME -->
+<!-- /tr/ ve /de/ sayfaları (scripts/localize.mjs) kök öğede data-locale-page özniteliği taşır: o sayfada dil URL'den
+     gelir ve tercih olarak kaydedilir. İngilizce bir sayfada ziyaretçinin kayıtlı dili için hreflang sürümü varsa oraya
+     gidilir (hreflang bağlantıları head'in en başında, bu script'ten önce). Arama botlarında kayıt yok → yönlendirme olmaz.
+     NOT: bu yoruma etiket biçiminde metin yazma; localize.mjs ilk html/head etiketini arar. -->
 <script is:inline>
 (function() {
+  var root = document.documentElement;
+  var pageLang = root.getAttribute('data-locale-page');
+  if (pageLang) {
+    root.setAttribute('data-lang', pageLang);
+    root.lang = pageLang;
+    try { localStorage.setItem('ww_language', pageLang); localStorage.setItem('ww_lang', pageLang); } catch (e) {}
+    return;
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('ww_language'); } catch (e) {}
+  if (saved && saved !== 'en') {
+    var alt = document.querySelector('link[rel="alternate"][hreflang="' + saved + '"]');
+    // yalnızca yol: yerel önizlemede canlı siteye gitmesin
+    var altPath = alt ? alt.getAttribute('href').replace(/^https?:\/\/[^/]+/, '') : '';
+    if (altPath && altPath !== location.pathname) {
+      location.replace(altPath + location.search + location.hash);
+      return;
+    }
+  }
+})();
+(function() {
+  if (document.documentElement.getAttribute('data-locale-page')) return;
   var savedLang = localStorage.getItem('ww_language');
   if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
     document.documentElement.setAttribute('data-lang', savedLang);

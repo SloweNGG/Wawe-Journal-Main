@@ -1,0 +1,121 @@
+---
+// Entegrasyon sayfası: Bybit içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - Türev "Closed P&L" imzası (Contracts + Closed P&L zorunlu; Qty, Entry/Exit Price, Closing Direction, Create Time)
+//    ve sabit kolon haritası (Contracts = sembol, K/Z = Closed P&L, tarih = Create Time): broker-detector.js bybit-closed-pnl
+//  - Spot işlem geçmişi imzası (Order ID + Side; Symbol, Price, Qty, Fee, Time), dolum bazlı: broker-detector.js bybit-spot
+//  - Dolum eşleştirme (FIFO, dosya sırası, açık kalanlar alınmaz): fill-pairing.js
+// Bybit API bağlantısı / otomatik senkron YOK: burada vaat edilmez.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Which Bybit export should I use for derivatives?',
+    a: 'The Closed P&L export. It already has one closed position per row with Contracts, Qty, Entry Price, Exit Price, Closing Direction, Closed P&L and Create Time, and Wawe Journal recognises it automatically.',
+  },
+  {
+    q: 'Is the P&L recalculated?',
+    a: 'Not for the Closed P&L export. Wawe Journal takes the Closed P&L value from the file as the trade’s result, so it matches what Bybit reported. For spot trade history, P&L is rebuilt from the paired buy and sell fills, minus fees.',
+  },
+  {
+    q: 'Can I import Bybit spot trades?',
+    a: 'Yes. Bybit’s spot trade history, with Order ID, Side, Symbol, Price, Qty, Fee and Time columns, is recognised too. Each row is a fill, and Wawe Journal pairs buys and sells first in, first out to build closed trades.',
+  },
+  {
+    q: 'Do I need a Bybit API key?',
+    a: 'No. There is no Bybit connection. You download the export from Bybit and upload it to Wawe Journal, so no key, password or trading permission is ever shared.',
+  },
+  {
+    q: 'I trade several Bybit sub-accounts. How do I keep them apart?',
+    a: 'Create one journal per account and import each account’s export into its own journal. The free plan includes two journals; Pro allows up to ten.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/bybit#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Bybit Trading Journal: Import Closed P&L | Wawe Journal"
+  description="Import your Bybit Closed P&L export or spot trade history into Wawe Journal and see win rate, drawdown and your best and worst days in crypto futures. Free."
+  crumb="Bybit journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>Bybit journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Bybit trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">Leverage makes perpetual futures fast, and fast trading is easy to repeat without learning from it. Import your Bybit closed positions into Wawe Journal and see which pairs, days and habits move your account.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import Bybit trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import Bybit trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export Closed P&amp;L</h3><p>For derivatives, download the Closed P&amp;L export from Bybit for the period you want. For spot, download your spot trade history.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Keep the header row first</h3><p>Upload the file as CSV or Excel with the column names on the first row. Leave the columns as Bybit named them; that is how the format is recognised.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Import into your journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. Bybit’s layout is detected, you check the preview, and the trades are saved.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What comes across <span class="dim">from Bybit.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Closed positions</h3><p>From the Closed P&amp;L export: the contract as the symbol, quantity, entry and exit price, the Create Time as the date and Closed P&amp;L as the result.</p></div>
+        <div class="fp-item"><h3>Spot fills, paired</h3><p>From the spot trade history: every buy and sell fill, matched first in, first out. Partial fills become separate trades, and fees are subtracted.</p></div>
+        <div class="fp-item"><h3>No duplicates</h3><p>Re-export a longer range whenever you like. Trades that are already in the journal are skipped automatically.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Futures analytics</h3><p>Win rate, profit factor, expectancy and max drawdown from your Bybit history, and a P&amp;L calendar that makes revenge-trading days easy to spot. <a href="/pricing">Pro</a> adds advanced analytics.</p></div>
+        <div class="fp-item"><h3>A coach that watches your risk</h3><p>The <a href="/#coach">AI coach</a> answers from your own trades and can point out sizing up after a loss or a losing streak, the two habits leverage punishes most.</p></div>
+        <div class="fp-item"><h3>Drill entries on BTC and ETH</h3><p><a href="/backtesting">Backtest replay</a> lets you practise Bitcoin and Ethereum setups candle by candle on synthetic data before trading them live.</p></div>
+        <div class="fp-item"><h3>Challenge rules in view</h3><p>If you trade a funded account, set its daily loss and drawdown limits in the <a href="/prop-firm-tracker">prop firm tracker</a> and watch the room you have left.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>No auto-sync</h3><p>Bybit is imported from files. There is no API connection, so update the journal by uploading a newer export.</p></div>
+        <div class="fp-item"><h3>Spot rows in time order</h3><p>Spot fills are paired in file order. Sort them oldest first; coins still held at the end of the file are not imported.</p></div>
+        <div class="fp-item"><h3>Funding and transfers</h3><p>Only closed trades are imported. Deposits, transfers and other wallet entries are not trades and stay out of the journal.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Bybit journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/binance" class="btn btn-line">Binance journal →</a>
+        <a href="/integrations/tradingview" class="btn btn-line">TradingView journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">Bybit is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Trade futures with a memory.</h2>
+      <p>Create a free Wawe Journal account and import your Bybit Closed P&amp;L in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

@@ -1,0 +1,119 @@
+---
+// Entegrasyon sayfası: TradingView Strateji Test Aracı işlem listesi içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - TradingView imzası (Type + Signal, "Entry Long"/"Exit Short"): public/interface/quick-add/js/broker-detector.js
+//  - Giriş/çıkış satırlarının FIFO eşleştirmesi, sıralama YOK (dosya sırası), dosya sonunda açık kalanlar alınmaz:
+//    public/interface/quick-add/js/fill-pairing.js
+//  - Sembol sütunu zorunlu (uygulama defaultSymbol geçirmiyor): parser-v2.js parse() + public/src/features/csv-parsers.js
+//  - K/Z fiyat × miktar × çarpan ile hesaplanır (forex 100000, altın 100, endeks 10, kripto 1): broker-dictionary.js getMultiplier
+//  - Ücretsiz planda 2 defter: en.js settings.plan_tier_free_6
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Which TradingView export does Wawe Journal read?',
+    a: 'The trade list from TradingView’s Strategy Tester, where each trade has an entry row and an exit row with Type values such as “Entry Long” or “Exit Short”, plus Signal, Date/Time, Price and Contracts columns. Wawe Journal pairs every entry with its exit and imports one closed trade.',
+  },
+  {
+    q: 'Why does the import say no data was found?',
+    a: 'Most often the file has no Symbol column. The Strategy Tester list does not include the market, so add a column named “Symbol” with the chart’s symbol on every row and upload again. Also check that the column names are on the first row.',
+  },
+  {
+    q: 'Does Wawe Journal connect to my TradingView account?',
+    a: 'No. There is no TradingView connection or auto-sync. You export the trade list from TradingView and upload the file; Wawe Journal never logs in to TradingView.',
+  },
+  {
+    q: 'Will tested trades mix with my real trading statistics?',
+    a: 'Imported trades go into the journal that is active when you import. Create a separate journal for strategy tests (the free plan includes two journals) so tested and live results stay apart and can be compared side by side.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/tradingview#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="TradingView Trading Journal: Import Trades | Wawe Journal"
+  description="Import your TradingView Strategy Tester trade list into Wawe Journal. Entries and exits are paired into closed trades so you can analyze a strategy for free."
+  crumb="TradingView journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>TradingView journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">TradingView trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">You built a strategy in TradingView and the Strategy Tester shows a nice equity curve. Import its trade list into Wawe Journal to study it like real trading: by day, by direction and against the rules your prop firm would apply.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import TradingView trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import a TradingView trade list <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export the trade list</h3><p>In the Strategy Tester, export the list of trades. A CSV file works best; if you save to Excel, make sure the trade list is the first sheet, because Wawe Journal reads only the first one.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Add a Symbol column</h3><p>The export does not name the market. Add a column called “Symbol” with the chart’s symbol, for example BTCUSDT, and sort the rows from the oldest trade to the newest.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Import and check the preview</h3><p>Open Add Trade, switch to CSV Import and drop the file. TradingView’s format is detected, entries are paired with exits, and you confirm the preview before anything is saved.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>How entries and exits <span class="dim">become trades.</span></h2>
+      <p class="lead">The Strategy Tester writes one row when a position opens and another when it closes. Wawe Journal reads the side from the Type column, so “Entry Long” is a buy that opens a long and “Exit Long” is the sell that closes it, and matches them first in, first out.</p>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Partial exits</h3><p>If a strategy scales out, each partial close becomes its own trade with the matching part of the entry, so position sizing stays visible.</p></div>
+        <div class="fp-item"><h3>P&amp;L from prices</h3><p>Profit is calculated from entry price, exit price and quantity. For forex, gold and index symbols the quantity is read as lots; for crypto it is read as units.</p></div>
+        <div class="fp-item"><h3>Open trades left out</h3><p>A position still open at the end of the file has no exit to pair with, so it is not counted as a closed trade.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Honest strategy statistics</h3><p>Win rate, profit factor, expectancy and drawdown, plus a P&amp;L calendar of the tested period. <a href="/pricing">Pro</a> adds strategy comparison and advanced analytics.</p></div>
+        <div class="fp-item"><h3>Stress-test it against prop rules</h3><p>Point a <a href="/prop-firm-tracker">prop firm tracker</a> at the test journal and see whether the strategy would have broken a daily loss or drawdown limit.</p></div>
+        <div class="fp-item"><h3>Replay it by hand</h3><p>Automated tests do not show how you would execute. Trade the same setup candle by candle in <a href="/backtesting">backtest replay</a> and compare.</p></div>
+        <div class="fp-item"><h3>Ask the AI coach</h3><p>The <a href="/#coach">AI coach</a> answers from your journal, so you can ask how the tested strategy compares with your live trades.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>File import only</h3><p>There is no TradingView auto-sync. Export a new trade list whenever you want to update the journal; trades already imported are skipped.</p></div>
+        <div class="fp-item"><h3>Row order matters</h3><p>Entries and exits are paired in the order they appear in the file, so keep the rows oldest first.</p></div>
+        <div class="fp-item"><h3>Check the numbers</h3><p>The Profit column of the export is not used; P&amp;L is recalculated. Compare the preview with the Strategy Tester before you confirm.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>TradingView journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/binance" class="btn btn-line">Binance journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations/metatrader" class="btn btn-line">MetaTrader journal →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">TradingView is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>See if the backtest holds up.</h2>
+      <p>Create a free Wawe Journal account and import your first TradingView trade list.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

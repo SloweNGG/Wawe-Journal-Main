@@ -7,20 +7,56 @@ export interface Props {
   lang?: string;
   description?: string;
   noIndex?: boolean;
+  /** Breadcrumb'da ve şemada görünen kısa sayfa adı (ör. "Backtesting"). Verilirse BreadcrumbList şeması eklenir. */
+  crumb?: string;
+  /** Ara seviye (ör. { name: 'Integrations', href: '/integrations' }): BreadcrumbList 3 seviyeli olur */
+  crumbParent?: { name: string; href: string };
+  /** Sayfaya özel ek JSON-LD düğümleri (@graph'a eklenir; @context yazmaya gerek yok) */
+  schema?: Record<string, unknown>[];
 }
 
-const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal', noIndex = false } = Astro.props;
+const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal', noIndex = false, crumb, crumbParent, schema = [] } = Astro.props;
 // Cloudflare "/about.html" adresini "/about"a yönlendirdiği için canonical temiz adres olmalı
 const cleanPath = Astro.url.pathname.replace(/(^|\/)index\.html$/, '/').replace(/\.html$/, '');
 // noindex sayfada (ör. 404) canonical olmaz: "dizine ekleme" ile "tercih edilen adres bu" çelişir
 const canonical = noIndex ? undefined : new URL(cleanPath, 'https://wawejournal.com').href;
+
+// Yapılandırılmış veri: kurum/site düğümleri ana sayfada (@id ile bağlanır), burada sayfa + breadcrumb + sayfaya özel düğümler
+const graph: Record<string, unknown>[] = [];
+if (canonical && crumb) {
+  graph.push({
+    '@type': 'WebPage',
+    '@id': canonical + '#webpage',
+    url: canonical,
+    name: title,
+    description,
+    inLanguage: lang,
+    isPartOf: { '@id': 'https://wawejournal.com/#website' },
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+    breadcrumb: { '@id': canonical + '#breadcrumb' },
+  });
+  graph.push({
+    '@type': 'BreadcrumbList',
+    '@id': canonical + '#breadcrumb',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Wawe Journal', item: 'https://wawejournal.com/' },
+      ...(crumbParent ? [{ '@type': 'ListItem', position: 2, name: crumbParent.name, item: new URL(crumbParent.href, 'https://wawejournal.com').href }] : []),
+      { '@type': 'ListItem', position: crumbParent ? 3 : 2, name: crumb, item: canonical },
+    ],
+  });
+}
+graph.push(...schema);
+const jsonLd = graph.length ? JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c') : null;
 ---
 <Layout lang={lang} showNavbar={false} title={title} description={description} canonical={canonical} noIndex={noIndex}>
 <Fragment slot="head">
   <meta name="theme-color" content="#000000" />
+  {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd}></script>}
   <link rel="stylesheet" href="/landing-preview.css" />
   <link rel="stylesheet" href="/pages.css" />
   <link rel="stylesheet" href="/page-chrome.css" />
+  <!-- sayfaya özel head içeriği (ör. /tools.css): <Fragment slot="head"> ile -->
+  <slot name="head" />
   <style is:global>
     * { box-sizing: border-box; }
     html {
@@ -51,15 +87,15 @@ const canonical = noIndex ? undefined : new URL(cleanPath, 'https://wawejournal.
   <header class="lp-head">
     <div class="g navbar" id="navbar">
       <a href="/" class="brand" aria-label="Wawe Journal home">
-        <img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="30" height="20" />
+        <img class="logo-glow" src="/images/brand/logo-mark-48.webp" srcset="/images/brand/logo-mark-48.webp 1x, /images/brand/logo-mark-96.webp 2x" alt="" width="30" height="20" />
         <span class="navword">Wawe <span class="brand-accent">Journal</span></span>
       </a>
       <nav class="navlinks" aria-label="Primary">
         <a href="/#journal" data-i18n="lp.nav.journal">Journal</a>
         <a href="/#analytics" data-i18n="lp.nav.analytics">Analytics</a>
-        <a href="/#backtest" data-i18n="lp.nav.backtest">Backtest</a>
-        <a href="/#pricing" data-i18n="lp.nav.pricing">Pricing</a>
-        <a href="/#faq" data-i18n="lp.nav.faq">FAQ</a>
+        <a href="/backtesting" data-i18n="lp.nav.backtest">Backtest</a>
+        <a href="/prop-firm-tracker" data-i18n="lp.nav.prop">Prop firms</a>
+        <a href="/pricing" data-i18n="lp.nav.pricing">Pricing</a>
       </nav>
       <div class="grow"></div>
       <div class="lang-selector" id="lang-selector">
@@ -83,19 +119,22 @@ const canonical = noIndex ? undefined : new URL(cleanPath, 'https://wawejournal.
     <div class="foot-in">
       <div class="foot-top">
         <div class="foot-brand">
-          <div class="foot-logo"><img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="36" height="24" />Wawe Journal</div>
+          <div class="foot-logo"><img class="logo-glow" src="/images/brand/logo-mark-48.webp" srcset="/images/brand/logo-mark-48.webp 1x, /images/brand/logo-mark-96.webp 2x" alt="" width="36" height="24" />Wawe Journal</div>
           <div class="foot-desc" data-i18n-html="lp.ft.desc_h">Trading journal, analytics and backtest replay.</div>
         </div>
-        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="/#journal" data-i18n="lp.nav.journal">Journal</a><a href="/#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="/#backtest" data-i18n="lp.nav.backtest">Backtest</a><a href="/#pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
-        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="/about" data-i18n="lp.ft.about">About</a><a href="/privacy" data-i18n="lp.ft.privacy">Privacy</a><a href="/terms" data-i18n="lp.ft.terms">Terms</a><a href="/contact" data-i18n="lp.ft.contact">Contact</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="/#journal" data-i18n="lp.nav.journal">Journal</a><a href="/#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="/ai-trading-coach" data-i18n="lp.nav.coach">AI Coach</a><a href="/backtesting" data-i18n="lp.ft.backtesting">Backtesting</a><a href="/prop-firm-tracker" data-i18n="lp.ft.prop">Prop firm tracker</a><a href="/pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="/about" data-i18n="lp.ft.about">About</a><a href="/privacy" data-i18n="lp.ft.privacy">Privacy</a><a href="/terms" data-i18n="lp.ft.terms">Terms</a><a href="/disclaimer" data-i18n="lp.ft.disclaimer">Risk disclosure</a><a href="/contact" data-i18n="lp.ft.contact">Contact</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.resources">RESOURCES</div><a href="/integrations" data-i18n="lp.ft.integrations">Integrations</a><a href="/ctrader-trading-journal">cTrader journal</a><a href="/tools" data-i18n="lp.ft.tools">Free tools</a><a href="/vs/tradezella">vs TradeZella</a><a href="/vs/tradervue">vs Tradervue</a><a href="/vs/edgewonk">vs Edgewonk</a></div>
         <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.social">SOCIAL</div><div class="foot-social"><a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Wawe Journal on Instagram" class="social-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="0.9" fill="currentColor" stroke="none"></circle></svg></a></div><a href="mailto:support@wawejournal.com">support@wawejournal.com</a></div>
       </div>
       <LegalDisclosures />
-      <div class="copy"><span data-i18n="lp.ft.tm">MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</span><br />© 2026 Wawe Journal · wawedev</div>
+      <div class="copy"><span data-i18n="lp.ft.tm">MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</span><br />© 2026 Wawe Journal (WaweJournal) · wawejournal.com</div>
     </div>
   </footer>
 
-  <script src="/index-i18n.js" is:inline></script>
+  <!-- defer: 73 KB çeviri dosyası ilk çizimi bekletmesin (senkron haliyle FCP/LCP ~0,5 sn gecikiyordu).
+       Aşağıdaki setupPage DOMContentLoaded'da çalışır; defer script'ler ondan önce biter, window.i18n hazır olur. -->
+  <script src="/index-i18n.js" is:inline defer></script>
   <script is:inline>
   (function() {
     function setupPage() {
@@ -147,12 +186,27 @@ const canonical = noIndex ? undefined : new URL(cleanPath, 'https://wawejournal.
         onScroll();
       }
 
-      // REVEAL
-      var obs = new IntersectionObserver(function(entries) {
-        entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
-      }, { threshold: 0.08 });
-      document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
     }
+
+    // REVEAL — DOMContentLoaded beklenmez (o, ertelenmiş i18n dosyasının inmesini bekler ve ilk ekrandaki metin ~1 sn
+    // görünmez kalıyordu → LCP gecikiyordu). Script body'nin sonunda: bütün .reveal öğeleri zaten ayrıştırıldı.
+    // İlk ekrandakiler geçişsiz hemen görünür; aşağıdakiler kaydırınca belirir.
+    (function() {
+      var els = document.querySelectorAll('.reveal');
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var obs = 'IntersectionObserver' in window ? new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+      }, { threshold: 0.08 }) : null;
+      els.forEach(function(el) {
+        if (!obs || el.getBoundingClientRect().top < vh) {
+          el.style.transition = 'none';
+          el.classList.add('visible');
+          requestAnimationFrame(function() { el.style.transition = ''; });
+        } else {
+          obs.observe(el);
+        }
+      });
+    })();
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', setupPage);

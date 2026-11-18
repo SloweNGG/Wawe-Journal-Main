@@ -1,0 +1,117 @@
+---
+// Entegrasyon sayfası: OANDA kapalı işlem içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - OANDA imzası (Instrument zorunlu; Units, Open/Close Price, Realized P/L, Open/Close Time): broker-detector.js oanda
+//  - Sembol dosyadaki gibi saklanır (ör. EUR_USD), Units = işlem büyüklüğü: parser-v2.js buildClosedTradeRows
+//  - K/Z sütunu yoksa (çıkış-giriş)×miktar×çarpan (forex 100000) → Units ile yanlış olur, bu yüzden Realized P/L şart deniyor
+//  - Saat dilimi ayarı: en.js settings.time_import_*
+// OANDA menü yolları kodda yok: dışa aktarma adımları genel tutuldu. OANDA API bağlantısı / otomatik senkron YOK.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Which OANDA columns does Wawe Journal recognise?',
+    a: 'Instrument, Type, Units, Open Price, Close Price, Open Time, Close Time and Realized P/L. A file with an Instrument column and one row per closed trade is detected as OANDA automatically.',
+  },
+  {
+    q: 'Why does my journal show 10,000 instead of 0.1 lots?',
+    a: 'OANDA sizes trades in units, and Wawe Journal stores the Units value as it is in the file. Your P&L is not affected because the Realized P/L from the file is used as the result.',
+  },
+  {
+    q: 'Do I need to connect my OANDA account or create an API token?',
+    a: 'No. There is no OANDA connection or auto-sync, and Wawe Journal never asks for a token or password. You export your trade history and upload it.',
+  },
+  {
+    q: 'Can I keep an OANDA demo and live account apart?',
+    a: 'Yes. Create a journal for each account and import each file into its own journal. The free plan includes two journals; Pro allows up to ten.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/oanda#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="OANDA Trading Journal: Import Your Trades | Wawe Journal"
+  description="Import your OANDA trade history into Wawe Journal. Instruments, units and realized P/L come across as reported, ready for forex analytics and an AI coach. Free."
+  crumb="OANDA journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>OANDA journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">OANDA trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">OANDA lets you trade any size down to a single unit, which is perfect for precise risk and terrible for keeping track by memory. Import your OANDA trades into Wawe Journal and see how your forex trading performs, pair by pair and day by day.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import OANDA trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import OANDA trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export closed trades</h3><p>Download your closed trade history from OANDA as a CSV or Excel file, covering the period you want to review.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Keep Realized P/L</h3><p>Make sure the column names are on the first row and that the file includes Realized P/L. That number becomes each trade’s result in your journal.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Import and review</h3><p>Open Add Trade, switch to CSV Import and drop the file. OANDA’s layout is detected and you confirm the preview before saving.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What comes across <span class="dim">from each OANDA trade.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Instrument as written</h3><p>OANDA names like EUR_USD or XAU_USD are kept exactly as they appear in your file.</p></div>
+        <div class="fp-item"><h3>Units and prices</h3><p>Buy or sell, the units traded, and the open and close price. The close time becomes the trade date.</p></div>
+        <div class="fp-item"><h3>Realized P/L</h3><p>Your realized profit or loss is imported as the result, the same figure OANDA reported for the trade.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Forex analytics</h3><p>Win rate, profit factor, expectancy and drawdown for your OANDA account, plus a P&amp;L calendar that shows which days and weeks work. <a href="/pricing">Pro</a> adds advanced analytics.</p></div>
+        <div class="fp-item"><h3>Coaching from your own trades</h3><p>The <a href="/#coach">AI coach</a> reads your journal and can tell you which pairs drag your results down or when you trade too much.</p></div>
+        <div class="fp-item"><h3>Replay the majors</h3><p><a href="/backtesting">Backtest replay</a> covers EURUSD, GBPUSD, USDJPY and gold on synthetic data, so you can rehearse a setup between sessions.</p></div>
+        <div class="fp-item"><h3>Prop firm tracking</h3><p>If you also trade a challenge, the <a href="/prop-firm-tracker">prop firm tracker</a> watches daily loss, drawdown and profit target in its own journal.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>No API sync</h3><p>OANDA trades are imported from files. Upload a newer export to update the journal; trades already there are skipped.</p></div>
+        <div class="fp-item"><h3>Sizes in units</h3><p>Trade size is stored in units, not lots. Without a Realized P/L column the result would be calculated as if units were lots, so keep that column.</p></div>
+        <div class="fp-item"><h3>Time zone</h3><p>Set the time zone of your file under Settings so every trade lands on the right day in the calendar.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>OANDA journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/metatrader" class="btn btn-line">MetaTrader journal →</a>
+        <a href="/integrations/xtb" class="btn btn-line">XTB journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">OANDA is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Every unit accounted for.</h2>
+      <p>Create a free Wawe Journal account and import your OANDA history in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

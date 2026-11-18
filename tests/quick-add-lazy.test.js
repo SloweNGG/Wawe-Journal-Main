@@ -80,7 +80,11 @@ describe('quick-add lazy loading', () => {
 
 describe('xlsx stays on demand (perf 2d, reference pattern)', () => {
   it('no page loads SheetJS; quick-add loads it only inside loadXLSX(), once, for .xlsx/.xls files', () => {
-    for (const p of fs.readdirSync('src/pages')) assert.ok(!fs.readFileSync('src/pages/' + p, 'utf8').includes('xlsx.full.min.js'), p);
+    // alt klasörler de (vs/, integrations/, tools/ ...): yalnızca dosyalar okunur
+    for (const p of fs.readdirSync('src/pages', { recursive: true })) {
+      if (!fs.statSync('src/pages/' + p).isFile()) continue;
+      assert.ok(!fs.readFileSync('src/pages/' + p, 'utf8').includes('xlsx.full.min.js'), p);
+    }
     const loader = qa.slice(qa.indexOf('function loadXLSX()'), qa.indexOf('async function fileToCsvText'));
     assert.match(loader, /if \(typeof XLSX !== 'undefined'\) return Promise\.resolve\(\);/);
     assert.match(loader, /if \(_xlsxLoading\) return _xlsxLoading;/);

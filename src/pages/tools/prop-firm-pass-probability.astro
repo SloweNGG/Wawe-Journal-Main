@@ -1,0 +1,379 @@
+---
+// Ücretsiz araç: prop challenge geçme olasılığı (Monte Carlo). İçerik İngilizce ve sunucuda hazır.
+// Simülasyon uygulamadaki prop kartı ve AI koçla aynı motor: public/src/utils/prop-montecarlo.js (simulate).
+// Motor gerçek kapanmış işlem listesi ister; burada kullanıcının girdilerinden 240 işlemlik sentetik bir örnek
+// üretilir (tam olarak girilen kazanma oranı, ortalama kazanç ve ortalama kayıp, girilen günlük işlem sayısıyla).
+// Sayfa metni bunu açıkça söyler. Hesap tarayıcıda bir Web Worker'da çalışır (worker açılamazsa ana iş parçacığında).
+import PageLayout from '../../layouts/PageLayout.astro';
+import PropRuleFields from '../../components/tools/PropRuleFields.astro';
+
+const URL_SELF = 'https://wawejournal.com/tools/prop-firm-pass-probability';
+
+const faq = [
+  {
+    q: 'How is the pass probability calculated?',
+    a: 'With a Monte Carlo simulation. The calculator plays the rest of the challenge 2,000 times for each risk level. Every simulated day places your number of trades, each one drawn at random from a trade sample, and checks the rules the way the Wawe Journal prop tracker does: daily loss on the running intraday result, static or end-of-day trailing max drawdown, profit target, maximum trading days and the consistency rule. The pass probability is the share of runs that reach the target without breaking a rule.',
+  },
+  {
+    q: 'Why does it use a synthetic trade sample?',
+    a: 'The simulator needs a list of trades. Here it builds 240 trades from your inputs: exactly your win rate, every win the size of your average win and every loss the size of your average loss, spread over your trades per day. Real trades vary in size and come in streaks, so real outcomes spread wider than this estimate. Inside Wawe Journal the same simulation runs on your own closed trades instead.',
+  },
+  {
+    q: 'Is the result a guarantee that I will pass?',
+    a: 'No. It is an estimate from the numbers you enter, not a promise and not investment advice. It assumes your win rate and trade sizes stay the same for the whole challenge, which rarely happens. Use it to compare risk settings and to see which rule is most likely to end the challenge.',
+  },
+  {
+    q: 'Why does a smaller risk per trade often pass more often?',
+    a: 'Because the daily loss limit and the max drawdown punish losing streaks, not average results. With a smaller risk it takes more losses in a row to break a limit, so more runs survive long enough to reach the target. The table under the result shows the same trades at 50%, 75%, 100% and 125% of your risk.',
+  },
+  {
+    q: 'Can I run it on my real trades?',
+    a: 'Yes. The Wawe Journal prop firm tracker runs the same simulation on the closed trades in your journal once a challenge has at least 20 trades, and shows the pass probability on your dashboard. Starting is free.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'WebApplication',
+    '@id': URL_SELF + '#app',
+    name: 'Prop Firm Challenge Pass Probability Calculator',
+    url: URL_SELF,
+    description: 'Free Monte Carlo calculator that estimates the chance to pass a prop firm challenge from win rate, average win and loss, risk per trade and trades per day.',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    isAccessibleForFree: true,
+    inLanguage: 'en',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': URL_SELF + '#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Prop Firm Pass Probability Calculator (Free) | Wawe Journal"
+  description="Estimate your odds of passing a prop firm challenge: enter win rate, average win and loss, risk and trades per day; Monte Carlo shows pass and fail rates."
+  crumb="Prop firm pass probability calculator"
+  crumbParent={{ name: 'Tools', href: '/tools' }}
+  schema={schema}
+>
+  <Fragment slot="head"><link rel="stylesheet" href="/tools.css" /></Fragment>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/tools">Tools</a><span aria-hidden="true">/</span><span>Pass probability</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Prop firm challenge pass probability calculator</h1>
+      <p class="page-lead anim" style="--d:.2s">Enter your win rate, average win and loss, risk and trades per day. A Monte Carlo simulation plays your challenge thousands of times and shows how often you pass, and which rule ends it when you don’t.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="tl-calc anim" style="--d:.3s">
+      <form class="tl-panel" id="pp-form" novalidate onsubmit="return false">
+        <h2>Your challenge</h2>
+        <PropRuleFields simulation />
+        <fieldset class="tl-fs">
+          <legend>Your trading</legend>
+          <div class="tl-grid">
+            <div class="tl-f tl-span2"><span id="pp-unit-label">Enter wins and losses in</span>
+              <div class="tl-seg" role="group" aria-labelledby="pp-unit-label">
+                <button type="button" data-unit="r" aria-pressed="true">R</button>
+                <button type="button" data-unit="usd" aria-pressed="false">$</button>
+              </div>
+            </div>
+            <label class="tl-f"><span>Win rate (%)</span>
+              <input id="pp-wr" type="number" inputmode="decimal" min="0" max="100" step="any" value="50" />
+            </label>
+            <label class="tl-f"><span>Trades per day</span>
+              <input id="pp-tpd" type="number" inputmode="decimal" min="1" max="30" step="any" value="2" />
+            </label>
+            <label class="tl-f"><span id="pp-win-label">Average win (R)</span>
+              <input id="pp-win" type="number" inputmode="decimal" min="0" step="any" value="1.5" />
+            </label>
+            <label class="tl-f"><span id="pp-loss-label">Average loss (R)</span>
+              <input id="pp-loss" type="number" inputmode="decimal" min="0" step="any" value="1" />
+            </label>
+            <label class="tl-f tl-span2" id="pp-risk-wrap"><span>Risk per trade (% of account)</span>
+              <input id="pp-risk" type="number" inputmode="decimal" min="0.01" max="100" step="any" value="1" />
+              <small id="pp-risk-hint">1R = $1,000 on this account.</small>
+            </label>
+          </div>
+        </fieldset>
+      </form>
+
+      <section class="tl-panel tl-sticky tl-out" aria-live="polite" aria-label="Results">
+        <div class="tl-kpi" id="pp-kpi">
+          <div class="tl-kpi-label">Pass probability</div>
+          <div class="tl-kpi-val" id="pp-pass">—</div>
+          <div class="tl-kpi-sub" id="pp-pass-sub">Running the simulation…</div>
+          <div class="tl-stack" id="pp-stack" aria-hidden="true"><i class="tl-c-pass"></i><i class="tl-c-daily"></i><i class="tl-c-max"></i><i class="tl-c-time"></i><i class="tl-c-open"></i></div>
+        </div>
+        <div class="tl-stats">
+          <div class="tl-stat"><b id="pp-fail-daily">—</b><span><i class="tl-dot tl-c-daily"></i>Fail by daily loss</span></div>
+          <div class="tl-stat"><b id="pp-fail-max">—</b><span><i class="tl-dot tl-c-max"></i>Fail by max drawdown</span></div>
+          <div class="tl-stat"><b id="pp-open">—</b><span><i class="tl-dot tl-c-open"></i><span id="pp-open-label" style="display:inline;margin:0">Target not reached in time</span></span></div>
+          <div class="tl-stat"><b id="pp-days">—</b><span>Median trading days to reach the target</span></div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Same trades, different risk</h3></div>
+          <table class="tl-risk">
+            <thead><tr><th>Risk</th><th>Pass</th><th>Daily</th><th>Max DD</th></tr></thead>
+            <tbody id="pp-risk-rows"><tr><td colspan="4">—</td></tr></tbody>
+          </table>
+          <p class="tl-hint" id="pp-risk-note"></p>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-rows">
+            <span>Expected result per trade</span><b id="pp-exp">—</b>
+            <span>Losing trades in one day that break the daily limit</span><b id="pp-streak">—</b>
+            <span>Simulated challenges</span><b id="pp-runs">—</b>
+          </div>
+        </div>
+        <div class="tl-msg" id="pp-msg" hidden></div>
+        <p class="tl-disc">An estimate from a synthetic sample built from your inputs (240 trades with exactly your win rate and average win and loss), not a promise and not investment advice. Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them. Rules change; confirm the numbers with your firm.</p>
+      </section>
+    </div>
+
+    <section class="fp-sec reveal">
+      <h2>How the simulation works <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>A trade sample from your numbers</h3><p>Your win rate, average win and average loss become a sample of 240 trades. In R mode, 1R is your risk per trade as a share of the account; in $ mode you enter the amounts directly.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Thousands of challenges</h3><p>The challenge is played 2,000 times per risk level. Each day places your trades per day, each trade drawn at random, and every rule is checked after every trade and at every daily close.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>How it ends</h3><p>Each run ends in a pass, a daily loss breach, a max drawdown breach, or no result inside the time window (the firm’s maximum trading days, or 60 trading days when there is no limit).</p></div>
+      </div>
+      <p class="fp-note">The engine is the same one the Wawe Journal prop firm tracker and AI coach use on real trades. Once the target is reached a run counts as passed; any remaining minimum trading days are assumed to be completed with minimal trades.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What moves your odds <span class="dim">the most.</span></h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Risk per trade against the daily limit</h3><p>With 1% risk and a 5% daily limit you need six full losses in one day to fail. At 2.5% risk, three are enough. Most failed challenges are one bad day, not a bad month.</p></div>
+        <div class="fp-item"><h3>Edge, not win rate alone</h3><p>A 40% win rate with 2R winners has a better expectancy than 60% with 0.5R winners. A negative expectancy rarely passes however small the risk; a positive one passes more often when the risk leaves room for losing streaks.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Pass probability questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/tools/prop-firm-drawdown-calculator" class="btn btn-line">Drawdown calculator →</a>
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm rule tracker →</a>
+        <a href="/pricing" class="btn btn-line">Plans and pricing →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Run it on your real trades.</h2>
+      <p>Wawe Journal’s prop firm tracker runs this simulation on your own closed trades and shows the result on your dashboard. Free to start.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+
+  <script src="/src/core/prop-templates.js" is:inline defer></script>
+  <script src="/src/utils/prop-calculator.js" is:inline defer></script>
+  <script src="/src/utils/prop-montecarlo.js" is:inline defer></script>
+  <script is:inline>
+  // Geçme olasılığı. Durum PropCalculator.calculatePropStatus ile (sıfırdan başlayan challenge), simülasyon
+  // PropMonteCarlo.simulate ile. 4 risk seviyesi x 2000 koşu telefonda 50 ms'yi aşabildiği için Blob Web Worker'da
+  // çalışır; worker motoru aynı dosyadan importScripts ile yükler (adresin ?v= değeri derlemede yazılır).
+  (function () {
+    'use strict';
+    var RUNS = 2000, SAMPLE = 240, MC_URL = '/src/utils/prop-montecarlo.js?v=__WW_BUILD_ID__';
+    function boot() {
+      var F = window.WWPropRuleForm;
+      if (!F) return;
+      var PC = window.PropCalculator || null;
+      var num = F.num, money = F.money;
+      function $(id) { return document.getElementById(id); }
+      function r2(v) { return Math.round(v * 100) / 100; }
+      function pct(v) { return isFinite(v) ? (Math.round(v * 10) / 10).toFixed(1) + '%' : '—'; }
+      function setText(id, v) { var el = $(id); if (el) el.textContent = v; }
+      var unit = 'r';
+      var el = { wr: $('pp-wr'), tpd: $('pp-tpd'), win: $('pp-win'), loss: $('pp-loss'), risk: $('pp-risk') };
+      var form = F.init({ simulation: true, onChange: schedule });
+      var out = $('pp-kpi');
+
+      // ── Worker (yoksa ana iş parçacığı) ─────────────────────────────
+      var worker = null, workerDead = false, seq = 0, pending = {};
+      function onMain(payload, cb) {
+        setTimeout(function () {
+          var t = performance.now(), r = null, err = null;
+          try {
+            if (!window.PropMonteCarlo) throw new Error('The simulation engine did not load. Refresh the page.');
+            r = window.PropMonteCarlo.simulate(payload);
+          } catch (e) { err = e && e.message ? e.message : String(e); }
+          cb(r, performance.now() - t, false, err);
+        }, 20);
+      }
+      function killWorker() {
+        workerDead = true;
+        try { if (worker) worker.terminate(); } catch (e) {}
+        worker = null;
+        var hs = Object.keys(pending).map(function (k) { return pending[k]; });
+        pending = {};
+        hs.forEach(function (h) { onMain(h.payload, h.cb); });
+      }
+      function simulate(payload, cb) {
+        if (!workerDead && window.Worker && window.Blob && window.URL && URL.createObjectURL) {
+          try {
+            if (!worker) {
+              var code = 'try{importScripts(' + JSON.stringify(location.origin + MC_URL) + ')}catch(e){}' +
+                'onmessage=function(e){var t=performance.now(),r=null,err=null;' +
+                'try{if(!self.PropMonteCarlo)throw new Error("engine");r=self.PropMonteCarlo.simulate(e.data.p)}catch(x){err=String(x&&x.message||x)}' +
+                'postMessage({id:e.data.id,r:r,err:err,ms:performance.now()-t})};';
+              worker = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+              worker.onmessage = function (e) {
+                var d = e.data || {}, h = pending[d.id];
+                delete pending[d.id];
+                if (!h) return;
+                if (d.err === 'engine') { pending[d.id] = h; killWorker(); return; }
+                h.cb(d.r, d.ms, true, d.err);
+              };
+              worker.onerror = function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); killWorker(); };
+            }
+            var id = ++seq;
+            pending[id] = { payload: payload, cb: cb };
+            worker.postMessage({ id: id, p: payload });
+            return;
+          } catch (e) { workerDead = true; worker = null; }
+        }
+        onMain(payload, cb);
+      }
+
+      // ── Girdiler ─────────────────────────────────────────────────────
+      function riskAmount() {
+        var S = form.balance(), rp = num(el.risk.value);
+        return S > 0 && rp > 0 ? S * rp / 100 : NaN;
+      }
+      function setUnit(u) {
+        if (u === unit) return;
+        var R = riskAmount();
+        if (R > 0) {
+          [el.win, el.loss].forEach(function (inp) {
+            var v = num(inp.value);
+            if (!isFinite(v)) return;
+            inp.value = String(u === 'usd' ? r2(v * R) : Math.round(v / R * 100) / 100);
+          });
+        }
+        unit = u;
+        Array.prototype.forEach.call(document.querySelectorAll('.tl-seg button'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-unit') === u)); });
+        setText('pp-win-label', 'Average win (' + (u === 'usd' ? '$' : 'R') + ')');
+        setText('pp-loss-label', 'Average loss (' + (u === 'usd' ? '$' : 'R') + ')');
+        $('pp-risk-wrap').hidden = u === 'usd';
+        schedule();
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('.tl-seg button'), function (b) {
+        b.addEventListener('click', function () { setUnit(b.getAttribute('data-unit')); });
+      });
+
+      // Motorun istediği kapanmış işlem listesi: tam olarak girilen oran ve tutarlarla, günlere tpd kadar dağıtılmış
+      function sampleTrades(W, L, wr, tpd) {
+        var trades = [], wins = Math.round(SAMPLE * wr / 100), day0 = Date.UTC(2025, 0, 1);
+        for (var i = 0; i < SAMPLE; i++) {
+          var day = Math.floor(i / tpd);
+          trades.push({ trade_date: new Date(day0 + day * 864e5).toISOString().slice(0, 10), pnl: i < wins ? W : -L });
+        }
+        return trades;
+      }
+
+      function msg(text) { var m = $('pp-msg'); if (!m) return; m.hidden = !text; m.textContent = text || ''; }
+      function blank(text) {
+        ['pp-pass', 'pp-fail-daily', 'pp-fail-max', 'pp-open', 'pp-days', 'pp-exp', 'pp-streak', 'pp-runs'].forEach(function (id) { setText(id, '—'); });
+        setText('pp-pass-sub', text || '');
+        $('pp-risk-rows').innerHTML = '<tr><td colspan="4">—</td></tr>';
+        setText('pp-risk-note', '');
+        stack(0, 0, 0, 0, 0);
+        if (out) out.classList.remove('tl-busy');
+      }
+      function stack(pass, daily, max, time, open) {
+        var segs = $('pp-stack').children, v = [pass, daily, max, time, open];
+        for (var i = 0; i < segs.length; i++) segs[i].style.width = Math.max(0, v[i] || 0) + '%';
+      }
+
+      var timer = null, lastReq = 0;
+      function schedule() { clearTimeout(timer); timer = setTimeout(run, 250); }
+
+      function run() {
+        msg('');
+        var acc = form.account(), S = Number(acc.starting_balance);
+        var R = riskAmount();
+        setText('pp-risk-hint', R > 0 ? '1R = ' + money(R, R < 100 ? 2 : 0) + ' on this account.' : '');
+        if (!(S > 0)) return blank('Enter an account size above zero.');
+        var wr = num(el.wr.value), tpd = num(el.tpd.value), w = num(el.win.value), l = num(el.loss.value);
+        if (!(wr >= 0 && wr <= 100)) return blank('Enter a win rate between 0 and 100%.');
+        if (!(tpd >= 1 && tpd <= 30)) return blank('Enter between 1 and 30 trades per day.');
+        if (!(w > 0) || !(l > 0)) return blank('Enter an average win and an average loss above zero.');
+        var W = w, L = l;
+        if (unit === 'r') {
+          if (!(R > 0)) return blank('Enter your risk per trade.');
+          W = w * R; L = l * R;
+        }
+        W = r2(W); L = r2(L);
+        if (!(W > 0) || !(L > 0)) return blank('Trade sizes are too small for this account.');
+        if (!PC) return blank('The calculator did not load. Refresh the page.');
+
+        var st;
+        try { st = PC.calculatePropStatus({ account: acc, trades: [], currentDate: '2026-01-01' }); }
+        catch (e) { return blank('Could not calculate: ' + (e && e.message ? e.message : 'check the rules')); }
+        if (!st || st.overall_status === 'invalid_rules') return blank((st && st.error_message ? st.error_message.replace(/_/g, ' ') : 'Check the rules') + '.');
+        if (!acc.rules.profit_target_pct) return blank('Add a profit target under “Rules used” to estimate the pass probability.');
+
+        // Sabit bilgiler (simülasyondan bağımsız)
+        var expv = (wr / 100) * W - (1 - wr / 100) * L;
+        var sign = expv < 0 ? '−' : '+';
+        setText('pp-exp', sign + money(Math.abs(expv), Math.abs(expv) < 100 ? 2 : 0) + (R > 0 ? ' (' + sign + (Math.abs(expv) / R).toFixed(2) + 'R)' : ''));
+        var dLimit = Number(st.daily_loss.limit_amount);
+        setText('pp-streak', dLimit > 0 ? String(Math.floor(dLimit / L + 1e-9) + 1) + ' (limit ' + money(dLimit) + ')' : '—');
+
+        var req = ++lastReq;
+        if (out) out.classList.add('tl-busy');
+        setText('pp-pass-sub', 'Running the simulation…');
+        simulate({ account: acc, status: st, trades: sampleTrades(W, L, wr, tpd), runs: RUNS }, function (m, ms, inWorker, err) {
+          if (req !== lastReq) return; // eski istek
+          if (out) out.classList.remove('tl-busy');
+          if (err || !m) return blank(err || 'Nothing to simulate with these inputs.');
+          if (m.kind !== 'challenge') return blank('Add a profit target under “Rules used” to estimate the pass probability.');
+          render(m, ms, inWorker, acc);
+        });
+      }
+
+      function render(m, ms, inWorker, acc) {
+        setText('pp-pass', pct(m.pass_pct));
+        var t = acc.rules.profit_target_pct;
+        setText('pp-pass-sub', 'Runs that reach the +' + t + '% target without breaking a rule within ' + m.horizon_days + ' trading days.');
+        setText('pp-fail-daily', pct(m.fail_daily_pct));
+        setText('pp-fail-max', pct(m.fail_max_pct));
+        var timeFail = m.fail_time_pct || 0;
+        setText('pp-open', pct((m.open_pct || 0) + timeFail));
+        setText('pp-open-label', 'Target not reached in ' + m.horizon_days + ' days');
+        setText('pp-days', m.median_days_to_pass === null || m.median_days_to_pass === undefined ? '—' : String(m.median_days_to_pass));
+        stack(m.pass_pct, m.fail_daily_pct, m.fail_max_pct, timeFail, m.open_pct);
+        var rp = num(el.risk.value);
+        var rows = (m.by_risk || []).map(function (b) {
+          var label = unit === 'r' && rp > 0 ? (Math.round(rp * b.risk_scale * 1000) / 1000) + '%' : Math.round(b.risk_scale * 100) + '% size';
+          return '<tr' + (b.risk_scale === 1 ? ' class="cur"' : '') + '><td>' + label + (b.risk_scale === 1 ? ' (yours)' : '') + '</td><td>' + pct(b.pass_pct) + '</td><td>' + pct(b.fail_daily_pct) + '</td><td>' + pct(b.fail_max_pct) + '</td></tr>';
+        });
+        $('pp-risk-rows').innerHTML = rows.join('') || '<tr><td colspan="4">—</td></tr>';
+        var best = (m.by_risk || []).filter(function (b) { return b.risk_scale === m.best_risk_scale; })[0];
+        setText('pp-risk-note', best && m.best_risk_scale !== 1
+          ? 'Cutting your trade size by ' + Math.round((1 - m.best_risk_scale) * 100) + '% raises the estimate to ' + pct(best.pass_pct) + '.'
+          : 'Smaller or larger trades with the same win rate and R multiples.');
+        setText('pp-runs', (m.runs * (m.by_risk ? m.by_risk.length : 1)).toLocaleString('en-US') + ' in ' + Math.max(1, Math.round(ms)) + ' ms' + (inWorker ? '' : ' (main thread)'));
+      }
+
+      [el.wr, el.tpd, el.win, el.loss, el.risk].forEach(function (inp) { if (inp) inp.addEventListener('input', schedule); });
+      run();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+  </script>
+</PageLayout>

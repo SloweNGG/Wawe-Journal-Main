@@ -1,0 +1,174 @@
+---
+// Fiyat sayfası. Fiyatlar landing (#pricing), config.js (12 / 99 USD) ve index.astro'daki şema ile aynı olmalı.
+// İade / iptal cümleleri terms.astro 7-8. maddeleriyle birebir uyumlu tutulmalı.
+import PageLayout from '../layouts/PageLayout.astro';
+
+const MONTHLY = 12;
+const YEARLY = 99;
+
+const faq = [
+  {
+    q: 'Is Wawe Journal really free?',
+    a: 'Yes. The Starter plan is free with no time limit and no card required. It covers unlimited trade logging, imports, cTrader auto-sync, core analytics, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.',
+  },
+  {
+    q: 'What does Pro add?',
+    a: 'More AI coach messages every day, up to 10 backtest accounts and 10 prop firm trackers, unlimited trades on real-data backtests, saved chart drawings, strategy comparison and advanced analytics, overtrade and daily loss alerts, and a customizable dashboard.',
+  },
+  {
+    q: 'How can I pay?',
+    a: 'By credit or debit card (processed by Creem, renews automatically until you cancel) or by cryptocurrency (processed by NOWPayments, a one-time prepayment for one period that does not renew).',
+  },
+  {
+    q: 'Can I cancel or get a refund?',
+    a: 'You can cancel a card subscription at any time from your account settings; Pro stays active until the end of the period you paid for. If you are not happy with Pro, you can request a full refund within 14 days of your first payment by emailing support@wawejournal.com.',
+  },
+  {
+    q: 'How much do I save with the yearly plan?',
+    a: `The yearly plan is $${YEARLY} a year, about $8.25 a month, compared with $${MONTHLY * 12} for twelve monthly payments: roughly 31% less, or two months free.`,
+  },
+];
+
+const schema = [
+  {
+    '@type': 'Product',
+    '@id': 'https://wawejournal.com/pricing#product',
+    name: 'Wawe Journal Pro',
+    description: 'Pro plan of Wawe Journal, the trading journal with analytics, an AI coach, backtest replay and prop firm tracking.',
+    brand: { '@type': 'Brand', name: 'Wawe Journal' },
+    image: 'https://wawejournal.com/og-image.jpg',
+    offers: [
+      { '@type': 'Offer', name: 'Pro (monthly)', price: String(MONTHLY), priceCurrency: 'USD', url: 'https://wawejournal.com/pricing', availability: 'https://schema.org/InStock' },
+      { '@type': 'Offer', name: 'Pro (yearly)', price: String(YEARLY), priceCurrency: 'USD', url: 'https://wawejournal.com/pricing', availability: 'https://schema.org/InStock' },
+    ],
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/pricing#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+
+const rows: [string, string, string][] = [
+  ['Trade logging & P&L calendar', 'Unlimited', 'Unlimited'],
+  ['Import (MetaTrader 4/5, TradingView, Binance, Bybit, IBKR, XTB, OANDA, CSV, Excel)', 'Included', 'Included'],
+  ['cTrader auto-sync', 'Included', 'Included'],
+  ['Core analytics (win rate, profit factor, expectancy, drawdown)', 'Included', 'Included'],
+  ['Strategy comparison & advanced analytics', '—', 'Included'],
+  ['AI coach', 'Daily allowance', 'More messages every day'],
+  ['Backtest accounts', '1', 'Up to 10'],
+  ['Trades on real-data backtests', 'Monthly allowance', 'Unlimited'],
+  ['Backtest chart drawings', 'Kept for the session', 'Saved to your account'],
+  ['Prop firm rule trackers', '1', 'Up to 10'],
+  ['Overtrade & daily loss alerts', '—', 'Included'],
+  ['Customizable dashboard charts', '—', 'Included'],
+];
+---
+<PageLayout
+  title="Pricing: Free Plan & Pro from $8.25/mo | Wawe Journal"
+  description={`Wawe Journal pricing: a free Starter plan for journaling, analytics, backtesting and prop firm tracking, and Pro for $${MONTHLY}/month or $${YEARLY}/year. Compare every feature.`}
+  crumb="Pricing"
+  schema={schema}
+>
+  <section class="page-hero" id="pricing" data-period="monthly">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Pricing</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Simple pricing. Start free.</h1>
+      <p class="page-lead anim" style="--d:.2s">Backtesting, prop firm tracking, cTrader sync and the AI coach are on every plan. Pro is for traders running several accounts and strategies.</p>
+      <div class="pr-toggle anim" style="--d:.25s" role="group" aria-label="Billing period">
+        <button type="button" class="on" id="pick-monthly" aria-pressed="true">Monthly</button>
+        <button type="button" id="pick-yearly" aria-pressed="false">Yearly · save 31%</button>
+      </div>
+
+      <div class="plans fp-plans anim" style="--d:.3s">
+        <div class="plan">
+          <span class="plan-tag">Starter</span>
+          <div class="plan-price">$0<span>forever</span></div>
+          <p class="plan-desc">Everything you need to start journaling.</p>
+          <ul class="plan-feats">
+            <li>Unlimited trade logging &amp; calendar</li>
+            <li>CSV &amp; broker import, cTrader auto-sync</li>
+            <li>Core analytics</li>
+            <li>1 backtest account</li>
+            <li>1 prop firm rule tracker</li>
+            <li>AI coach with a daily message allowance</li>
+          </ul>
+          <a href="/register" class="btn btn-line">Start for free</a>
+        </div>
+        <div class="plan featured">
+          <span class="plan-tag">Pro · most popular</span>
+          <div class="plan-price"><span class="pm">${MONTHLY}</span><span class="py">${YEARLY}</span><span><span class="pm">/ month</span><span class="py">/ year</span></span></div>
+          <p class="plan-desc"><span class="pm">For traders running several accounts and strategies.</span><span class="py">About $8.25 a month, 2 months free.</span></p>
+          <ul class="plan-feats">
+            <li>Everything in Starter</li>
+            <li>More AI coach messages every day</li>
+            <li>Up to 10 backtest accounts</li>
+            <li>Up to 10 prop firm rule trackers</li>
+            <li>Strategy comparison &amp; advanced analytics</li>
+            <li>Overtrade &amp; daily loss alerts</li>
+          </ul>
+          <a href="/register?plan=monthly" class="btn btn-accent" id="go-pro">Go Pro</a>
+        </div>
+      </div>
+      <p class="fp-note">Prices in USD. Card payments renew until you cancel; crypto payments cover one period.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>Compare every feature</h2>
+      <div class="fp-table-wrap">
+        <table class="fp-table">
+          <thead><tr><th>Feature</th><th>Starter</th><th>Pro</th></tr></thead>
+          <tbody>
+            {rows.map(([f, s, p]) => (
+              <tr><td>{f}</td><td class={s === '—' ? '' : 'yes'}>{s}</td><td class="yes">{p}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="fp-related">
+        <a href="/backtesting" class="btn btn-line">Backtesting →</a>
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
+        <a href="/#coach" class="btn btn-line">AI coach →</a>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Pricing questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <p class="fp-note">Full terms: <a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a></p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Your journal is one minute away.</h2>
+      <p>Start on the free plan and upgrade only when you need more.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+
+  <script is:inline>
+  (function() {
+    // Aylık / yıllık seçimi: görünen fiyat ve "Go Pro" bağlantısı (register ?plan'ı ödeme ekranına taşır;
+    // oturum açıksa register zaten settings.html?plan=...#panel-plan'a yönlendirir)
+    var box = document.getElementById('pricing');
+    var m = document.getElementById('pick-monthly');
+    var y = document.getElementById('pick-yearly');
+    var go = document.getElementById('go-pro');
+    function set(period) {
+      box.setAttribute('data-period', period);
+      m.classList.toggle('on', period === 'monthly'); m.setAttribute('aria-pressed', period === 'monthly');
+      y.classList.toggle('on', period === 'yearly'); y.setAttribute('aria-pressed', period === 'yearly');
+      if (go) go.setAttribute('href', '/register?plan=' + period);
+    }
+    if (box && m && y) {
+      m.addEventListener('click', function() { set('monthly'); });
+      y.addEventListener('click', function() { set('yearly'); });
+    }
+  })();
+  </script>
+</PageLayout>

@@ -1,0 +1,124 @@
+---
+// Özellik sayfası: backtest tekrarı. İçerik İngilizce ve sunucuda hazır (arama motoru JS beklemeden okur).
+// Buradaki her iddia uygulamadaki gerçek davranışla aynı olmalı (bkz. public/interface/backtest/js, en.js backtest.*).
+import PageLayout from '../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Is the backtesting free?',
+    a: 'Yes. The free Starter plan includes one backtest account with every replay feature. Pro raises that to ten accounts, removes the monthly trade allowance on real-data accounts and saves your chart drawings to your account.',
+  },
+  {
+    q: 'Where does the candle data come from?',
+    a: 'You choose per account. Synthetic data is generated in your browser so you can start practicing immediately; it is not real market data. For real candles, connect a cTrader broker account and replay its own price history, available up to the previous day.',
+  },
+  {
+    q: 'Does backtesting place orders with my broker?',
+    a: 'No. Every order in a backtest account is simulated inside Wawe Journal. Nothing is ever sent to your broker, and connected broker accounts are read-only.',
+  },
+  {
+    q: 'Do backtest trades mix with my live statistics?',
+    a: 'Only if you want them to. A real-data backtest account can be linked to a journal, and you decide whether its trades are shown separately or combined with live trading. Synthetic-data accounts cannot be linked, because their trades do not come from real prices.',
+  },
+  {
+    q: 'Which timeframes and symbols can I replay?',
+    a: 'M1, M5, M15, M30, H1, H4 and D1. Synthetic data covers EURUSD, GBPUSD, USDJPY, gold (XAUUSD), Bitcoin and Ethereum; with cTrader you replay the symbols your broker offers.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/backtesting#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Free Backtesting Software with Candle Replay | Wawe Journal"
+  description="Backtest forex, gold and crypto for free: replay the market candle by candle on synthetic or real cTrader data, trade with SL/TP and review results in Wawe Journal."
+  crumb="Backtesting"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Backtesting</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Backtest your strategy, candle by candle.</h1>
+      <p class="page-lead anim" style="--d:.2s">Wawe Journal’s backtest replay lets you go back in time, trade a setup a hundred times with simulated orders and see in your journal whether it really has an edge. Free to start, right in your browser.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Start backtesting free</a>
+        <a href="/pricing" class="btn btn-line btn-lg">See plans</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="frame fp-shot anim" style="--d:.35s">
+      <img src="/images/landing/screen-backtest.webp" alt="Wawe Journal backtest workspace replaying EURUSD H1 candles with balance, equity and a buy/sell order panel" width="1800" height="947" loading="eager" decoding="async" />
+    </div>
+
+    <section class="fp-sec reveal">
+      <h2>How backtest replay works <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Pick your data and start date</h3><p>Create a backtest account, choose a symbol, a timeframe and the date the replay starts from. Start instantly on synthetic data, or connect cTrader for real candles.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Replay and trade</h3><p>Step one candle at a time or play from 0.1 to 10 candles per second. Place buy and sell orders with lot size, stop loss and take profit, and see risk, reward and R:R before you click.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Review the results</h3><p>Every closed trade is recorded with its balance, equity and statistics. Link a real-data account to a journal and analyze the trades next to your live ones, or keep them apart.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>A full charting workspace, <span class="dim">built for practice.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Seven timeframes</h3><p>M1, M5, M15, M30, H1, H4 and D1. Change the timeframe from the toolbar at any point of the replay.</p></div>
+        <div class="fp-item"><h3>Multi-chart layouts</h3><p>One chart, two side by side or stacked, a 2×2 grid, or one large chart with three small ones, each on its own timeframe.</p></div>
+        <div class="fp-item"><h3>Drawing tools</h3><p>Trend lines, horizontal lines, rays, rectangle zones, Fibonacci retracements, long and short position tools, text and a measure tool, with a magnet to snap to candles.</p></div>
+        <div class="fp-item"><h3>Realistic costs</h3><p>Set the spread and the commission per lot. Stops must respect the spread, and commission is deducted from the balance when a position closes.</p></div>
+        <div class="fp-item"><h3>Go to any date</h3><p>Jump the replay to a specific date to study a news day, a trend or a range again. The replay pauses when it reaches the end of the data.</p></div>
+        <div class="fp-item"><h3>Simple or advanced view</h3><p>Simple mode shows only the chart, replay controls and order panel. Advanced mode opens every panel and tool.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Synthetic or real data. <span class="dim">You choose per account.</span></h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Synthetic data</h3><p>Candles generated in your browser for EURUSD, GBPUSD, USDJPY, gold (XAUUSD), Bitcoin and Ethereum. Ideal to learn the tools and drill execution. It is not real market data, so results on it are never proof of an edge.</p></div>
+        <div class="fp-item"><h3>Real cTrader candles</h3><p>Connect a cTrader broker account (read-only) and replay its own price history, up to the previous day. Trades on real data can be linked to a journal and analyzed with your live statistics.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Free vs Pro <span class="dim">for backtesting.</span></h2>
+      <div class="fp-table-wrap">
+        <table class="fp-table">
+          <thead><tr><th>Feature</th><th>Starter (free)</th><th>Pro</th></tr></thead>
+          <tbody>
+            <tr><td>Backtest accounts</td><td>1</td><td class="yes">Up to 10</td></tr>
+            <tr><td>Replay, timeframes, multi-chart, orders with SL/TP</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><td>Trades on real cTrader data</td><td>Monthly allowance</td><td class="yes">Unlimited</td></tr>
+            <tr><td>Chart drawings</td><td>Kept for the session</td><td class="yes">Saved to your account</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fp-note">Full plan details are on the <a href="/pricing">pricing page</a>.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Backtesting questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm rule tracker →</a>
+        <a href="/#coach" class="btn btn-line">AI trading coach →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Practice before you risk it.</h2>
+      <p>Create a free Wawe Journal account and run your first backtest in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

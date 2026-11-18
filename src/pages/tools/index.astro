@@ -1,0 +1,69 @@
+---
+// Ücretsiz araçlar merkezi (/tools). Kısa sayfa: iki hesaplayıcıya bağlantı verir. Yeni araç eklenince `tools` dizisine ekle.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const tools = [
+  {
+    href: '/tools/prop-firm-drawdown-calculator',
+    name: 'Prop firm drawdown calculator',
+    desc: 'See your daily loss limit, your static or trailing max drawdown level and how much you can still lose today. Presets for FTMO, FundedNext and FundingPips, or enter custom rules.',
+    cta: 'Open the drawdown calculator',
+  },
+  {
+    href: '/tools/prop-firm-pass-probability',
+    name: 'Challenge pass probability calculator',
+    desc: 'Enter your win rate, average win and loss, risk and trades per day. A Monte Carlo simulation estimates how often you pass and whether the daily loss or max drawdown ends the challenge.',
+    cta: 'Open the pass probability calculator',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'ItemList',
+    '@id': 'https://wawejournal.com/tools#list',
+    name: 'Free prop firm calculators',
+    itemListElement: tools.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, url: 'https://wawejournal.com' + t.href })),
+  },
+];
+---
+<PageLayout
+  title="Free Prop Firm Calculators | Wawe Journal"
+  description="Free prop firm calculators from Wawe Journal: check your daily loss limit and max drawdown, and estimate your chance to pass a challenge. No sign-up needed."
+  crumb="Tools"
+  schema={schema}
+>
+  <Fragment slot="head"><link rel="stylesheet" href="/tools.css" /></Fragment>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Tools</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Free prop firm calculators</h1>
+      <p class="page-lead anim" style="--d:.2s">Two calculators built on the same rule engine as the Wawe Journal prop firm tracker. They run in your browser, with no sign-up and nothing stored.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec tl-hub anim" style="--d:.3s">
+      <div class="fp-grid two">
+        {tools.map((t, i) => (
+          <div class="fp-item">
+            <span class="num">{String(i + 1).padStart(2, '0')}</span>
+            <h2 class="fp-tool-h"><a href={t.href}>{t.name}</a></h2>
+            <p>{t.desc}</p>
+            <a href={t.href} class="btn btn-line">{t.cta} →</a>
+          </div>
+        ))}
+      </div>
+      <p class="fp-note">Estimates for planning, not investment advice. Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them. Rules change; confirm the numbers with your firm.</p>
+      <div class="fp-related">
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm rule tracker →</a>
+        <a href="/pricing" class="btn btn-line">Plans and pricing →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Track the real thing.</h2>
+      <p>Log or sync your trades and Wawe Journal checks every prop firm rule for you, with the pass probability from your own results.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

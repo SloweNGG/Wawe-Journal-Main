@@ -1,0 +1,117 @@
+---
+// Entegrasyon sayfası: Interactive Brokers (IBKR) içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// DÜRÜSTLÜK NOTU: IBKR'nin ham işlem (execution) raporu her dolumu ayrı satırda verir ve çıkış fiyatı yoktur;
+// parser bunu kapalı işleme ÇEVİRMEZ (test-broker-formats.html'deki IBKR vakası: "needs manual mapping"), uygulamada
+// manuel eşleme ekranı da yok → "veri bulunamadı". Bu yüzden sayfa, satır başına bir kapalı işlem içeren dosya ister.
+// Kaynaklar: broker-detector.js (ibkr imzası: TradePrice), parser-v2.js (kapalı işlem modu: sembol/yön/giriş/çıkış zorunlu,
+// K/Z yoksa (çıkış-giriş)×miktar×çarpan; hisse/opsiyon çarpanı 1), broker-dictionary.js (kolon adı adayları).
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Can I upload my IBKR trade confirmation or execution report directly?',
+    a: 'Not yet. Those reports list every execution on its own row without an exit price, and Wawe Journal does not pair IBKR executions into round trips today, so the import finds no closed trades. Use a file with one row per closed trade, as described above.',
+  },
+  {
+    q: 'How should I handle options and futures P&L?',
+    a: 'Include a P&L column. When the file has one, Wawe Journal keeps your number exactly. Without it, P&L is calculated as price difference times quantity, which is right for shares but leaves out contract multipliers such as 100 for US equity options.',
+  },
+  {
+    q: 'Does Wawe Journal connect to my IBKR account?',
+    a: 'No. There is no Interactive Brokers connection or auto-sync, and Wawe Journal never asks for your IBKR login. You prepare the file and upload it.',
+  },
+  {
+    q: 'Can I import short sales?',
+    a: 'Yes. Put Sell or Short in the Side column for trades that opened with a sale; they are imported as short trades with their own entry and exit prices.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/interactive-brokers#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Interactive Brokers Trading Journal (IBKR) | Wawe Journal"
+  description="Journal your Interactive Brokers stock, ETF and options trades: import closed trades from CSV or Excel into Wawe Journal and track win rate and drawdown."
+  crumb="Interactive Brokers journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>Interactive Brokers journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Interactive Brokers trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">IBKR reports are built for accounting: executions, commissions, positions. To improve as a stock or options trader you need round trips, the full trade from entry to exit with its result. Bring your IBKR trades into Wawe Journal as closed trades and study them properly.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Journal IBKR trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import IBKR trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export your trades</h3><p>Download your trade history from Interactive Brokers as CSV, or copy it into a spreadsheet. You need each trade’s symbol, side, quantity, entry and exit price and close date.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>One row per closed trade</h3><p>Arrange the sheet so every row is a finished round trip, with the column names on the first row: Symbol, Side, Quantity, Entry Price, Exit Price, Close Time, Commission, Profit.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Upload and confirm</h3><p>Save as CSV or Excel, open Add Trade, switch to CSV Import and drop the file. Check the preview, then import into your journal.</p></div>
+      </div>
+      <p class="fp-note">Optional columns that are also picked up: Open Time, Stop Loss, Take Profit and a comment or notes column.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Built for stocks, ETFs <span class="dim">and options.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Any symbol</h3><p>Tickers like AAPL or full option symbols are kept exactly as written, so you can filter and compare by underlying in your journal.</p></div>
+        <div class="fp-item"><h3>Your P&amp;L, untouched</h3><p>A Profit column is imported as is, including the option multiplier and IBKR commissions you already account for. Without it, P&amp;L is price difference times quantity.</p></div>
+        <div class="fp-item"><h3>Commission separate</h3><p>A Commission column is stored with each trade, so you can see how much of your edge goes to costs.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Round-trip analytics</h3><p>Win rate, profit factor, expectancy and drawdown across your stock and options trades, and a P&amp;L calendar of your trading days. <a href="/pricing">Pro</a> adds strategy comparison, useful for separating earnings plays from swing trades.</p></div>
+        <div class="fp-item"><h3>An AI coach on your own data</h3><p>Ask which tickers cost you the most or whether you hold losers longer than winners. The <a href="/#coach">AI coach</a> answers from your journal, not from market news.</p></div>
+        <div class="fp-item"><h3>Strategies and notes</h3><p>Assign your trades to strategies and add notes, then compare setups by their numbers instead of guessing which one works.</p></div>
+        <div class="fp-item"><h3>Prop rules if you need them</h3><p>Trading a funded account? The <a href="/prop-firm-tracker">prop firm tracker</a> checks daily loss and drawdown rules against your imported trades.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Executions are not paired yet</h3><p>IBKR execution and confirmation reports have no exit price per row, and Wawe Journal does not merge them into round trips. Prepare closed trades first.</p></div>
+        <div class="fp-item"><h3>No auto-sync</h3><p>There is no IBKR connection. Upload a new file when you want the journal updated; trades already imported are skipped.</p></div>
+        <div class="fp-item"><h3>Check the exit column</h3><p>Use the price you actually closed at. A column of daily closing prices would be read as the exit, so remove it or rename it before uploading.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Interactive Brokers journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations/tradingview" class="btn btn-line">TradingView journal →</a>
+        <a href="/integrations/oanda" class="btn btn-line">OANDA journal →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">Interactive Brokers and IBKR are trademarks of their owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Every round trip, in one place.</h2>
+      <p>Create a free Wawe Journal account and import your first IBKR trades today.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

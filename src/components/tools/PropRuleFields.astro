@@ -1,0 +1,295 @@
+---
+// Hesaplayıcı sayfalarının ortak "firma + faz + hesap büyüklüğü + kurallar" formu.
+// Seçenekler derlemede public/src/core/prop-templates.js'ten basılır; tarayıcıda window.PropTemplates ile
+// yeniden doldurulur ve kurallar getDefaultRules() ile alanlara yazılır. Bütün alanlar düzenlenebilir.
+// simulation=true: kâr hedefi olmayan fazlar (funded) gizlenir ve Monte Carlo'nun kullandığı ek kurallar
+// (min/max işlem günü, tutarlılık) gösterilir.
+import { loadPropTemplates, presetLabel } from './prop-presets';
+
+export interface Props {
+  simulation?: boolean;
+}
+const { simulation = false } = Astro.props;
+
+const templates = loadPropTemplates();
+const DEFAULT_KEY = 'ftmo-2step';
+const first = templates.find((t) => t.key === DEFAULT_KEY) || templates[0];
+const phases = first ? first.phases.filter((p) => !simulation || p.profit_target_pct != null) : [];
+const sizes = (first && first.starting_balances) || [5000, 10000, 25000, 50000, 100000, 200000];
+const p0 = phases[0];
+const fmt = (n: number) => '$' + n.toLocaleString('en-US');
+---
+<fieldset class="tl-fs" data-simulation={simulation ? '1' : '0'}>
+  <legend>Firm and account</legend>
+  <div class="tl-grid">
+    <label class="tl-f tl-span2"><span>Prop firm preset</span>
+      <select id="pr-firm">
+        {templates.map((t) => <option value={t.key} selected={t.key === (first && first.key)}>{presetLabel(t)}</option>)}
+        {!templates.length && <option value="custom">Custom rules</option>}
+      </select>
+    </label>
+    <label class="tl-f"><span>Phase</span>
+      <select id="pr-phase">
+        {phases.map((p) => <option value={String(p.phase_index)}>{p.phase_name}</option>)}
+        {!phases.length && <option value="0">Phase 1</option>}
+      </select>
+    </label>
+    <label class="tl-f"><span>Account size</span>
+      <select id="pr-size">
+        {sizes.map((s) => <option value={String(s)} selected={s === 100000}>{fmt(s)}</option>)}
+        <option value="other">Other amount</option>
+      </select>
+    </label>
+    <label class="tl-f tl-span2" id="pr-size-other-wrap" hidden><span>Other account size ($)</span>
+      <input id="pr-size-other" type="number" inputmode="decimal" min="100" step="any" value="100000" />
+    </label>
+  </div>
+
+  <details class="tl-rules">
+    <summary><span>Rules used</span><span class="tl-rules-sum" id="pr-rules-sum"></span></summary>
+    <div class="tl-grid">
+      <label class="tl-f"><span>Profit target (%)</span>
+        <input id="pr-target" type="number" inputmode="decimal" min="0" max="100" step="any" value={p0 && p0.profit_target_pct != null ? String(p0.profit_target_pct) : ''} placeholder="none" />
+      </label>
+      <label class="tl-f"><span>Daily loss limit (%)</span>
+        <input id="pr-daily" type="number" inputmode="decimal" min="0.1" max="100" step="any" value={p0 ? String(p0.daily_loss_limit_pct) : '5'} />
+      </label>
+      <label class="tl-f tl-span2"><span>Daily limit is a % of</span>
+        <select id="pr-daily-base">
+          <option value="initial_balance">Starting balance (fixed amount)</option>
+          <option value="day_start_balance">Today’s starting balance</option>
+        </select>
+      </label>
+      <label class="tl-f"><span>Max loss (%)</span>
+        <input id="pr-max" type="number" inputmode="decimal" min="0.1" max="100" step="any" value={p0 ? String(p0.max_loss_limit_pct) : '10'} />
+      </label>
+      <label class="tl-f"><span>Max loss type</span>
+        <select id="pr-max-type">
+          <option value="static">Static</option>
+          <option value="eod_trailing">Trailing (end of day)</option>
+        </select>
+      </label>
+      <label class="tl-f tl-span2" id="pr-lock-wrap"><span>Trailing stop stops rising at</span>
+        <select id="pr-lock">
+          <option value="none">Never (keeps trailing)</option>
+          <option value="at_starting_balance">The starting balance</option>
+        </select>
+      </label>
+      {simulation && (
+        <>
+          <label class="tl-f"><span>Min trading days</span>
+            <input id="pr-min-days" type="number" inputmode="numeric" min="0" step="1" placeholder="none" />
+          </label>
+          <label class="tl-f"><span>Max trading days</span>
+            <input id="pr-max-days" type="number" inputmode="numeric" min="1" step="1" placeholder="none" />
+          </label>
+          <label class="tl-f tl-span2"><span>Consistency: best day max % of total profit</span>
+            <input id="pr-consistency" type="number" inputmode="decimal" min="1" max="100" step="any" placeholder="off" />
+          </label>
+        </>
+      )}
+    </div>
+  </details>
+  <p class="tl-hint" id="pr-preset-note">Preset values come from Wawe Journal’s prop tracker. Rules change; confirm the numbers with your firm.</p>
+</fieldset>
+
+<script is:inline>
+// Ortak form yardımcısı (window.WWPropRuleForm). Sayfa betiği DOMContentLoaded'da init() çağırır;
+// o anda ertelenmiş (defer) prop-templates.js yüklenmiş olur. Şablon dosyası ya da seçili şablon yoksa
+// FALLBACK kurallarıyla (özel kural) çalışmaya devam eder.
+(function () {
+  'use strict';
+  var FALLBACK = {
+    phase_name: 'Phase 1', profit_target_pct: 10, daily_loss_limit_pct: 5, daily_loss_amount_base: 'initial_balance',
+    max_loss_limit_pct: 10, max_loss_type: 'static', max_loss_trail_lock: 'none', min_trading_days: null,
+    max_trading_days: null, consistency_rule: { enabled: false, max_single_day_profit_pct: null }, reset_tz: 'UTC'
+  };
+  var SIZES = [5000, 10000, 25000, 50000, 100000, 200000];
+
+  function $(id) { return document.getElementById(id); }
+  function num(v) {
+    if (v === null || v === undefined) return NaN;
+    var s = String(v).replace(/[\s,$]/g, '');
+    if (s === '') return NaN;
+    var n = Number(s);
+    return isFinite(n) ? n : NaN;
+  }
+  function money(n, dec) {
+    if (!isFinite(n)) return '—';
+    var neg = n < 0, a = Math.abs(n);
+    var s = a.toLocaleString('en-US', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
+    return (neg ? '−$' : '$') + s;
+  }
+  function tzLabel(tz) {
+    if (!tz) return 'your platform’s server time';
+    var m = /^Etc\/GMT([+-])(\d{1,2})$/.exec(tz);
+    if (m) return 'UTC' + (m[1] === '-' ? '+' : '-') + m[2];
+    return tz;
+  }
+  function setVal(el, v) { if (el) el.value = v === null || v === undefined ? '' : String(v); }
+
+  function init(opts) {
+    opts = opts || {};
+    var PT = window.PropTemplates || null;
+    var firm = $('pr-firm'), phase = $('pr-phase'), size = $('pr-size');
+    var sizeOther = $('pr-size-other'), sizeOtherWrap = $('pr-size-other-wrap');
+    var f = {
+      target: $('pr-target'), daily: $('pr-daily'), base: $('pr-daily-base'), max: $('pr-max'),
+      type: $('pr-max-type'), lock: $('pr-lock'), lockWrap: $('pr-lock-wrap'),
+      minDays: $('pr-min-days'), maxDays: $('pr-max-days'), cons: $('pr-consistency')
+    };
+    var sum = $('pr-rules-sum'), note = $('pr-preset-note');
+    var preset = FALLBACK;
+    var onChange = typeof opts.onChange === 'function' ? opts.onChange : function () {};
+
+    function templates() {
+      try { return PT && PT.getPropTemplates ? PT.getPropTemplates() : []; } catch (e) { return []; }
+    }
+    function tpl() {
+      try { return PT && PT.getPropTemplate ? PT.getPropTemplate(firm.value) : null; } catch (e) { return null; }
+    }
+    function phaseList() {
+      var t = tpl();
+      var list = t && t.phases && t.phases.length ? t.phases : [{ phase_index: 0, phase_name: 'Phase 1', profit_target_pct: 10 }];
+      if (opts.simulation) {
+        var withTarget = list.filter(function (p) { return p.profit_target_pct !== null && p.profit_target_pct !== undefined; });
+        if (withTarget.length) list = withTarget;
+      }
+      return list;
+    }
+
+    function fillFirms() {
+      var list = templates();
+      if (!list.length) return; // sunucuda basılan seçenekler kalır
+      var keep = firm.value;
+      firm.innerHTML = '';
+      list.forEach(function (t) {
+        var o = document.createElement('option');
+        o.value = t.key;
+        o.textContent = t.key === 'custom' ? 'Custom rules' : t.name;
+        firm.appendChild(o);
+      });
+      firm.value = keep && list.some(function (t) { return t.key === keep; }) ? keep : list[0].key;
+    }
+    function fillPhases() {
+      var keep = phase.value;
+      phase.innerHTML = '';
+      phaseList().forEach(function (p) {
+        var o = document.createElement('option');
+        o.value = String(p.phase_index);
+        o.textContent = p.phase_name || ('Phase ' + (p.phase_index + 1));
+        phase.appendChild(o);
+      });
+      if (keep && Array.prototype.some.call(phase.options, function (o) { return o.value === keep; })) phase.value = keep;
+    }
+    function fillSizes() {
+      var t = tpl();
+      var list = (t && t.starting_balances && t.starting_balances.length ? t.starting_balances : (PT && PT.DEFAULT_STARTING_BALANCES) || SIZES).slice();
+      var keep = size.value;
+      size.innerHTML = '';
+      list.forEach(function (s) {
+        var o = document.createElement('option');
+        o.value = String(s);
+        o.textContent = money(s);
+        size.appendChild(o);
+      });
+      var other = document.createElement('option');
+      other.value = 'other';
+      other.textContent = 'Other amount';
+      size.appendChild(other);
+      if (keep && Array.prototype.some.call(size.options, function (o) { return o.value === keep; })) size.value = keep;
+      else size.value = list.indexOf(100000) !== -1 ? '100000' : String(list[list.length - 1]);
+      syncSizeOther();
+    }
+    function syncSizeOther() { if (sizeOtherWrap) sizeOtherWrap.hidden = size.value !== 'other'; }
+    function syncLock() { if (f.lockWrap) f.lockWrap.hidden = f.type.value !== 'eod_trailing'; }
+
+    function applyPreset() {
+      var r = null;
+      try { r = PT && PT.getDefaultRules ? PT.getDefaultRules(firm.value, Number(phase.value) || 0) : null; } catch (e) { r = null; }
+      preset = r || FALLBACK;
+      setVal(f.target, preset.profit_target_pct);
+      setVal(f.daily, preset.daily_loss_limit_pct);
+      f.base.value = preset.daily_loss_amount_base === 'day_start_balance' ? 'day_start_balance' : 'initial_balance';
+      setVal(f.max, preset.max_loss_limit_pct);
+      f.type.value = preset.max_loss_type === 'eod_trailing' || preset.max_loss_type === 'trailing_eod' ? 'eod_trailing' : 'static';
+      f.lock.value = preset.max_loss_trail_lock === 'at_starting_balance' ? 'at_starting_balance' : 'none';
+      setVal(f.minDays, preset.min_trading_days || null);
+      setVal(f.maxDays, preset.max_trading_days);
+      var c = preset.consistency_rule;
+      setVal(f.cons, c && c.enabled ? c.max_single_day_profit_pct : null);
+      syncLock();
+      if (note) {
+        var t = tpl();
+        var name = t ? (t.key === 'custom' ? 'Custom rules' : t.name) : 'Custom rules';
+        note.textContent = name + (t && t.key !== 'custom' && preset.last_verified ? ' preset, last checked ' + preset.last_verified : '') +
+          '. Daily reset: midnight, ' + tzLabel(preset.reset_tz) + '. Every value is editable. Rules change; confirm the numbers with your firm.';
+      }
+    }
+
+    function balance() {
+      var v = size.value === 'other' ? num(sizeOther && sizeOther.value) : num(size.value);
+      return v > 0 ? v : NaN;
+    }
+
+    // calculatePropStatus / simulate için hesap nesnesi. Tarihler sabittir (işlemler tarih-only verilir),
+    // bu yüzden reset saat dilimi sonucu değiştirmez; yine de zorunlu alan olduğu için 'UTC' verilir.
+    function account() {
+      var target = num(f.target.value);
+      var minD = f.minDays ? num(f.minDays.value) : NaN;
+      var maxD = f.maxDays ? num(f.maxDays.value) : NaN;
+      var cons = f.cons ? num(f.cons.value) : NaN;
+      var rules = {
+        profit_target_pct: target > 0 ? target : null,
+        daily_loss_limit_pct: num(f.daily.value),
+        daily_loss_amount_base: f.base.value,
+        max_loss_limit_pct: num(f.max.value),
+        max_loss_type: f.type.value,
+        max_loss_trail_lock: f.type.value === 'eod_trailing' ? f.lock.value : 'none',
+        min_trading_days: f.minDays ? (minD > 0 ? Math.floor(minD) : null) : (preset.min_trading_days || null),
+        max_trading_days: f.maxDays ? (maxD > 0 ? Math.floor(maxD) : null) : null,
+        consistency_rule: f.cons
+          ? (cons > 0 ? { enabled: true, max_single_day_profit_pct: cons } : { enabled: false, max_single_day_profit_pct: null })
+          : { enabled: false, max_single_day_profit_pct: null },
+        reset_tz: 'UTC'
+      };
+      if (!(rules.daily_loss_limit_pct > 0)) rules.daily_loss_limit_pct = '';
+      if (!(rules.max_loss_limit_pct > 0)) rules.max_loss_limit_pct = '';
+      var bal = balance();
+      return { id: 'wawe-tools', starting_balance: bal > 0 ? bal : '', start_date: '2026-01-01', reset_tz: 'UTC', time_shift_hours: 0, rules: rules };
+    }
+
+    function summary() {
+      if (!sum) return;
+      var a = account(), r = a.rules;
+      var parts = [];
+      if (r.profit_target_pct) parts.push('target ' + r.profit_target_pct + '%');
+      if (r.daily_loss_limit_pct) parts.push('daily ' + r.daily_loss_limit_pct + '%');
+      if (r.max_loss_limit_pct) parts.push('max ' + r.max_loss_limit_pct + '% ' + (r.max_loss_type === 'eod_trailing' ? 'trailing' : 'static'));
+      sum.textContent = parts.join(' · ');
+    }
+
+    function changed() { summary(); onChange(); }
+
+    fillFirms();
+    fillPhases();
+    fillSizes();
+    applyPreset();
+    summary();
+
+    firm.addEventListener('change', function () { fillPhases(); fillSizes(); applyPreset(); changed(); });
+    phase.addEventListener('change', function () { applyPreset(); changed(); });
+    size.addEventListener('change', function () { syncSizeOther(); changed(); });
+    if (sizeOther) sizeOther.addEventListener('input', changed);
+    f.type.addEventListener('change', syncLock);
+    [f.target, f.daily, f.base, f.max, f.type, f.lock, f.minDays, f.maxDays, f.cons].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', changed);
+    });
+
+    return { account: account, balance: balance, preset: function () { return preset; } };
+  }
+
+  window.WWPropRuleForm = { init: init, num: num, money: money };
+})();
+</script>

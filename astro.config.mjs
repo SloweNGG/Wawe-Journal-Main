@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assetVersionIntegration } from './scripts/asset-version.mjs';
 import { sitemapIntegration } from './scripts/sitemap.mjs';
+import { localizeIntegration } from './scripts/localize.mjs';
 
 // Her derlemeye özel TEK kimlik. Kullanıldığı yerler:
 //  - SpaRouter <meta name="ww-build">: açık sekmede deploy sonrası eski/yeni script karışmasın diye tam yükleme
@@ -103,8 +104,9 @@ export default defineConfig({
   outDir: 'dist',
   // Geliştirme araç çubuğu localhost'ta alt paneldeki tabloların üstünü kapatıyordu
   devToolbar: { enabled: false },
-  // asset-version minify'dan SONRA çalışmalı (build:done kancaları sırayla çalışır)
-  integrations: [react(), bundleAppScript(), minifyDistAssets(), assetVersionIntegration(BUILD_ID), sitemapIntegration()],
+  // asset-version minify'dan SONRA çalışmalı (build:done kancaları sırayla çalışır).
+  // localize (/tr/, /de/ kopyaları) damgalanmış HTML'den üretir → asset-version'dan sonra; sitemap onları da görsün → sitemap'ten önce.
+  integrations: [react(), bundleAppScript(), minifyDistAssets(), assetVersionIntegration(BUILD_ID), localizeIntegration(), sitemapIntegration()],
   vite: {
     build: {
       // Astro derleme hedefini "esnext" yapıyor; bu durumda CSS küçültücü (lightningcss) tarayıcı hedefi olmadan

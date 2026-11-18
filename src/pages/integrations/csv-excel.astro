@@ -1,0 +1,123 @@
+---
+// Entegrasyon sayfası: genel CSV / Excel içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - Kabul edilen uzantılar (.csv .xlsx .xls .htm .html .txt): quick-add.js (file input accept + sürükle-bırak kontrolü)
+//  - Excel: yalnızca ilk sayfa; HTML: en büyük tablo: quick-add.js fileToCsvText
+//  - Ayraç otomatik (virgül/noktalı virgül/sekme), ondalık virgül dosya düzeyinde: parser-v2.js detectDelimiter,
+//    broker-dictionary.js detectDecimalSeparator
+//  - Başlık ilk satır; zorunlu alanlar sembol/yön/giriş/çıkış (parser-v2.js), lot (quick-add.js executeCsvImport)
+//  - Çok dilli kolon adları (EN/TR/DE/ES/PT/RU): broker-dictionary.js FIELD_CANDIDATES
+//  - K/Z yoksa çarpanlı hesap (forex 100000, altın 100, endeks 10, kripto ve diğer 1): broker-dictionary.js
+//  - Tanınmayan yön → LONG + uyarı: parser-v2.js; tarih yok/okunamıyor → bugün + uyarı: public/src/features/csv-parsers.js
+//  - Toplu Yapıştır formatı: quick-modal-i18n.js quickmodal.bulk_format
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'What columns does my file need?',
+    a: 'At minimum: symbol, direction (buy/sell or long/short), size, entry price and exit price, with the column names on the first row. Add the close date and a P&L column for the best results. Commission, swap, stop loss, take profit, open time, a ticket number and notes are picked up when present.',
+  },
+  {
+    q: 'Do my column names have to match exactly?',
+    a: 'No. Columns are matched by meaning, so Entry, Entry Price and Open Price all work, and so do common names in Turkish, German, Spanish, Portuguese and Russian. Layouts from MetaTrader, cTrader, Binance, Bybit, TradingView, XTB and OANDA are recognised automatically.',
+  },
+  {
+    q: 'My spreadsheet uses semicolons and decimal commas. Will it work?',
+    a: 'Yes. The separator (comma, semicolon or tab) and the decimal format are detected from the file, so 1,08521 and 1.08521 are both read correctly.',
+  },
+  {
+    q: 'What if my file has no P&L column?',
+    a: 'Wawe Journal calculates it from entry, exit and size, reading the size as lots for forex (100,000 units), gold (100) and indices (10), and as units for crypto and everything else. If your broker reports P&L, include it: your own number is always used first.',
+  },
+  {
+    q: 'Can I export my trades from Wawe Journal too?',
+    a: 'Yes. Your trade list can be downloaded as CSV, and filtered statistics can be exported as CSV or PDF, so your data is never locked in.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/csv-excel#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="CSV & Excel Trading Journal Import | Wawe Journal"
+  description="Import trades into Wawe Journal from any broker or exchange with a CSV or Excel file. Columns are matched automatically and duplicates skipped. Free to start."
+  crumb="CSV & Excel import"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>CSV &amp; Excel import</span></nav>
+      <h1 class="anim wide" style="--d:.1s">CSV and Excel trading journal import</h1>
+      <p class="page-lead anim" style="--d:.2s">Your broker is not on our list? If it can give you a spreadsheet, it works with Wawe Journal. Upload any CSV or Excel file with one row per closed trade and get a full journal, analytics and an AI coach on top of it.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import a file free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import a CSV or Excel file <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export or build the file</h3><p>Export your trade history from your broker or exchange, or keep your own spreadsheet. One row per closed trade, column names on the first row.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Drop it in</h3><p>Open Add Trade, switch to the CSV Import tab and choose or drag in a .csv, .xlsx, .xls, .html or .txt file. Columns are matched automatically.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Preview, then import</h3><p>Check the trades in the preview, read any notes about rows that were skipped, and confirm. Trades already in the journal are left out.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>A layout that always works</h2>
+      <p class="lead">If you are building the file yourself, use these column names on the first row. Only the first five are required.</p>
+      <div class="fp-chips"><span>Symbol</span><span>Side</span><span>Quantity</span><span>Entry Price</span><span>Exit Price</span><span>Close Time</span><span>Open Time</span><span>Profit</span><span>Commission</span><span>Swap</span><span>Stop Loss</span><span>Take Profit</span><span>Notes</span></div>
+      <p class="fp-note">Side accepts Buy/Sell or Long/Short. Prefer to paste? The Bulk Paste tab takes one trade per line as symbol, direction, lot, entry, exit, date, notes.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Core analytics, free</h3><p>Win rate, profit factor, expectancy and drawdown, and a P&amp;L calendar of every trading day. <a href="/pricing">Pro</a> adds strategy comparison, advanced analytics and a customizable dashboard.</p></div>
+        <div class="fp-item"><h3>An AI coach that reads your file</h3><p>Once imported, your trades feed the <a href="/#coach">AI coach</a>. Ask what your best setup is or why last month went wrong, and it answers from your data.</p></div>
+        <div class="fp-item"><h3>Prop firm tracking</h3><p>Track a challenge from any broker: the <a href="/prop-firm-tracker">prop firm tracker</a> checks your imported trades against daily loss, drawdown and profit target rules.</p></div>
+        <div class="fp-item"><h3>Backtest replay</h3><p>Practise a setup candle by candle in <a href="/backtesting">backtest replay</a> and keep the results next to your live journal.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Header on row one</h3><p>The first row is read as column names. Delete any title or account summary rows above them. From Excel files the first sheet is read; from HTML files, the largest table.</p></div>
+        <div class="fp-item"><h3>Rows that are skipped</h3><p>A row without a symbol, size, entry or exit price is skipped and listed. If a date cannot be read, that trade gets today’s date and you are warned.</p></div>
+        <div class="fp-item"><h3>Times and time zones</h3><p>Choose under Settings whether the times in your files are in your own time zone, UTC or a fixed offset.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>CSV and Excel import questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/metatrader" class="btn btn-line">MetaTrader journal →</a>
+        <a href="/integrations/interactive-brokers" class="btn btn-line">Interactive Brokers journal →</a>
+        <a href="/integrations/binance" class="btn btn-line">Binance journal →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">Excel is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Any broker. One journal.</h2>
+      <p>Create a free Wawe Journal account and upload your first file in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

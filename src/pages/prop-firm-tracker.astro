@@ -1,0 +1,108 @@
+---
+// Özellik sayfası: prop firma kural takibi. İçerik İngilizce ve sunucuda hazır.
+// Firma listesi ve kural tipleri public/src/core/prop-templates.js ile aynı olmalı (şablon eklenince burayı da güncelle).
+import PageLayout from '../layouts/PageLayout.astro';
+
+// Yalnızca prop-templates.js'te gerçek kural seti olan firmalar (diğerleri logo/renk olarak var, kuralları özel şablonla girilir)
+const firms = ['FTMO 2-Step', 'FTMO 1-Step', 'FundedNext Stellar 2-Step', 'FundedNext Stellar 1-Step', 'FundedNext Stellar Lite', 'FundingPips 2-Step Standard', 'FundingPips 2-Step Pro'];
+
+const faq = [
+  {
+    q: 'Which prop firms are supported?',
+    a: 'Wawe Journal ships ready rule presets for FTMO (1-Step and 2-Step), FundedNext (Stellar 1-Step, 2-Step and Lite) and FundingPips (2-Step Standard and Pro). For any other firm, such as The5ers, Topstep, E8 Markets, Apex Trader Funding or Alpha Capital, start from the custom template and enter its daily loss, drawdown, target and reset time zone yourself.',
+  },
+  {
+    q: 'Are the rule presets always up to date?',
+    a: 'Presets are checked against each firm’s public rules, but firms change their terms. Every value stays editable, so confirm the numbers with your own firm’s dashboard and adjust them if needed. Wawe Journal is not affiliated with any prop firm.',
+  },
+  {
+    q: 'How does the tracker get my trades?',
+    a: 'From your journal: connect cTrader for automatic sync, import a MetaTrader 4/5 or other broker statement, or log trades by hand. The tracker recalculates every rule from those trades.',
+  },
+  {
+    q: 'Is the prop firm tracker free?',
+    a: 'Yes. The free Starter plan includes one prop firm rule tracker. Pro allows up to ten, for traders running several challenges or funded accounts at once.',
+  },
+  {
+    q: 'What is the pass probability?',
+    a: 'Once a challenge has enough trades, the tracker runs a Monte Carlo simulation of the rest of the challenge using your own trade results and shows how often you would hit the profit target before breaking a rule. It is an estimate from your past trades, not a promise.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/prop-firm-tracker#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Prop Firm Tracker: Daily Loss & Drawdown | Wawe Journal"
+  description="Track FTMO, FundedNext, FundingPips or any custom challenge in Wawe Journal: daily loss, max drawdown, profit target and pass probability from your own trades."
+  crumb="Prop firm tracker"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Prop firm tracker</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Pass the challenge. Watch every rule in real time.</h1>
+      <p class="page-lead anim" style="--d:.2s">Wawe Journal’s prop firm tracker checks your trades against your firm’s rule set: daily loss, max drawdown, profit target and trading days. You see how much room is left before a bad day ends the challenge.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Track a challenge free</a>
+        <a href="/pricing" class="btn btn-line btn-lg">See plans</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>Ready presets for FTMO, FundedNext and FundingPips <span class="dim">and a custom template for any other firm.</span></h2>
+      <div class="fp-chips">{firms.map((f) => <span>{f}</span>)}<span>Custom rules for any firm</span></div>
+      <p class="fp-note">Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Every rule that can fail a challenge, <span class="dim">tracked.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Daily loss limit</h3><p>Measured the way your firm measures it, from the day’s starting balance, with the firm’s own reset time zone (for example midnight in Prague for FTMO).</p></div>
+        <div class="fp-item"><h3>Max drawdown</h3><p>Static or end-of-day trailing drawdown, with the exact stop level and the distance left to it.</p></div>
+        <div class="fp-item"><h3>Profit target</h3><p>Progress toward the target of the current phase, in money and percent.</p></div>
+        <div class="fp-item"><h3>Trading days and consistency</h3><p>Minimum trading days and, where the firm has one, a consistency rule that caps how much of the profit can come from a single day.</p></div>
+        <div class="fp-item"><h3>Phases</h3><p>Move from Phase 1 to verification and funded with one click, keeping your customized rules or switching to the next phase’s defaults.</p></div>
+        <div class="fp-item"><h3>Pass probability</h3><p>A Monte Carlo simulation of the rest of the challenge, built from your own trades, shows your odds of passing.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Stop the spiral <span class="dim">before it starts.</span></h2>
+      <p class="lead">Most challenges are lost on one emotional day, not on a bad strategy. The tracker shows how much daily loss and drawdown is left before every trade, Pro adds overtrade and daily loss alerts, and the <a href="/#coach">AI coach</a> knows your active challenges, so you can ask it how much risk is left today.</p>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Connect or import</h3><p>Sync cTrader automatically or import a MetaTrader 4/5, CSV or Excel statement.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Pick your firm and size</h3><p>Choose the preset, the phase and the account size, from $5K to $200K or a custom balance.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Trade with the numbers in view</h3><p>The dashboard card shows each rule as a meter, so you always know what is left.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Prop firm tracker questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/tools/prop-firm-drawdown-calculator" class="btn btn-line">Drawdown calculator →</a>
+        <a href="/tools/prop-firm-pass-probability" class="btn btn-line">Pass probability calculator →</a>
+        <a href="/backtesting" class="btn btn-line">Practice with backtest replay →</a>
+        <a href="/pricing" class="btn btn-line">Compare plans →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Protect your funded account.</h2>
+      <p>Create a free Wawe Journal account and add your first challenge in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

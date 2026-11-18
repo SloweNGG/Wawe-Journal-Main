@@ -1,0 +1,121 @@
+---
+// Entegrasyon sayfası: Binance işlem geçmişi içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - Binance imzası (Pair + Side zorunlu; Price, Executed, Amount, Fee, Date): public/interface/quick-add/js/broker-detector.js
+//  - Dolum (fill) bazlı FIFO eşleştirme, kısmi dolum, önce satış = short, dosya sırası (sıralama yok),
+//    dosya sonunda açık kalanlar alınmaz, ücretler K/Z'den düşülür: public/interface/quick-add/js/fill-pairing.js
+//  - Kripto çarpanı 1 (USDT/USDC/BUSD kotasyonu): broker-dictionary.js guessInstrument/getMultiplier
+// Binance API bağlantısı / otomatik senkron YOK: burada vaat edilmez.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Which Binance file does Wawe Journal import?',
+    a: 'Your trade history export, with one row per executed fill: Date, Pair, Side, Price, Executed, Amount and Fee. Wawe Journal recognises this layout automatically and turns the fills into closed trades.',
+  },
+  {
+    q: 'Can I journal Binance futures shorts?',
+    a: 'Yes, as long as the file uses the same columns. When a sell comes before the buy that closes it, the pair is imported as a short trade. If your export calls the market column something other than Pair, rename that header to Pair before you upload.',
+  },
+  {
+    q: 'Do I need to create a Binance API key?',
+    a: 'No. Wawe Journal does not connect to Binance and never asks for API keys. You download your history from Binance and upload the file, so nothing can ever trade or withdraw from your account.',
+  },
+  {
+    q: 'How are trading fees handled?',
+    a: 'The Fee column is subtracted from each trade’s P&L, split pro rata when a fill is matched in parts. The amount is used as written in the file, so a fee paid in BNB or in the coin you bought is subtracted as that number.',
+  },
+  {
+    q: 'Can I import several months at once?',
+    a: 'Yes. Upload a long export, or several files one after another. Trades already in the journal are skipped, so overlapping date ranges do not create duplicates.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/binance#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Binance Trading Journal: Import Trade History | Wawe Journal"
+  description="Import your Binance trade history into Wawe Journal. Buy and sell fills are paired into closed long and short trades with fees, ready for analytics. Free."
+  crumb="Binance journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>Binance journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Binance trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">Binance gives you a long list of fills. A journal needs trades: when you got in, when you got out and what it earned after fees. Wawe Journal turns your Binance trade history into closed trades and shows what your crypto trading really does.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import Binance trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import Binance trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Export your trade history</h3><p>Download your trade history from Binance as a CSV or Excel file. The column names must be on the first row: Date, Pair, Side, Price, Executed, Amount and Fee.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Sort oldest first</h3><p>Fills are matched in the order they appear in the file. Sort the rows by date from oldest to newest so every buy meets the sell that really closed it.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. Binance’s format is detected, fills are paired, and you check the preview before importing.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>From fills to trades, <span class="dim">first in, first out.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Longs and shorts</h3><p>A buy followed by a sell becomes a long trade. A sell followed by a buy becomes a short, the way futures traders open and cover.</p></div>
+        <div class="fp-item"><h3>Partial fills</h3><p>Scaling in or out across several fills is handled: each matched part becomes its own closed trade with its share of the entry and fees.</p></div>
+        <div class="fp-item"><h3>Fees included</h3><p>P&amp;L is the price difference times quantity, minus the fees from the Fee column, in the quote currency of the pair, such as USDT.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Crypto analytics that count fees</h3><p>Win rate, profit factor, expectancy and drawdown on your Binance trades, and a P&amp;L calendar that shows your best and worst days. <a href="/pricing">Pro</a> adds advanced analytics and strategy comparison.</p></div>
+        <div class="fp-item"><h3>An AI coach for 24/7 markets</h3><p>Crypto never closes, and neither does overtrading. The <a href="/#coach">AI coach</a> reads your journal and warns you about losing streaks and bigger size after a loss.</p></div>
+        <div class="fp-item"><h3>Practise on Bitcoin and Ethereum</h3><p><a href="/backtesting">Backtest replay</a> includes Bitcoin and Ethereum on synthetic data, so you can drill a setup before risking it on Binance.</p></div>
+        <div class="fp-item"><h3>Rules for funded crypto accounts</h3><p>Trading a challenge? Build a custom rule set in the <a href="/prop-firm-tracker">prop firm tracker</a> with your firm’s daily loss and drawdown limits.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>No API connection</h3><p>Binance import is file based. There is no auto-sync; upload a new export when you want the journal updated.</p></div>
+        <div class="fp-item"><h3>Open positions stay out</h3><p>Coins you still hold at the end of the file have no closing fill, so they are not imported as trades. Deposits, transfers and conversions are not trades either.</p></div>
+        <div class="fp-item"><h3>P&amp;L is recalculated</h3><p>Trades are rebuilt from the fills, so a Realized Profit column is not used. Compare the preview with Binance before you confirm.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Binance journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/bybit" class="btn btn-line">Bybit journal →</a>
+        <a href="/integrations/tradingview" class="btn btn-line">TradingView journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">Binance is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Your fills, finally as trades.</h2>
+      <p>Create a free Wawe Journal account and import your Binance history in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

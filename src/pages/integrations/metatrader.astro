@@ -1,0 +1,121 @@
+---
+// Entegrasyon sayfası: MetaTrader 4/5 dosya içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - MT4/MT5 kolon imzaları: public/interface/quick-add/js/broker-detector.js (mt4 + mt5 imzaları)
+//  - Başlık satırı ilk satır olmalı: public/interface/quick-add/js/parser-v2.js parse()
+//  - Dosya tipleri, Excel'de yalnızca ilk sayfa, HTML'de en büyük tablo, mükerrer atlama: quick-add.js
+//  - Saat dilimi ayarı: en.js settings.time_import_*
+// MT5 senkron eklentisi sitede DUYURULMADI: MetaTrader otomatik senkronu burada yalnızca "yakında" olarak geçer.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Can I import both MT4 and MT5 history?',
+    a: 'Yes. Wawe Journal recognises the MetaTrader 4 layout (Ticket, Open Time, Type, Size, Item, Price, S/L, T/P, Close Time, Price, Commission, Swap, Profit) and the MetaTrader 5 positions layout (Time, Position, Symbol, Type, Volume, Price, S/L, T/P, Time, Price, Commission, Swap, Profit), including files that use Open Price and Close Price columns.',
+  },
+  {
+    q: 'Does Wawe Journal sync with MetaTrader automatically?',
+    a: 'Not yet. Auto-sync for the MetaTrader series is on the way and will be released once it gives correct numbers. Today you import a file; re-importing a longer history later is safe because trades already in the journal are skipped.',
+  },
+  {
+    q: 'Do I need to give my MetaTrader password or investor password?',
+    a: 'No. A file import only reads the file you upload. Wawe Journal never asks for your MetaTrader login and cannot place trades on your account.',
+  },
+  {
+    q: 'Why are my imported trade times a few hours off?',
+    a: 'MetaTrader shows server time, and most MT4/MT5 brokers run on GMT+2 or GMT+3. In Settings, tell Wawe Journal which time zone the times in your files use: your own time zone, UTC, or a fixed offset.',
+  },
+  {
+    q: 'Can I journal a prop firm challenge that runs on MetaTrader?',
+    a: 'Yes. Import the challenge account into its own journal and add a prop firm rule tracker with the firm’s daily loss, drawdown and profit target rules. Ready presets cover FTMO, FundedNext and FundingPips; for other firms you enter the rules in a custom template, and every value stays editable.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/metatrader#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="MetaTrader 4 & 5 Trading Journal (MT4/MT5) | Wawe Journal"
+  description="Import your MT4 or MT5 trade history into Wawe Journal with stop loss, take profit and profit, then track win rate, drawdown and prop firm rules. Free to start."
+  crumb="MetaTrader journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>MetaTrader journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">MetaTrader trading journal for MT4 and MT5</h1>
+      <p class="page-lead anim" style="--d:.2s">MetaTrader keeps a record of every position, but it does not tell you which setups pay, which sessions hurt or how close you are to a prop firm limit. Import your MT4 or MT5 history into Wawe Journal and get those answers from your own trades.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import MetaTrader trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import MetaTrader trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Save your history</h3><p>In MetaTrader, open your account history, pick the period you want and save the closed positions as an Excel, HTML or CSV file.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Put the headers on top</h3><p>Wawe Journal reads the first row as column names. If your report starts with account details, delete the rows above the positions table and keep only that table.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. The MT4 or MT5 layout is detected, you check the preview, and the trades are added to your journal.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What comes across <span class="dim">from each MetaTrader position.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>The trade itself</h3><p>Symbol, buy or sell, lot size, open and close price, and the close time as the trade date. MetaTrader’s repeated Price and Time columns are read in order: the first is the open, the second the close.</p></div>
+        <div class="fp-item"><h3>Stop loss and take profit</h3><p>S/L and T/P levels are imported when your file has them, so planned risk and reward stay attached to every trade.</p></div>
+        <div class="fp-item"><h3>Costs and result</h3><p>Profit comes straight from the file. From an MT5 file, commission, swap and the position number are kept with each trade as well.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Analytics on your real history</h3><p>Win rate, profit factor, expectancy and drawdown from your MetaTrader trades, plus a P&amp;L calendar that shows which days and weeks carry your results. Strategy comparison and advanced analytics are on <a href="/pricing">Pro</a>.</p></div>
+        <div class="fp-item"><h3>An AI coach that reads your journal</h3><p>Ask why your gold trades lose on Fridays or whether you size up after a loss. The <a href="/#coach">AI coach</a> answers from your own trades, notes and strategies.</p></div>
+        <div class="fp-item"><h3>Prop firm rule tracking</h3><p>Running an MT4 or MT5 challenge? The <a href="/prop-firm-tracker">prop firm tracker</a> checks your imported trades against daily loss, max drawdown, profit target and trading day rules.</p></div>
+        <div class="fp-item"><h3>Backtest before you trade it</h3><p>Practise a setup candle by candle with <a href="/backtesting">backtest replay</a>, then compare it with what your live MetaTrader trades actually did.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>Import is manual for now</h3><p>MetaTrader auto-sync is coming soon. Until then, upload a new file when you want the journal updated; trades already imported are skipped.</p></div>
+        <div class="fp-item"><h3>Closed positions only</h3><p>Each row needs an open and a close price, so open positions are not imported. Balance, deposit and withdrawal rows have no symbol and are skipped.</p></div>
+        <div class="fp-item"><h3>One table per file</h3><p>From an Excel file the first sheet is read; from an HTML report, the largest table. Check the time zone setting so server times land on the right day.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>MetaTrader journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/integrations/xtb" class="btn btn-line">XTB journal →</a>
+        <a href="/integrations/oanda" class="btn btn-line">OANDA journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">MetaTrader is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Turn your MetaTrader history into answers.</h2>
+      <p>Create a free Wawe Journal account and import your first MT4 or MT5 file in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

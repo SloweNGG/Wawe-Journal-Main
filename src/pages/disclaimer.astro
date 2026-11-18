@@ -1,0 +1,27 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import LegalFullText from '../components/LegalFullText.astro';
+---
+<PageLayout crumb="Risk Disclosure" title="Risk Disclosure and Disclaimer – Wawe Journal" description="Trading involves substantial risk. How Wawe Journal's analytics, AI coach, backtests and prop firm simulations should be used, and the limits of our liability.">
+  <section class="page-hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b>Legal</b></span>
+      <h1 class="anim" style="--d:.15s">Risk Disclosure and Disclaimer</h1>
+      <p class="page-meta anim" style="--d:.3s">Last updated: October 24, 2026</p>
+    </div>
+  </section>
+
+  <section class="page-body">
+    <div class="wrap">
+      <article class="prose">
+        <LegalFullText />
+      </article>
+
+      <div class="page-actions">
+        <a href="/terms" class="btn btn-line">Terms of Service</a>
+        <a href="/privacy" class="btn btn-line">Privacy Policy</a>
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Back to Home</a>
+      </div>
+    </div>
+  </section>
+</PageLayout>
