@@ -650,7 +650,7 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
             if (s.maintenance_mode) {
               var { data: { session } } = await window.sb.auth.getSession();
               if (session && session.user?.app_metadata?.role === 'admin') return;
-              window.location.href = 'maintenance.html';
+              window.location.href = '/maintenance.html';
             }
           } catch(e) {}
         })();
@@ -664,7 +664,7 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
         (async function() {
           try {
             var { data: { session } } = await window.sb.auth.getSession();
-            if (session && !done) { done = true; window.location.href = 'dashboard.html'; }
+            if (session && !done) { done = true; window.location.href = '/dashboard.html'; }
           } catch(e) {}
         })();
       });
@@ -766,12 +766,12 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
       e.preventDefault(); e.stopPropagation();
       var period = pricing && pricing.getAttribute('data-period') === 'yearly' ? 'yearly' : 'monthly';
       (async function() {
-        var dest = 'register.html?plan=' + period;
+        var dest = '/register.html?plan=' + period;
         try {
           var sb = window.sb || window.supabase;
           if (sb && sb.auth) {
             var res = await sb.auth.getSession();
-            if (res && res.data && res.data.session) dest = 'settings.html?plan=' + period + '#panel-plan';
+            if (res && res.data && res.data.session) dest = '/settings.html?plan=' + period + '#panel-plan';
           }
         } catch (err) { console.error(err); }
         window.location.href = dest;

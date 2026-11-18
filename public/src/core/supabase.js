@@ -109,7 +109,7 @@ export async function requireAuth() {
       if (typeof window !== 'undefined' && window.location.search.includes('test=1')) {
         return { id: 'demo-user-id', email: 'demo@wawejournal.com', user_metadata: { username: 'demo' } };
       }
-      window.location.href = 'login.html'; 
+      window.location.href = '/login.html'; 
       return null; 
     }
     
@@ -126,7 +126,7 @@ export async function requireAuth() {
       await sb.auth.signOut();
       safeLocalStorageRemove('ww_last_active_push');
       showToast(i18n.t('auth.account_disabled'), 'error');
-      window.location.href = 'index.html';
+      window.location.href = '/';
       return null;
     }
     
@@ -187,7 +187,7 @@ export async function requireAdmin() {
   const user = await requireAuth();
   if (!user) return null;
   if (!isAdmin(user)) {
-    window.location.href = 'dashboard.html';
+    window.location.href = '/dashboard.html';
     return null;
   }
   return user;
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', async () => {
       safeLocalStorageRemove('ww_last_active_push');
       await sb.auth.signOut();
-      window.location.href = 'index.html';
+      window.location.href = '/';
     });
   }
 });

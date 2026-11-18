@@ -196,7 +196,45 @@ export function localizeDist(distDir, i18nSource, log = console.log) {
     const en = fs.readFileSync(f, 'utf8');
     if (!en.includes('hreflang="x-default"')) fs.writeFileSync(f, insertHead(en, hreflangLinks(pg.path)));
   }
-  log(`🌍 [localize] ${report.join(' · ')}`);
+  const extra = writeLangRedirects(distDir);
+  log(`🌍 [localize] ${report.join(' · ')} · _redirects +${extra}`);
+}
+
+/**
+ * Güvenlik ağı: /tr/ ve /de/ altında yalnızca PAGES var. Göreli bir link ya da eski bir adres /tr/dashboard.html
+ * gibi bir yere giderse 404 yerine sayfanın ana sürümüne 301. dist'teki (dil klasörleri dışındaki) her sayfa için
+ * hem temiz hem .html adresi yazılır; yerelleştirilmiş sayfalar listeye girmez (onlar gerçek dosya).
+ * Cloudflare Pages: _redirects statik dosyadan önce uygulanır → var olan /tr/about'a kural YAZILMAMALI.
+ */
+function writeLangRedirects(distDir) {
+  const localized = new Set(PAGES.map((pg) => pg.path));
+  const pages = [];
+  const walk = (dir, rel = '') => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (!rel && (LANGS.includes(e.name) || e.name.startsWith('_') || e.name.startsWith('.'))) continue;
+        walk(path.join(dir, e.name), r);
+      } else if (e.name.endsWith('.html')) {
+        pages.push('/' + r.replace(/\.html$/, ''));
+      }
+    }
+  };
+  walk(distDir);
+  const lines = ['', '# --- scripts/localize.mjs: /tr/ ve /de/ altında olmayan sayfalar ana sürüme (otomatik) ---'];
+  for (const lang of LANGS) {
+    for (const p of pages.sort()) {
+      const clean = p === '/index' ? '/' : p;
+      if (localized.has(clean) || p === '/404') continue;
+      lines.push(`/${lang}${p}.html ${p}.html 301`, `/${lang}${p} ${p} 301`);
+    }
+  }
+  const file = path.join(distDir, '_redirects');
+  const prev = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const marker = lines[1];
+  const base = prev.includes(marker) ? prev.slice(0, prev.indexOf(marker)).replace(/\n+$/, '') : prev.replace(/\n+$/, '');
+  fs.writeFileSync(file, base + '\n' + lines.join('\n') + '\n');
+  return lines.length - 2;
 }
 
 export function localizeIntegration() {

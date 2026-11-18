@@ -147,7 +147,7 @@ export async function requirePro() {
     const { plan } = await getUserPlan();
     if (plan !== 'premium') {
       showToast('Bu özellik sadece Pro üyelere özeldir!', 'error');
-      window.location.href = 'settings.html#panel-plan';
+      window.location.href = '/settings.html#panel-plan';
       return null;
     }
     
@@ -155,7 +155,7 @@ export async function requirePro() {
   } catch (error) {
     console.error('requirePro hatası:', error);
     showToast('Bir hata oluştu. Lütfen tekrar deneyin.', 'error');
-    window.location.href = 'settings.html';
+    window.location.href = '/settings.html';
     return null;
   }
 }
