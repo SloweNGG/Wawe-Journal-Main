@@ -29,19 +29,10 @@ const faq = [
   },
 ];
 
+// Product şeması bilinçli olarak YOK: Google onu Ürün snippet'i + Satıcı girişi olarak denetliyor
+// (kargo, iade politikası, puan istiyor) ve SaaS aboneliği için GSC'de sorun üretiyordu (2026-11-19).
+// Fiyatlar index.astro'daki SoftwareApplication (#app) offers içinde.
 const schema = [
-  {
-    '@type': 'Product',
-    '@id': 'https://wawejournal.com/pricing#product',
-    name: 'Wawe Journal Pro',
-    description: 'Pro plan of Wawe Journal, the trading journal with analytics, an AI coach, backtest replay and prop firm tracking.',
-    brand: { '@type': 'Brand', name: 'Wawe Journal' },
-    image: 'https://wawejournal.com/og-image.jpg',
-    offers: [
-      { '@type': 'Offer', name: 'Pro (monthly)', price: String(MONTHLY), priceCurrency: 'USD', url: 'https://wawejournal.com/pricing', availability: 'https://schema.org/InStock' },
-      { '@type': 'Offer', name: 'Pro (yearly)', price: String(YEARLY), priceCurrency: 'USD', url: 'https://wawejournal.com/pricing', availability: 'https://schema.org/InStock' },
-    ],
-  },
   {
     '@type': 'FAQPage',
     '@id': 'https://wawejournal.com/pricing#faq',
