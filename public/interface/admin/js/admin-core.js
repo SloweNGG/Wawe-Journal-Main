@@ -293,6 +293,7 @@ function switchPanel(panelId, clickedEl) {
     if (panelId === 'panel-users') {
       if (typeof renderUsersTable === 'function') renderUsersTable();
       reload(window.loadUsers, window.renderUsersTable);
+      if (typeof window.refreshUserActivityStats === 'function') window.refreshUserActivityStats(false);
     }
     if (panelId === 'panel-references' && typeof renderReferencesTable === 'function') renderReferencesTable();
     if (panelId === 'panel-analytics' && typeof loadAnalyticsData === 'function') setTimeout(loadAnalyticsData, 50);
@@ -567,6 +568,7 @@ function renderAdminPanel() {
     refreshBtn.addEventListener('click', async function() {
       if (typeof loadUsers === 'function') await loadUsers();
       if (typeof renderUsersTable === 'function') renderUsersTable();
+      if (typeof window.refreshUserActivityStats === 'function') window.refreshUserActivityStats(true);
     });
   }
 

@@ -266,6 +266,119 @@ async function loadReferences() {
   }
 }
 
+// Kullanıcı başına kayıt sayıları: journal trade'leri, backtest hesapları ve backtest trade'leri.
+// Adminler bu tabloların tüm satırlarını RLS üzerinden okuyabiliyor (is_admin()); yalnız user_id
+// (ve hesaplar için is_active) çekilip istemcide sayılıyor. loadUsers sık çağrıldığı için (realtime,
+// 2 dk yoklama) bu ayrı tutuluyor: Kullanıcılar sekmesi açılınca ve Yenile'ye basınca, en çok dakikada bir.
+var USER_STATS_TTL_MS = 60 * 1000;
+var _userStatsPromise = null;
+
+async function loadUserActivityStats(force) {
+  var cur = adminState.userStats;
+  if (!force && cur && (Date.now() - cur.loadedAt) < USER_STATS_TTL_MS) return cur;
+  if (_userStatsPromise) return _userStatsPromise;
+
+  _userStatsPromise = (async function() {
+    var res = await Promise.all([
+      adminFetchAll('trades', 'user_id', 'id', true),
+      adminFetchAll('backtest_accounts', 'user_id,is_active', 'id', true),
+      adminFetchAll('backtest_account_trades', 'user_id', 'id', true)
+    ]);
+    var byUser = {};
+    function row(uid) {
+      if (!byUser[uid]) byUser[uid] = { trades: 0, btAccounts: 0, btAccountsAll: 0, btTrades: 0 };
+      return byUser[uid];
+    }
+    var ok = { trades: !res[0].error, btAccounts: !res[1].error, btTrades: !res[2].error };
+    (res[0].data || []).forEach(function(r) { if (r.user_id) row(r.user_id).trades++; });
+    (res[1].data || []).forEach(function(r) {
+      if (!r.user_id) return;
+      var s = row(r.user_id);
+      s.btAccountsAll++;
+      if (r.is_active) s.btAccounts++;
+    });
+    (res[2].data || []).forEach(function(r) { if (r.user_id) row(r.user_id).btTrades++; });
+    res.forEach(function(r) { if (r.error) console.error('Kullanıcı istatistikleri alınamadı:', r.error); });
+
+    var stats = { byUser: byUser, ok: ok, loadedAt: Date.now() };
+    // Hepsi başarısızsa önbelleğe alma; bir sonraki açılışta yeniden denensin
+    if (ok.trades || ok.btAccounts || ok.btTrades) adminState.userStats = stats;
+    return stats;
+  })();
+
+  try {
+    return await _userStatsPromise;
+  } finally {
+    _userStatsPromise = null;
+  }
+}
+
+function refreshUserActivityStats(force) {
+  return loadUserActivityStats(force).then(function() {
+    if (typeof renderUsersTable === 'function') renderUsersTable();
+  }).catch(function(e) {
+    console.error('Kullanıcı istatistikleri yüklenemedi:', e);
+  });
+}
+
+function userStatCell(stats, uid, key) {
+  if (!stats) return '<span class="stat-num loading">…</span>';
+  if (!stats.ok[key]) return '<span class="stat-num">—</span>';
+  var s = stats.byUser[uid];
+  var n = s ? s[key] : 0;
+  var title = '';
+  if (key === 'btAccounts' && s && s.btAccountsAll !== s.btAccounts) {
+    title = ' title="' + s.btAccounts + ' aktif, ' + (s.btAccountsAll - s.btAccounts) + ' pasif"';
+    return '<span class="stat-num' + (n ? '' : ' zero') + '"' + title + '>' + n +
+      '<small> / ' + s.btAccountsAll + '</small></span>';
+  }
+  return '<span class="stat-num' + (n ? '' : ' zero') + '">' + n.toLocaleString('tr-TR') + '</span>';
+}
+
+// Sıralanabilir sütunlar (başlığa tıklayınca: çoktan aza / en yeni → tersi → kapalı)
+var USER_SORT_KEYS = { trades: 'Trade', btAccounts: 'BT Hesap', btTrades: 'BT Trade', lastActive: 'Son Aktif' };
+
+function userLastActiveMs(u) {
+  var t = u.last_active ? new Date(u.last_active).getTime() : NaN;
+  return isNaN(t) ? 0 : t;
+}
+
+function sortUsersByStat(list, stats, sort) {
+  if (!sort) return list;
+  if (sort.key !== 'lastActive' && !stats) return list;
+  var dir = sort.dir === 'asc' ? 1 : -1;
+  return list.slice().sort(function(a, b) {
+    var va, vb;
+    if (sort.key === 'lastActive') {
+      va = userLastActiveMs(a);
+      vb = userLastActiveMs(b);
+    } else {
+      var sa = stats.byUser[a.id], sb2 = stats.byUser[b.id];
+      va = sa ? sa[sort.key] : 0;
+      vb = sb2 ? sb2[sort.key] : 0;
+    }
+    return (va - vb) * dir;
+  });
+}
+
+// "3 dk önce", "5 saat önce", "Dün", "12 gün önce"; 30 günden eskiyse tarih. Tam zaman title'da.
+function lastActiveCell(u, now) {
+  var t = userLastActiveMs(u);
+  if (!t) return '<span class="last-active never">Hiç</span>';
+  var diff = Math.max(0, now - t);
+  var min = Math.floor(diff / 60000);
+  var text;
+  if (min < 1) text = 'Az önce';
+  else if (min < 60) text = min + ' dk önce';
+  else if (min < 24 * 60) text = Math.floor(min / 60) + ' saat önce';
+  else {
+    var days = Math.floor(min / (24 * 60));
+    text = days === 1 ? 'Dün' : (days < 30 ? days + ' gün önce' : formatDate(u.last_active));
+  }
+  var cls = min < 24 * 60 ? ' recent' : (min > 30 * 24 * 60 ? ' stale' : '');
+  return '<span class="last-active' + cls + '" title="' + escapeHtml(formatDateFull(u.last_active)) + '">' + text + '</span>';
+}
+
 function filterUsers(term) {
   if (!term) return adminState.users;
   var t = term.toLowerCase();
@@ -284,7 +397,9 @@ async function renderUsersTable() {
   var searchInput = document.getElementById('user-search');
   if (searchInput) term = searchInput.value || '';
 
-  var filtered = filterUsers(term);
+  var stats = adminState.userStats || null;
+  var sort = adminState.userSort || null;
+  var filtered = sortUsersByStat(filterUsers(term), stats, sort);
   var countEl = document.getElementById('user-count');
   if (countEl) countEl.textContent = filtered.length;
 
@@ -321,20 +436,42 @@ async function renderUsersTable() {
       '<td><span class="expiry-text ' + expiryClass + '">' + expiryText + '</span></td>' +
       '<td class="muted nowrap">' + (proActive && expiresAt ? formatDate(expiresAt) : '—') + '</td>' +
       '<td class="muted nowrap">' + formatDate(u.created_at) + '</td>' +
+      '<td class="num">' + userStatCell(stats, u.id, 'trades') + '</td>' +
+      '<td class="num">' + userStatCell(stats, u.id, 'btAccounts') + '</td>' +
+      '<td class="num">' + userStatCell(stats, u.id, 'btTrades') + '</td>' +
       '<td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>' +
+      '<td class="nowrap">' + lastActiveCell(u, now) + '</td>' +
       '<td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>' +
       '<td class="right"><div class="table-action-btns"><button type="button" class="btn btn-ghost btn-sm" data-notify-user="' + escapeHtml(u.id) + '" data-notify-name="' + escapeHtml(u.username || u.email || '') + '">Bildirim</button></div></td>' +
     '</tr>';
   }).join('');
 
+  function sortHead(key, cls) {
+    var active = sort && sort.key === key;
+    var arrow = active ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : '';
+    return '<th' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" class="th-sort' + (active ? ' active' : '') + '" data-user-sort="' + key + '"' +
+      ' aria-label="' + USER_SORT_KEYS[key] + ' sütununa göre sırala">' + USER_SORT_KEYS[key] + arrow + '</button></th>';
+  }
+  var statHeads = sortHead('trades', 'num') + sortHead('btAccounts', 'num') + sortHead('btTrades', 'num');
+
   container.innerHTML =
     '<div class="table-wrap"><div class="table-scroll"><table class="ww-table">' +
-      '<thead><tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th><th>Durum</th><th>Rol</th><th class="right">İşlem</th></tr></thead>' +
-      '<tbody>' + (rows || '<tr><td colspan="10" class="empty-cell"><div class="empty-state">Kullanıcı bulunamadı.</div></td></tr>') + '</tbody>' +
+      '<thead><tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th>' + statHeads + '<th>Durum</th>' + sortHead('lastActive') + '<th>Rol</th><th class="right">İşlem</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="14" class="empty-cell"><div class="empty-state">Kullanıcı bulunamadı.</div></td></tr>') + '</tbody>' +
     '</table></div></div>';
 
   // Satır içi onclick yerine tek olay dinleyicisi (kimlik/ad değerleri HTML'e gömülmez)
   container.onclick = function(e) {
+    var sortBtn = e.target.closest('[data-user-sort]');
+    if (sortBtn) {
+      var key = sortBtn.getAttribute('data-user-sort');
+      var cur = adminState.userSort;
+      if (!cur || cur.key !== key) adminState.userSort = { key: key, dir: 'desc' };
+      else if (cur.dir === 'desc') adminState.userSort = { key: key, dir: 'asc' };
+      else adminState.userSort = null;
+      renderUsersTable();
+      return;
+    }
     var btn = e.target.closest('[data-notify-user]');
     if (btn && typeof window.openNotificationModal === 'function') {
       window.openNotificationModal(btn.getAttribute('data-notify-user'), btn.getAttribute('data-notify-name'));
@@ -823,6 +960,8 @@ window.loadPayments = loadPayments;
 window.loadReferences = loadReferences;
 window.filterUsers = filterUsers;
 window.renderUsersTable = renderUsersTable;
+window.loadUserActivityStats = loadUserActivityStats;
+window.refreshUserActivityStats = refreshUserActivityStats;
 window.renderReferencesTable = renderReferencesTable;
 window.openReferenceModal = openReferenceModal;
 window.closeReferenceModal = closeReferenceModal;
