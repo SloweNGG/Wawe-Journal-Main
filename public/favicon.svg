@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="w" x1="8" y1="48" x2="56" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b3df5"/>
+      <stop offset=".55" stop-color="#7c6dfa"/>
+      <stop offset="1" stop-color="#b9a8ff"/>
+    </linearGradient>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.2"/>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#000"/>
+  <polyline points="11,46 24,28 35,38 53,16" fill="none" stroke="#7c6dfa" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" opacity=".55" filter="url(#g)"/>
+  <polyline points="11,46 24,28 35,38 53,16" fill="none" stroke="url(#w)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="11.8,43.8 24,26.6 35,36 52.2,15.4" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
