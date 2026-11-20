@@ -36,7 +36,7 @@ Record the same fields every time. Missing fields are the main reason journals b
 | After | Net P&L after commission and swap | Gross numbers flatter you |
 | After | Result in R ([R-multiple](/glossary/r-multiple)) | Makes trades of different sizes comparable |
 | After | Followed the plan? (yes/no) | Separates bad luck from bad decisions |
-| After | Emotion before entry | FOMO, revenge, boredom, calm |
+| After | Emotion before entry | FOMO, [revenge](/blog/how-to-stop-revenge-trading), boredom, calm |
 | After | Mistake tag | Moved stop, early exit, no stop, oversized |
 | After | Chart screenshot | You will not remember the context in a month |
 

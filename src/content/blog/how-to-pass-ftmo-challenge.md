@@ -71,7 +71,7 @@ On the 1-Step challenge the daily limit is 3%: at 1% risk, three losses on the s
 
 ### 1. Risk 0.5% per trade, or less
 
-It feels slow, but it buys you room for the losing streaks shown above. Calculate the lot size from the stop distance every time, so that a full stop-out costs exactly 0.5% ([1R](/glossary/r-multiple)).
+It feels slow, but it buys you room for the losing streaks shown above. Calculate the lot size from the stop distance every time ([here is how](/blog/how-to-calculate-position-size)), so that a full stop-out costs exactly 0.5% ([1R](/glossary/r-multiple)).
 
 ### 2. Set a personal daily stop well above the firm's
 
