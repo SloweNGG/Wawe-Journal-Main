@@ -2,6 +2,7 @@
 // Blog yazısı sayfası. İçerik: src/content/blog/<dosya>.md (bkz. src/data/blog.ts)
 import PageLayout from '../../layouts/PageLayout.astro';
 import { allPosts, fmtDate, type BlogPost } from '../../data/blog';
+import LogoStrip from '../../components/blog/LogoStrip.astro';
 
 export function getStaticPaths() {
   return allPosts().map((p) => ({ params: { slug: p.fm.slug }, props: { post: p } }));
@@ -49,6 +50,8 @@ const schema = [
     <article class="article">
       <Content />
     </article>
+
+    <LogoStrip props={!!fm.props} />
 
     <section class="fp-sec">
       <div class="fp-related" style="justify-content:center">

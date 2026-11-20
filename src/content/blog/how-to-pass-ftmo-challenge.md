@@ -6,6 +6,7 @@ description: "FTMO 2-Step and 1-Step rules in plain numbers, the losing-streak m
 date: "2026-11-18"
 summary: "The rules in plain numbers, the losing-streak math behind most failed challenges, and a risk plan that keeps you inside the limits."
 cta: { href: "/tools/prop-firm-pass-probability", label: "Estimate your pass probability" }
+props: true
 ---
 
 Most FTMO challenges are not lost because the strategy has no edge. They are lost because a normal losing streak, sized too big, runs into the daily loss limit or the maximum loss before the edge has time to show. Passing is mostly a risk-management problem, and risk management is arithmetic.

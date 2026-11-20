@@ -13,6 +13,8 @@ export interface BlogFrontmatter {
   summary: string;
   /** İlgili özellik sayfası (yazının sonundaki CTA) */
   cta: { href: string; label: string };
+  /** true: the logo strip under the post also shows the prop firm rule presets */
+  props?: boolean;
 }
 
 export interface BlogPost {

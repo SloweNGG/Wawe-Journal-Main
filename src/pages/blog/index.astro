@@ -2,6 +2,7 @@
 // Blog liste sayfası (en yeni üstte). Yazılar: src/content/blog/*.md
 import PageLayout from '../../layouts/PageLayout.astro';
 import { allPosts, fmtDate } from '../../data/blog';
+import LogoStrip from '../../components/blog/LogoStrip.astro';
 
 const posts = allPosts();
 const schema = [
@@ -42,5 +43,7 @@ const schema = [
       </div>
       <div class="fp-related"><a href="/glossary" class="btn btn-line">Trading glossary →</a><a href="/tools" class="btn btn-line">Free trading calculators →</a></div>
     </section>
+
+    <LogoStrip />
   </div>
 </PageLayout>

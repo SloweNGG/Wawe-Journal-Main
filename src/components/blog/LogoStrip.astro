@@ -1,0 +1,46 @@
+---
+// Blog yazısının altındaki logo şeridi: işlemlerin içe aktarıldığı platformlar (her logo kendi entegrasyon
+// sayfasına gider) ve isteğe bağlı olarak kural şablonu OLAN prop firmaları. Şablonu olmayan firmaları
+// (The5ers, Topstep, E8, Apex, Alpha) buraya ekleme: uygulamada yalnızca logoları var, preset yok.
+interface Props { props?: boolean }
+const { props = false } = Astro.props;
+
+const platforms = [
+  { name: 'MetaTrader 4/5', src: '/images/platforms/mt5.png', href: '/integrations/metatrader' },
+  { name: 'cTrader', src: '/images/platforms/ctrader_icon.png', href: '/ctrader-trading-journal' },
+  { name: 'TradingView', src: '/images/platforms/tradingview.svg', href: '/integrations/tradingview' },
+  { name: 'Binance', src: '/images/platforms/binance.svg', href: '/integrations/binance' },
+  { name: 'Bybit', src: '/images/platforms/bybit_icon.png', href: '/integrations/bybit' },
+  { name: 'Interactive Brokers', src: '/images/platforms/ibkr_icon.png', href: '/integrations/interactive-brokers' },
+  { name: 'OANDA', src: '/images/platforms/oanda_icon.png', href: '/integrations/oanda' },
+  { name: 'XTB', src: '/images/platforms/xtb_icon.png', href: '/integrations/xtb' },
+  { name: 'CSV / Excel', src: '/images/platforms/excel.svg', href: '/integrations/csv-excel' },
+];
+
+const firms = [
+  { name: 'FTMO', src: '/images/props/real-ftmo.png' },
+  { name: 'FundedNext', src: '/images/props/real-fundednext.png' },
+  { name: 'FundingPips', src: '/images/props/real-fundingpips.png' },
+];
+---
+<section class="fp-sec bl-logos reveal" aria-label="Supported platforms">
+  <h2>Bring your trades from the platform you already use.</h2>
+  <p class="lead">Auto-sync from cTrader, or import a statement from your broker or exchange. Every trade lands in one journal with the same metrics.</p>
+  <ul class="bl-chips">
+    {platforms.map((p) => (
+      <li><a class="bl-chip" href={p.href}><img src={p.src} alt="" width="28" height="28" loading="lazy" decoding="async" /><span>{p.name}</span></a></li>
+    ))}
+  </ul>
+  {props && (
+    <>
+      <h3 class="bl-sub">Prop firm rule presets</h3>
+      <ul class="bl-chips">
+        {firms.map((f) => (
+          <li><a class="bl-chip" href="/prop-firm-tracker"><img src={f.src} alt="" width="28" height="28" loading="lazy" decoding="async" /><span>{f.name}</span></a></li>
+        ))}
+        <li><a class="bl-chip" href="/prop-firm-tracker"><img src="/images/props/custom-symbol.svg" alt="" width="28" height="28" loading="lazy" decoding="async" /><span>Any firm, custom rules</span></a></li>
+      </ul>
+    </>
+  )}
+  <p class="fp-note">Logos are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them.</p>
+</section>
