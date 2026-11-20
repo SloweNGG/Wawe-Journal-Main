@@ -191,6 +191,31 @@
     return out + hiOut;
   }
 
+  // Smooth SVG path through the points (monotone cubic, the d3 curveMonotoneX method): no bumps above a peak
+  // or below a dip that the data doesn't have, so the line never leaves the box or invents a move.
+  function smoothPath(xy) {
+    var n = xy.length;
+    if (n < 3) return xy.map(function (p, k) { return (k ? 'L' : 'M') + p[0].toFixed(2) + ' ' + p[1].toFixed(2); }).join('');
+    function sign(v) { return v < 0 ? -1 : 1; }
+    var t = new Array(n);
+    for (var k = 1; k < n - 1; k++) {
+      var h0 = xy[k][0] - xy[k - 1][0], h1 = xy[k + 1][0] - xy[k][0];
+      var s0 = (xy[k][1] - xy[k - 1][1]) / h0, s1 = (xy[k + 1][1] - xy[k][1]) / h1;
+      var pm = (s0 * h1 + s1 * h0) / (h0 + h1);
+      t[k] = (sign(s0) + sign(s1)) * Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(pm)) || 0;
+    }
+    t[0] = (3 * (xy[1][1] - xy[0][1]) / (xy[1][0] - xy[0][0]) - t[1]) / 2;
+    t[n - 1] = (3 * (xy[n - 1][1] - xy[n - 2][1]) / (xy[n - 1][0] - xy[n - 2][0]) - t[n - 2]) / 2;
+    var d = 'M' + xy[0][0].toFixed(2) + ' ' + xy[0][1].toFixed(2);
+    for (var i = 0; i < n - 1; i++) {
+      var dx = (xy[i + 1][0] - xy[i][0]) / 3;
+      d += 'C' + (xy[i][0] + dx).toFixed(2) + ' ' + (xy[i][1] + dx * t[i]).toFixed(2) + ' ' +
+        (xy[i + 1][0] - dx).toFixed(2) + ' ' + (xy[i + 1][1] - dx * t[i + 1]).toFixed(2) + ' ' +
+        xy[i + 1][0].toFixed(2) + ' ' + xy[i + 1][1].toFixed(2);
+    }
+    return d;
+  }
+
   // Line through a running series; null values before it is defined are skipped.
   function sparkLine(values, fmt, zero, id, s) {
     var esc = s.esc, pts = [];
@@ -208,7 +233,7 @@
     function x(k) { return SPARK_PAD + k * step; }
     function y(v) { return SPARK_PAD + (max - v) / range * span; }
 
-    var d = pts.map(function (p, k) { return (k ? 'L' : 'M') + x(k).toFixed(2) + ' ' + y(p.v).toFixed(2); }).join('');
+    var d = smoothPath(pts.map(function (p, k) { return [x(k), y(p.v)]; }));
     var last = pts.length - 1;
     var gid = 'pc2-fade-' + id;
     var out = '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
