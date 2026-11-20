@@ -1051,9 +1051,15 @@ export function renderCumulativeChart(trades) {
       fixLeftEdge: true,
       fixRightEdge: true,
       lockVisibleTimeRangeOnResize: true,
-      tickMarkFormatter: function(time) {
+      // several trades on one day used to repeat the same date ("17/11 17/11 17/11"): intraday ticks show the hour.
+      // Times are pseudo-UTC wall clock (toLwcTime), so read them with the UTC getters.
+      tickMarkFormatter: function(time, type) {
         var date = new Date(time * 1000);
-        return date.getDate() + '/' + (date.getMonth() + 1);
+        if (type >= 3) {
+          var h = date.getUTCHours(), m = date.getUTCMinutes();
+          return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+        }
+        return date.getUTCDate() + '/' + (date.getUTCMonth() + 1);
       },
     },
     crosshair: {
@@ -1082,6 +1088,7 @@ export function renderCumulativeChart(trades) {
     series = chart.addLineSeries({
       color: CHART_THEME.purple,
       lineWidth: 2.5,
+      lineType: 2, // LineType.Curved
       priceFormat: priceFormat,
     });
   } else if (seriesType === 'baseline') {
@@ -1094,6 +1101,7 @@ export function renderCumulativeChart(trades) {
       bottomFillColor1: 'rgba(239,68,68,0.02)',
       bottomFillColor2: 'rgba(239,68,68,0.28)',
       lineWidth: 2.5,
+      lineType: 2, // LineType.Curved
       priceFormat: priceFormat,
     });
   } else {
@@ -1102,13 +1110,21 @@ export function renderCumulativeChart(trades) {
       topColor: accentRgba(0.35),
       bottomColor: accentRgba(0.0),
       lineWidth: 2.5,
+      lineType: 2, // LineType.Curved
       priceFormat: priceFormat,
     });
   }
 
   series.setData(points);
 
-  var propLines = propChartLevels(points[points.length - 1].value);
+  // A prop level is drawn only when it is near the curve, the same rule as the dashboard card: a $500 target on a
+  // -$40 curve stretched the scale so far that the curve became a flat line and the axis labels piled up.
+  var dMin = 0, dMax = 0;
+  points.forEach(function(pt) { if (pt.value < dMin) dMin = pt.value; if (pt.value > dMax) dMax = pt.value; });
+  var reach = Math.max(dMax - dMin, 1) * 1.5;
+  var propLines = propChartLevels(points[points.length - 1].value).filter(function(l) {
+    return l.price > dMax ? l.price - dMax <= reach : (l.price < dMin ? dMin - l.price <= reach : true);
+  });
   if (propLines.length) {
     propLines.forEach(function(l) {
       series.createPriceLine({
@@ -1293,7 +1309,7 @@ export function renderDrawdownChart(trades) {
     chart: { type: 'area' },
     series: [{ name: _t('analytics_dash.widgets.drawdown', 'Drawdown'), data: points }],
     colors: [CHART_THEME.red],
-    stroke: { width: 2, curve: 'straight' },
+    stroke: { width: 2, curve: 'monotoneCubic' },   // smooth like the P/L curve; monotone so it never bulges above 0
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.05, opacityTo: 0.35, stops: [0, 100] } },
     markers: { size: 0, hover: { size: 4 } },
     xaxis: {

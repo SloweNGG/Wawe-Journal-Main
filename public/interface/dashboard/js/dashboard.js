@@ -1296,6 +1296,7 @@ function wwAccent() {
       bottomFillColor1: 'rgba(' + redRgb + ',0.01)',
       bottomFillColor2: 'rgba(' + redRgb + ',' + fillTop + ')',
       lineWidth: 2,
+      lineType: 2,   // LineType.Curved: smooth curve between trades instead of sharp corners
       priceLineVisible: false,
       lastValueVisible: false,
       priceFormat: { type: 'custom', formatter: function (price) { return formatCurrency(price); } },
