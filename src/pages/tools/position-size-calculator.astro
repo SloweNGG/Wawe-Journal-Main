@@ -1,0 +1,362 @@
+---
+// Ücretsiz araç: pozisyon (lot) büyüklüğü hesaplayıcı. İçerik İngilizce ve sunucuda hazır; hesap tarayıcıda.
+// Hesap: risk tutarı / (stop mesafesi × 1 lotun o mesafedeki değeri). Lot 0.01 adımına AŞAĞI yuvarlanır,
+// böylece gerçek risk girilen sınırı asla aşmaz. Hesap birimi USD; kotasyon para birimi USD değilse
+// kullanıcıdan güncel kur istenir (varsayılan kurlar yalnızca örnektir, sayfa bunu söyler).
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const URL_SELF = 'https://wawejournal.com/tools/position-size-calculator';
+
+// kind: 'fx' → stop pips ile, pip = 0.0001 (JPY kotasyonunda 0.01), sözleşme 100.000
+//       'metal' → stop fiyat farkı ile (ör. 5.00), sözleşme ons cinsinden
+const instruments = [
+  { g: 'Major pairs', items: [['EURUSD', 'EUR/USD'], ['GBPUSD', 'GBP/USD'], ['AUDUSD', 'AUD/USD'], ['NZDUSD', 'NZD/USD'], ['USDJPY', 'USD/JPY'], ['USDCHF', 'USD/CHF'], ['USDCAD', 'USD/CAD']] },
+  { g: 'Crosses', items: [['EURJPY', 'EUR/JPY'], ['GBPJPY', 'GBP/JPY'], ['EURGBP', 'EUR/GBP'], ['AUDJPY', 'AUD/JPY'], ['EURAUD', 'EUR/AUD'], ['GBPAUD', 'GBP/AUD'], ['EURCHF', 'EUR/CHF'], ['CADJPY', 'CAD/JPY']] },
+  { g: 'Metals', items: [['XAUUSD', 'XAU/USD (gold, 100 oz)'], ['XAGUSD', 'XAG/USD (silver, 5,000 oz)']] },
+  { g: 'Other', items: [['CUSTOM', 'Other (enter the value per point)']] },
+];
+
+const faq = [
+  {
+    q: 'How do you calculate position size in forex?',
+    a: 'Position size = money you are willing to lose ÷ (stop loss in pips × pip value of one lot). With a $10,000 account, 1% risk and a 25-pip stop on EUR/USD: $100 ÷ (25 × $10) = 0.40 lots. The calculator does the same math for every pair and rounds down to the 0.01 lot step, so the real risk never goes above your limit.',
+  },
+  {
+    q: 'What is the pip value of one lot?',
+    a: 'One standard lot is 100,000 units of the base currency. When the quote currency is USD (EUR/USD, GBP/USD, AUD/USD) one pip of 0.0001 is worth exactly $10 per lot. When the quote currency is something else, the pip value changes with the exchange rate: on USD/JPY one pip (0.01) is 1,000 yen, which is about $6.67 when USD/JPY trades at 150. That is why the calculator asks for the current rate on those pairs.',
+  },
+  {
+    q: 'How much should I risk per trade?',
+    a: 'Many traders risk between 0.5% and 2% of the account on one trade. The smaller the risk, the longer a losing streak you can survive: at 1% risk, ten losses in a row cost about 10%; at 5% risk they cost about 40%. In a prop firm challenge the daily loss limit (often 5%) and max drawdown (often 10%) make small risk even more important. The risk of ruin calculator shows how the risk per trade changes your chance of hitting a drawdown limit.',
+  },
+  {
+    q: 'How is gold position size calculated?',
+    a: 'One lot of XAU/USD is usually 100 ounces, so a $1.00 move in the gold price is worth $100 per lot. Enter your stop as a price distance: a stop $5.00 away with $200 at risk gives $200 ÷ ($5 × $100) = 0.40 lots. Some brokers use a different contract size; check the contract specification in your platform and use “Other” if it differs.',
+  },
+  {
+    q: 'Why is my broker’s lot size slightly different?',
+    a: 'Brokers can use different contract sizes, minimum lot steps and exchange rates, and your account currency may not be USD. Commissions and spread also add to the real loss at the stop. Use the result as a planning number and check it against your platform’s order ticket.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'WebApplication',
+    '@id': URL_SELF + '#app',
+    name: 'Position Size Calculator',
+    url: URL_SELF,
+    description: 'Free forex and gold position size calculator: lot size from account balance, risk per trade and stop loss, rounded down so the real risk stays under your limit.',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    isAccessibleForFree: true,
+    inLanguage: 'en',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': URL_SELF + '#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Position Size Calculator (Forex & Gold Lot Size) | Wawe Journal"
+  description="Free position size calculator: get your forex or gold lot size from account balance, risk per trade and stop loss. Rounded down so your real risk stays under the limit."
+  crumb="Position size calculator"
+  crumbParent={{ name: 'Tools', href: '/tools' }}
+  schema={schema}
+>
+  <Fragment slot="head"><link rel="stylesheet" href="/tools.css" /></Fragment>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/tools">Tools</a><span aria-hidden="true">/</span><span>Position size calculator</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Position size calculator</h1>
+      <p class="page-lead anim" style="--d:.2s">Enter your balance, how much you want to risk and where your stop is. Get the lot size that loses exactly that much at the stop, for forex pairs and gold.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="tl-calc anim" style="--d:.3s">
+      <form class="tl-panel" id="ps-form" novalidate onsubmit="return false">
+        <h2>Your trade</h2>
+        <fieldset class="tl-fs">
+          <legend>Account (USD)</legend>
+          <div class="tl-grid">
+            <label class="tl-f tl-span2"><span>Account balance</span>
+              <input id="ps-balance" type="number" inputmode="decimal" step="any" min="0" value="10000" />
+            </label>
+            <label class="tl-f"><span>Risk per trade</span>
+              <select id="ps-risk-mode">
+                <option value="pct" selected>% of balance</option>
+                <option value="usd">Fixed $ amount</option>
+              </select>
+            </label>
+            <label class="tl-f"><span id="ps-risk-label">Risk (%)</span>
+              <input id="ps-risk" type="number" inputmode="decimal" step="any" min="0" value="1" />
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="tl-fs">
+          <legend>Instrument and stop</legend>
+          <div class="tl-grid">
+            <label class="tl-f tl-span2"><span>Instrument</span>
+              <select id="ps-sym">
+                {instruments.map((grp) => (
+                  <optgroup label={grp.g}>
+                    {grp.items.map(([v, l]) => <option value={v} selected={v === 'EURUSD'}>{l}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+            <label class="tl-f tl-span2" id="ps-rate-wrap" hidden><span id="ps-rate-label">Exchange rate</span>
+              <input id="ps-rate" type="number" inputmode="decimal" step="any" min="0" />
+              <small id="ps-rate-hint">Example rate. Enter the current one for an exact pip value.</small>
+            </label>
+            <label class="tl-f tl-span2" id="ps-custom-wrap" hidden><span>Value of a 1-point move for 1 lot ($)</span>
+              <input id="ps-custom" type="number" inputmode="decimal" step="any" min="0" value="1" />
+              <small>Find it in your platform’s contract specification (tick value ÷ tick size).</small>
+            </label>
+            <label class="tl-f"><span id="ps-stop-label">Stop loss (pips)</span>
+              <input id="ps-stop" type="number" inputmode="decimal" step="any" min="0" value="25" />
+            </label>
+            <label class="tl-f"><span id="ps-tp-label">Take profit (pips, optional)</span>
+              <input id="ps-tp" type="number" inputmode="decimal" step="any" min="0" value="50" />
+            </label>
+          </div>
+          <p class="tl-hint" id="ps-unit-hint">1 pip = 0.0001 on most pairs and 0.01 on JPY pairs.</p>
+        </fieldset>
+      </form>
+
+      <section class="tl-panel tl-sticky tl-out" aria-live="polite" aria-label="Results">
+        <div class="tl-kpi">
+          <div class="tl-kpi-label">Position size</div>
+          <div class="tl-kpi-val" id="ps-lots">—</div>
+          <div class="tl-kpi-sub" id="ps-lots-sub">Fill in your numbers to see the lot size.</div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Risk at the stop</h3><span class="tl-badge" id="ps-risk-badge">—</span></div>
+          <div class="tl-big" id="ps-real-risk">—</div>
+          <div class="tl-rows">
+            <span>Risk you entered</span><b id="ps-target-risk">—</b>
+            <span>Value of 1 lot per pip</span><b id="ps-pipval">—</b>
+            <span>Value of this position per pip</span><b id="ps-pos-pipval">—</b>
+            <span>Units</span><b id="ps-units">—</b>
+          </div>
+        </div>
+        <div class="tl-card" id="ps-tp-card">
+          <div class="tl-card-top"><h3>At take profit</h3><span class="tl-badge" id="ps-rr-badge">—</span></div>
+          <div class="tl-big" id="ps-profit">—</div>
+          <div class="tl-rows">
+            <span>Risk : reward</span><b id="ps-rr">—</b>
+            <span>Win rate needed to break even</span><b id="ps-be">—</b>
+          </div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Same stop, other risk levels</h3></div>
+          <table class="tl-risk" aria-label="Lot size at other risk levels">
+            <thead><tr><th>Risk</th><th>$ at risk</th><th>Lots</th></tr></thead>
+            <tbody id="ps-table"></tbody>
+          </table>
+        </div>
+        <div class="tl-msg" id="ps-msg" hidden></div>
+        <p class="tl-disc">A planning number, not investment advice. Spread, commission and slippage add to the real loss. Contract sizes and lot steps differ between brokers; check your order ticket.</p>
+      </section>
+    </div>
+
+    <section class="fp-sec reveal">
+      <h2>One formula sizes every trade. <span class="dim">Risk first, lots second.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Decide the loss</h3><p>Pick how much of the account one trade may cost, for example 1%. On $10,000 that is $100. This number stays the same no matter how wide the stop is.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Measure the stop</h3><p>Put the stop where the trade idea is wrong, then count the distance: 25 pips on EUR/USD, or $5.00 on gold. The stop comes from the chart, not from the lot size you would like to trade.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Divide</h3><p>Lots = risk ÷ (stop distance × value of one lot per pip). $100 ÷ (25 × $10) = 0.40 lots. A wider stop gives a smaller position and the same $100 loss.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Pip value per standard lot, <span class="dim">with a USD account.</span></h2>
+      <div class="fp-table-wrap">
+        <table class="fp-table">
+          <thead><tr><th>Pair type</th><th>Example</th><th>1 pip</th><th>Value per lot</th></tr></thead>
+          <tbody>
+            <tr><td>Quote currency is USD</td><td>EUR/USD, GBP/USD</td><td>0.0001</td><td>$10.00, always</td></tr>
+            <tr><td>Base currency is USD</td><td>USD/JPY at 150</td><td>0.01</td><td>1,000 JPY ÷ 150 = $6.67</td></tr>
+            <tr><td>Cross pair</td><td>EUR/GBP, GBP/USD at 1.27</td><td>0.0001</td><td>£10 × 1.27 = $12.70</td></tr>
+            <tr><td>Gold</td><td>XAU/USD, 100 oz</td><td>$0.01 move</td><td>$1 per $0.01, $100 per $1.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fp-note">The exchange rates above are examples. Pip values on non-USD quotes move with the market, which is why the calculator asks for the current rate.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Position size calculator questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/tools/risk-of-ruin-calculator" class="btn btn-line">Risk of ruin calculator →</a>
+        <a href="/tools/prop-firm-drawdown-calculator" class="btn btn-line">Prop firm drawdown calculator →</a>
+        <a href="/glossary/risk-reward-ratio" class="btn btn-line">Risk-reward ratio explained →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Size it right, then see if it worked.</h2>
+      <p>Wawe Journal shows your average win, average loss and max drawdown from every trade you log or sync, so you can see whether your sizing keeps your losses even. Free to start.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+
+  <script is:inline>
+  // Pozisyon büyüklüğü hesabı. Hesap birimi USD. Lot 0.01 adımına aşağı yuvarlanır (gerçek risk ≤ girilen risk).
+  (function () {
+    'use strict';
+    // quote: kotasyon para birimi; jpy: pip 0.01; contract: 1 lotun birimi; metal: stop fiyat farkıyla girilir
+    var SPEC = {
+      EURUSD: { q: 'USD' }, GBPUSD: { q: 'USD' }, AUDUSD: { q: 'USD' }, NZDUSD: { q: 'USD' },
+      USDJPY: { q: 'JPY', self: true }, USDCHF: { q: 'CHF', self: true }, USDCAD: { q: 'CAD', self: true },
+      EURJPY: { q: 'JPY' }, GBPJPY: { q: 'JPY' }, AUDJPY: { q: 'JPY' }, CADJPY: { q: 'JPY' },
+      EURGBP: { q: 'GBP' }, EURAUD: { q: 'AUD' }, GBPAUD: { q: 'AUD' }, EURCHF: { q: 'CHF' },
+      XAUUSD: { q: 'USD', metal: true, contract: 100 }, XAGUSD: { q: 'USD', metal: true, contract: 5000 },
+      CUSTOM: { custom: true }
+    };
+    // Kur yönü: JPY/CHF/CAD için USD/XXX, GBP/AUD/EUR için XXX/USD. Varsayılanlar yalnızca örnek.
+    var RATE = {
+      JPY: { label: 'USD/JPY rate', def: 150, usdPer: function (r) { return 1 / r; } },
+      CHF: { label: 'USD/CHF rate', def: 0.88, usdPer: function (r) { return 1 / r; } },
+      CAD: { label: 'USD/CAD rate', def: 1.38, usdPer: function (r) { return 1 / r; } },
+      GBP: { label: 'GBP/USD rate', def: 1.27, usdPer: function (r) { return r; } },
+      AUD: { label: 'AUD/USD rate', def: 0.65, usdPer: function (r) { return r; } }
+    };
+    function $(id) { return document.getElementById(id); }
+    function num(v) { var s = String(v == null ? '' : v).replace(/[\s,$%]/g, ''); if (s === '') return NaN; var n = Number(s); return isFinite(n) ? n : NaN; }
+    function money(n, dec) {
+      if (!isFinite(n)) return '—';
+      var d = dec === undefined ? 2 : dec;
+      return (n < 0 ? '−$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+    function lotsTxt(l) { return l.toFixed(2); }
+    function setText(id, v) { var el = $(id); if (el) el.textContent = v; }
+    function badge(id, text, cls) { var el = $(id); if (!el) return; el.textContent = text; el.className = 'tl-badge' + (cls ? ' ' + cls : ''); }
+    function msg(text) { var el = $('ps-msg'); if (!el) return; el.hidden = !text; el.textContent = text || ''; }
+
+    var lastRateQuote = null;
+    function syncFields() {
+      var sym = $('ps-sym').value, sp = SPEC[sym] || {};
+      var needRate = !sp.custom && sp.q !== 'USD';
+      $('ps-rate-wrap').hidden = !needRate;
+      $('ps-custom-wrap').hidden = !sp.custom;
+      if (needRate) {
+        var R = RATE[sp.q];
+        setText('ps-rate-label', R.label + (sp.self ? ' (the pair’s current price)' : ''));
+        if (lastRateQuote !== sp.q) { $('ps-rate').value = R.def; lastRateQuote = sp.q; }
+      }
+      var unit = sp.metal ? 'price distance, $' : sp.custom ? 'points' : 'pips';
+      setText('ps-stop-label', 'Stop loss (' + unit + ')');
+      setText('ps-tp-label', 'Take profit (' + unit + ', optional)');
+      setText('ps-unit-hint', sp.metal ? 'Enter the stop as a price distance: a stop at 2,395.00 for an entry at 2,400.00 is 5.00.'
+        : sp.custom ? 'Use the same point size as the value you entered above.'
+        : '1 pip = 0.0001 on most pairs and 0.01 on JPY pairs.');
+      if (sp.metal && num($('ps-stop').value) === 25 && num($('ps-tp').value) === 50) { $('ps-stop').value = 5; $('ps-tp').value = 10; }
+      if (!sp.metal && !sp.custom && num($('ps-stop').value) === 5 && num($('ps-tp').value) === 10) { $('ps-stop').value = 25; $('ps-tp').value = 50; }
+      setText('ps-risk-label', $('ps-risk-mode').value === 'pct' ? 'Risk (%)' : 'Risk ($)');
+    }
+
+    // 1 lotun stop birimi başına USD değeri
+    function unitValue(sp) {
+      if (sp.custom) return num($('ps-custom').value);
+      if (sp.metal) return sp.contract; // $1 fiyat hareketi × ons
+      var pip = sp.q === 'JPY' ? 0.01 : 0.0001;
+      var quotePerPip = 100000 * pip; // kotasyon para biriminde
+      if (sp.q === 'USD') return quotePerPip;
+      var r = num($('ps-rate').value);
+      if (!(r > 0)) return NaN;
+      return quotePerPip * RATE[sp.q].usdPer(r);
+    }
+
+    function blank(text) {
+      ['ps-lots', 'ps-real-risk', 'ps-target-risk', 'ps-pipval', 'ps-pos-pipval', 'ps-units', 'ps-profit', 'ps-rr', 'ps-be'].forEach(function (id) { setText(id, '—'); });
+      setText('ps-lots-sub', 'Fill in your numbers to see the lot size.');
+      badge('ps-risk-badge', '—', ''); badge('ps-rr-badge', '—', '');
+      $('ps-table').innerHTML = '';
+      msg(text);
+    }
+
+    function lotsFor(riskUsd, stop, uv) { return Math.floor(riskUsd / (stop * uv) * 100 + 1e-9) / 100; }
+
+    function run() {
+      syncFields();
+      var sp = SPEC[$('ps-sym').value] || {};
+      var bal = num($('ps-balance').value);
+      var mode = $('ps-risk-mode').value;
+      var rIn = num($('ps-risk').value);
+      var stop = num($('ps-stop').value);
+      var tp = num($('ps-tp').value);
+      if (!(bal > 0)) return blank('Enter an account balance above zero.');
+      if (!(rIn > 0)) return blank('Enter how much you want to risk.');
+      var riskUsd = mode === 'pct' ? bal * rIn / 100 : rIn;
+      if (mode === 'pct' && rIn > 100) return blank('Risk can’t be more than 100% of the balance.');
+      if (!(stop > 0)) return blank('Enter a stop loss distance above zero.');
+      var uv = unitValue(sp);
+      if (!(uv > 0)) return blank(sp.custom ? 'Enter the value of a 1-point move for 1 lot.' : 'Enter the current exchange rate.');
+
+      var exact = riskUsd / (stop * uv);
+      var lots = lotsFor(riskUsd, stop, uv);
+      var unitName = sp.metal ? '$1.00 move' : sp.custom ? 'point' : 'pip';
+      setText('ps-target-risk', money(riskUsd) + (mode === 'pct' ? ' (' + rIn + '%)' : ' (' + (Math.round(riskUsd / bal * 10000) / 100) + '%)'));
+      setText('ps-pipval', money(uv) + ' per ' + unitName);
+      if (lots < 0.01) {
+        setText('ps-lots', '< 0.01 lots');
+        setText('ps-lots-sub', 'Even the smallest lot (0.01) would risk ' + money(stop * uv * 0.01) + '. Widen your risk or tighten the stop.');
+        setText('ps-real-risk', money(stop * uv * 0.01) + ' at 0.01 lots');
+        badge('ps-risk-badge', 'Too small', 'warn');
+        setText('ps-pos-pipval', '—'); setText('ps-units', '—');
+      } else {
+        var real = lots * stop * uv;
+        setText('ps-lots', lotsTxt(lots) + ' lots');
+        setText('ps-lots-sub', (exact - lots > 0.0001 ? 'Exact size ' + exact.toFixed(3) + ', rounded down to the 0.01 lot step. ' : '') +
+          'That is ' + (lots * 10).toFixed(1).replace(/\.0$/, '') + ' mini or ' + Math.round(lots * 100) + ' micro lots.');
+        setText('ps-real-risk', money(real));
+        badge('ps-risk-badge', (Math.round(real / bal * 10000) / 100) + '% of balance', real / bal > 0.02 ? 'warn' : 'ok');
+        setText('ps-pos-pipval', money(lots * uv) + ' per ' + unitName);
+        var units = sp.custom ? '—' : sp.metal ? (lots * sp.contract).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' oz' : Math.round(lots * 100000).toLocaleString('en-US');
+        setText('ps-units', units);
+      }
+
+      // Kâr al (isteğe bağlı)
+      var tpCard = $('ps-tp-card');
+      if (tp > 0) {
+        tpCard.hidden = false;
+        var useLots = Math.max(lots, 0.01);
+        var rr = tp / stop;
+        setText('ps-profit', money(useLots * tp * uv));
+        setText('ps-rr', '1 : ' + (Math.round(rr * 100) / 100));
+        setText('ps-be', (Math.round(1 / (1 + rr) * 1000) / 10) + '%');
+        badge('ps-rr-badge', rr >= 2 ? 'Good' : rr >= 1 ? 'OK' : 'Below 1:1', rr >= 1 ? 'ok' : 'warn');
+      } else {
+        tpCard.hidden = true;
+      }
+
+      // Aynı stopla diğer risk seviyeleri
+      var rows = [0.5, 1, 1.5, 2, 3].map(function (p) {
+        var ru = bal * p / 100, l = lotsFor(ru, stop, uv);
+        var cur = mode === 'pct' && Math.abs(p - rIn) < 1e-9;
+        return '<tr' + (cur ? ' class="cur"' : '') + '><td>' + p + '%</td><td>' + money(ru, 0) + '</td><td>' + (l < 0.01 ? '< 0.01' : lotsTxt(l)) + '</td></tr>';
+      });
+      $('ps-table').innerHTML = rows.join('');
+      msg('');
+    }
+
+    function boot() {
+      ['ps-balance', 'ps-risk', 'ps-stop', 'ps-tp', 'ps-rate', 'ps-custom'].forEach(function (id) { var el = $(id); if (el) el.addEventListener('input', run); });
+      ['ps-risk-mode', 'ps-sym'].forEach(function (id) { var el = $(id); if (el) el.addEventListener('change', run); });
+      run();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+  </script>
+</PageLayout>

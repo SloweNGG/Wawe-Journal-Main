@@ -1,8 +1,20 @@
 ---
-// Ücretsiz araçlar merkezi (/tools). Kısa sayfa: iki hesaplayıcıya bağlantı verir. Yeni araç eklenince `tools` dizisine ekle.
+// Ücretsiz araçlar merkezi (/tools). Kısa sayfa: hesaplayıcılara bağlantı verir. Yeni araç eklenince `tools` dizisine ekle.
 import PageLayout from '../../layouts/PageLayout.astro';
 
 const tools = [
+  {
+    href: '/tools/position-size-calculator',
+    name: 'Position size calculator',
+    desc: 'Get your lot size for forex pairs and gold from account balance, risk per trade and stop loss. Rounded down so the real risk stays under your limit, with the profit and risk-reward at your take profit.',
+    cta: 'Open the position size calculator',
+  },
+  {
+    href: '/tools/risk-of-ruin-calculator',
+    name: 'Risk of ruin calculator',
+    desc: 'See how likely a losing streak is to take your account to a drawdown limit, from your win rate, risk-reward and risk per trade. 10,000 simulated accounts, plus the deepest drawdown and longest losing streak to expect.',
+    cta: 'Open the risk of ruin calculator',
+  },
   {
     href: '/tools/prop-firm-drawdown-calculator',
     name: 'Prop firm drawdown calculator',
@@ -21,14 +33,14 @@ const schema = [
   {
     '@type': 'ItemList',
     '@id': 'https://wawejournal.com/tools#list',
-    name: 'Free prop firm calculators',
+    name: 'Free trading calculators',
     itemListElement: tools.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, url: 'https://wawejournal.com' + t.href })),
   },
 ];
 ---
 <PageLayout
-  title="Free Prop Firm Calculators | Wawe Journal"
-  description="Free prop firm calculators from Wawe Journal: check your daily loss limit and max drawdown, and estimate your chance to pass a challenge. No sign-up needed."
+  title="Free Trading & Prop Firm Calculators | Wawe Journal"
+  description="Free trading calculators from Wawe Journal: position size, risk of ruin, prop firm drawdown and challenge pass probability. They run in your browser, no sign-up needed."
   crumb="Tools"
   schema={schema}
 >
@@ -36,8 +48,8 @@ const schema = [
   <section class="page-hero">
     <div class="wrap">
       <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Tools</span></nav>
-      <h1 class="anim wide" style="--d:.1s">Free prop firm calculators</h1>
-      <p class="page-lead anim" style="--d:.2s">Two calculators built on the same rule engine as the Wawe Journal prop firm tracker. They run in your browser, with no sign-up and nothing stored.</p>
+      <h1 class="anim wide" style="--d:.1s">Free trading calculators</h1>
+      <p class="page-lead anim" style="--d:.2s">Size your trades, see what your risk does to your account and check your prop firm rules. Every calculator runs in your browser, with no sign-up and nothing stored.</p>
     </div>
   </section>
 
@@ -53,7 +65,7 @@ const schema = [
           </div>
         ))}
       </div>
-      <p class="fp-note">Estimates for planning, not investment advice. Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them. Rules change; confirm the numbers with your firm.</p>
+      <p class="fp-note">Estimates for planning, not investment advice. The prop firm calculators use the same rule engine as the Wawe Journal prop tracker. Firm names are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them. Rules change; confirm the numbers with your firm.</p>
       <div class="fp-related">
         <a href="/prop-firm-tracker" class="btn btn-line">Prop firm rule tracker →</a>
         <a href="/pricing" class="btn btn-line">Plans and pricing →</a>

@@ -1,0 +1,304 @@
+---
+// Ücretsiz araç: risk of ruin (Monte Carlo). İçerik İngilizce ve sunucuda hazır; hesap tarayıcıda.
+// Model: her işlem p olasılıkla +risk×RR, aksi halde −risk kazandırır. Risk ya güncel bakiyenin yüzdesi (bileşik)
+// ya da başlangıç bakiyesinin yüzdesi (sabit). "Ruin" = bakiye başlangıcın ya da zirvenin X% altına inmesi.
+// Rastgele sayı üreteci sabit tohumlu (mulberry32): aynı girdiler her seferinde aynı sonucu verir.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const URL_SELF = 'https://wawejournal.com/tools/risk-of-ruin-calculator';
+
+const faq = [
+  {
+    q: 'What is risk of ruin in trading?',
+    a: 'Risk of ruin is the chance that a run of losses takes your account down to a level you can’t or won’t trade from: zero, half the account, or a prop firm’s max drawdown. It depends on three numbers: your win rate, how big your wins are compared with your losses (risk-reward), and how much of the account you risk on each trade.',
+  },
+  {
+    q: 'How does the calculator work?',
+    a: 'It runs a Monte Carlo simulation: 10,000 accounts each take your number of trades, and every trade is a win or a loss drawn at random with your win rate. A win adds your risk times the reward ratio, a loss takes away your risk. The risk of ruin is the share of accounts that touched the ruin level at any point. The random numbers come from a fixed seed, so the same inputs always give the same result.',
+  },
+  {
+    q: 'Can a strategy with a positive expectancy still be ruined?',
+    a: 'Yes. Expectancy tells you what happens on average over many trades, but you trade one sequence of trades, not the average. With a 50% win rate and 1.5R winners the expectancy is +0.25R per trade, yet risking 10% per trade about one account in five still loses half its balance within 500 trades before the edge shows. Lowering the risk per trade is the most direct way to lower the risk of ruin.',
+  },
+  {
+    q: 'What ruin level should I use for a prop firm challenge?',
+    a: 'Use the firm’s max drawdown: 10% for most two-step challenges. Pick “starting balance” for a static limit and “highest balance” for a trailing one. The daily loss limit is a separate rule; the prop firm pass probability calculator simulates both at once.',
+  },
+  {
+    q: 'Why are real results riskier than the calculator shows?',
+    a: 'The simulation gives every win the same size and every loss the same size, and treats trades as independent. Real trades vary in size, losses can be bigger than planned through slippage, and losing trades often come in clusters when the market changes. Treat the result as a lower bound for the real risk.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'WebApplication',
+    '@id': URL_SELF + '#app',
+    name: 'Risk of Ruin Calculator',
+    url: URL_SELF,
+    description: 'Free Monte Carlo risk of ruin calculator for traders: the chance of hitting a drawdown limit from win rate, risk-reward and risk per trade.',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    isAccessibleForFree: true,
+    inLanguage: 'en',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': URL_SELF + '#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Risk of Ruin Calculator for Traders | Wawe Journal"
+  description="Free risk of ruin calculator: see the chance a losing streak takes your account to a drawdown limit, from your win rate, risk-reward and risk per trade. Monte Carlo, no sign-up."
+  crumb="Risk of ruin calculator"
+  crumbParent={{ name: 'Tools', href: '/tools' }}
+  schema={schema}
+>
+  <Fragment slot="head"><link rel="stylesheet" href="/tools.css" /></Fragment>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/tools">Tools</a><span aria-hidden="true">/</span><span>Risk of ruin calculator</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Risk of ruin calculator</h1>
+      <p class="page-lead anim" style="--d:.2s">How likely is a losing streak to take your account down to a level you can’t come back from? Enter your win rate, risk-reward and risk per trade. 10,000 simulated accounts answer.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="tl-calc anim" style="--d:.3s">
+      <form class="tl-panel" id="rr-form" novalidate onsubmit="return false">
+        <h2>Your strategy</h2>
+        <fieldset class="tl-fs">
+          <legend>Edge</legend>
+          <div class="tl-grid">
+            <label class="tl-f"><span>Win rate (%)</span>
+              <input id="ru-wr" type="number" inputmode="decimal" step="any" min="0" max="100" value="45" />
+            </label>
+            <label class="tl-f"><span>Reward : risk (avg win ÷ avg loss)</span>
+              <input id="ru-rr" type="number" inputmode="decimal" step="any" min="0" value="1.5" />
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="tl-fs">
+          <legend>Risk</legend>
+          <div class="tl-grid">
+            <label class="tl-f"><span>Risk per trade (%)</span>
+              <input id="ru-risk" type="number" inputmode="decimal" step="any" min="0" max="100" value="2" />
+            </label>
+            <label class="tl-f"><span>Position sizing</span>
+              <select id="ru-sizing">
+                <option value="compound" selected>% of current balance</option>
+                <option value="fixed">% of starting balance</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="tl-fs">
+          <legend>Ruin</legend>
+          <div class="tl-grid">
+            <label class="tl-f"><span>Ruin at a drawdown of (%)</span>
+              <input id="ru-ruin" type="number" inputmode="decimal" step="any" min="0" max="100" value="50" />
+            </label>
+            <label class="tl-f"><span>Measured from</span>
+              <select id="ru-from">
+                <option value="start" selected>Starting balance</option>
+                <option value="peak">Highest balance</option>
+              </select>
+            </label>
+            <label class="tl-f tl-span2"><span>Number of trades</span>
+              <input id="ru-n" type="number" inputmode="numeric" step="1" min="1" max="2000" value="500" />
+              <small>Use 10% from the starting balance to model a static prop firm max drawdown, or from the highest balance for a trailing one.</small>
+            </label>
+          </div>
+        </fieldset>
+      </form>
+
+      <section class="tl-panel tl-sticky tl-out" aria-live="polite" aria-label="Results">
+        <div class="tl-kpi">
+          <div class="tl-kpi-label">Risk of ruin</div>
+          <div class="tl-kpi-val" id="ru-ror">—</div>
+          <div class="tl-kpi-sub" id="ru-ror-sub">Fill in your numbers to run the simulation.</div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Edge per trade</h3><span class="tl-badge" id="ru-edge-badge">—</span></div>
+          <div class="tl-big" id="ru-exp">—</div>
+          <div class="tl-rows">
+            <span>Break-even win rate at this reward</span><b id="ru-be">—</b>
+            <span>Expected result per trade</span><b id="ru-exp-pct">—</b>
+          </div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>After all trades</h3></div>
+          <div class="tl-stats">
+            <div class="tl-stat"><b id="ru-median">—</b><span>Median balance (start = 100%)</span></div>
+            <div class="tl-stat"><b id="ru-profit">—</b><span>Accounts in profit</span></div>
+            <div class="tl-stat"><b id="ru-dd">—</b><span>Median deepest drawdown</span></div>
+            <div class="tl-stat"><b id="ru-dd95">—</b><span>Deepest drawdown, worst 5%</span></div>
+            <div class="tl-stat"><b id="ru-streak">—</b><span>Median longest losing streak</span></div>
+            <div class="tl-stat"><b id="ru-streak95">—</b><span>Longest losing streak, worst 5%</span></div>
+          </div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-card-top"><h3>Same edge, other risk levels</h3></div>
+          <table class="tl-risk" aria-label="Risk of ruin at other risk levels">
+            <thead><tr><th>Risk / trade</th><th>Risk of ruin</th><th>Median balance</th></tr></thead>
+            <tbody id="ru-table"></tbody>
+          </table>
+        </div>
+        <div class="tl-msg" id="ru-msg" hidden></div>
+        <p class="tl-disc">A simulation from the numbers you enter, not a forecast and not investment advice. Real trades vary in size and losses cluster, so real risk is usually higher.</p>
+      </section>
+    </div>
+
+    <section class="fp-sec reveal">
+      <h2>Three numbers decide your risk of ruin. <span class="dim">Only one is fully in your control.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Win rate</h3><p>How often a trade ends in profit. It comes from your strategy and the market, and it drifts: a 50% strategy runs at 35% for weeks at a time.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Reward : risk</h3><p>Your average win divided by your average loss. Together with the win rate it sets the edge: at 1.5 you break even at a 40% win rate, at 2.0 at 33%.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Risk per trade</h3><p>The one number you choose before every trade. Halving it often cuts the risk of ruin by far more than half, because a ruin then needs a much longer losing streak.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Losing streaks are normal. <span class="dim">Size for them.</span></h2>
+      <div class="fp-table-wrap">
+        <table class="fp-table">
+          <thead><tr><th>Losses in a row</th><th>1% risk</th><th>2% risk</th><th>5% risk</th><th>10% risk</th></tr></thead>
+          <tbody>
+            <tr><td>5</td><td>−4.9%</td><td>−9.6%</td><td>−22.6%</td><td>−41.0%</td></tr>
+            <tr><td>10</td><td>−9.6%</td><td>−18.3%</td><td>−40.1%</td><td>−65.1%</td></tr>
+            <tr><td>15</td><td>−14.0%</td><td>−26.1%</td><td>−53.7%</td><td>−79.4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fp-note">Drawdown when each loss risks a percentage of the current balance. With a 45% win rate, a streak of 10 losses or more shows up in about four out of ten runs of 500 trades.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Risk of ruin questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/tools/position-size-calculator" class="btn btn-line">Position size calculator →</a>
+        <a href="/tools/prop-firm-pass-probability" class="btn btn-line">Prop firm pass probability →</a>
+        <a href="/glossary/expectancy" class="btn btn-line">Expectancy explained →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Run it on your real numbers.</h2>
+      <p>Wawe Journal calculates your win rate, average win and loss and max drawdown from every trade you log or sync, so the inputs here come from facts, not hopes. Free to start.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+
+  <script is:inline>
+  // Risk of ruin Monte Carlo. Bakiye başlangıç = 1. Sabit tohum: aynı girdi → aynı sonuç.
+  (function () {
+    'use strict';
+    function $(id) { return document.getElementById(id); }
+    function num(v) { var s = String(v == null ? '' : v).replace(/[\s,%]/g, ''); if (s === '') return NaN; var n = Number(s); return isFinite(n) ? n : NaN; }
+    function setText(id, v) { var el = $(id); if (el) el.textContent = v; }
+    function badge(id, text, cls) { var el = $(id); if (!el) return; el.textContent = text; el.className = 'tl-badge' + (cls ? ' ' + cls : ''); }
+    function msg(text) { var el = $('ru-msg'); if (!el) return; el.hidden = !text; el.textContent = text || ''; }
+    function pct(v, d) { return (Math.round(v * Math.pow(10, d || 0) * 100) / Math.pow(10, d || 0)).toFixed(d || 0) + '%'; }
+    // no ruined run → show the resolution of the run count, not a made-up precision
+    function rorTxt(f, runs) { return f <= 0 ? (runs >= 10000 ? '< 0.01%' : '< 0.1%') : f < 0.001 ? '< 0.1%' : f < 0.1 ? pct(f, 1) : pct(f, 0); }
+    function quant(arr, q) { var a = arr.slice().sort(function (x, y) { return x - y; }); return a[Math.min(a.length - 1, Math.floor(q * a.length))]; }
+
+    function mulberry32(a) {
+      return function () {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    // p: kazanma olasılığı, rr: ödül/risk, r: işlem başı risk (oran), ruin: drawdown oranı, n: işlem sayısı
+    function simulate(o, runs) {
+      var rnd = mulberry32(20261120);
+      var ruined = 0, finals = [], dds = [], streaks = [], inProfit = 0;
+      var floorStart = 1 - o.ruin;
+      for (var k = 0; k < runs; k++) {
+        var bal = 1, peak = 1, maxDD = 0, streak = 0, longest = 0, dead = false;
+        for (var i = 0; i < o.n; i++) {
+          var base = o.sizing === 'fixed' ? 1 : bal;
+          if (rnd() < o.p) { bal += base * o.r * o.rr; streak = 0; }
+          else { bal -= base * o.r; streak++; if (streak > longest) longest = streak; }
+          if (bal > peak) peak = bal;
+          var dd = peak > 0 ? (peak - bal) / peak : 1;
+          if (dd > maxDD) maxDD = dd;
+          var floor = o.from === 'peak' ? peak * (1 - o.ruin) : floorStart;
+          if (bal <= floor + 1e-12 || bal <= 0) { dead = true; break; }
+        }
+        if (dead) ruined++;
+        if (!dead && bal > 1) inProfit++;
+        finals.push(Math.max(0, bal)); dds.push(Math.min(1, maxDD)); streaks.push(longest);
+      }
+      return { ror: ruined / runs, median: quant(finals, 0.5), profit: inProfit / runs, dd: quant(dds, 0.5), dd95: quant(dds, 0.95),
+        streak: quant(streaks, 0.5), streak95: quant(streaks, 0.95) };
+    }
+
+    function blank(text) {
+      ['ru-ror', 'ru-exp', 'ru-be', 'ru-exp-pct', 'ru-median', 'ru-profit', 'ru-dd', 'ru-dd95', 'ru-streak', 'ru-streak95'].forEach(function (id) { setText(id, '—'); });
+      setText('ru-ror-sub', 'Fill in your numbers to run the simulation.');
+      badge('ru-edge-badge', '—', '');
+      $('ru-table').innerHTML = '';
+      msg(text);
+    }
+
+    function run() {
+      var wr = num($('ru-wr').value), rr = num($('ru-rr').value), risk = num($('ru-risk').value);
+      var ruin = num($('ru-ruin').value), n = Math.round(num($('ru-n').value));
+      var sizing = $('ru-sizing').value, from = $('ru-from').value;
+      if (!(wr >= 0 && wr <= 100)) return blank('Enter a win rate between 0 and 100.');
+      if (!(rr > 0)) return blank('Enter a reward : risk above zero, for example 1.5.');
+      if (!(risk > 0 && risk <= 100)) return blank('Enter a risk per trade between 0 and 100%.');
+      if (!(ruin > 0 && ruin <= 100)) return blank('Enter a ruin drawdown between 0 and 100%.');
+      if (!(n >= 1 && n <= 2000)) return blank('Enter between 1 and 2,000 trades.');
+      var o = { p: wr / 100, rr: rr, r: risk / 100, ruin: ruin / 100, n: n, sizing: sizing, from: from };
+
+      var exp = o.p * rr - (1 - o.p);
+      setText('ru-exp', (exp >= 0 ? '+' : '−') + Math.abs(exp).toFixed(2) + 'R');
+      setText('ru-be', pct(1 / (1 + rr), 1));
+      setText('ru-exp-pct', (exp >= 0 ? '+' : '−') + Math.abs(exp * risk).toFixed(2) + '% of ' + (sizing === 'fixed' ? 'start' : 'balance'));
+      badge('ru-edge-badge', exp > 0.0001 ? 'Positive' : exp < -0.0001 ? 'Negative' : 'Break-even', exp > 0.0001 ? 'ok' : 'bad');
+
+      var s = simulate(o, 10000);
+      setText('ru-ror', rorTxt(s.ror, 10000));
+      setText('ru-ror-sub', 'of 10,000 simulated accounts fell ' + ruin + '% below their ' + (from === 'peak' ? 'highest' : 'starting') + ' balance within ' + n.toLocaleString('en-US') + ' trades.');
+      setText('ru-median', pct(s.median, 0));
+      setText('ru-profit', pct(s.profit, 0));
+      setText('ru-dd', pct(s.dd, 1));
+      setText('ru-dd95', pct(s.dd95, 1));
+      setText('ru-streak', String(s.streak));
+      setText('ru-streak95', String(s.streak95));
+      msg(exp < 0 ? 'The edge is negative: with these numbers the account shrinks on average, so ruin is only a question of time.' : '');
+
+      var levels = [0.5, 1, 2, 3, 5, 10];
+      $('ru-table').innerHTML = levels.map(function (lv) {
+        var r = simulate({ p: o.p, rr: rr, r: lv / 100, ruin: o.ruin, n: n, sizing: sizing, from: from }, 3000);
+        var cur = Math.abs(lv - risk) < 1e-9;
+        return '<tr' + (cur ? ' class="cur"' : '') + '><td>' + lv + '%</td><td>' + rorTxt(r.ror, 3000) + '</td><td>' + pct(r.median, 0) + '</td></tr>';
+      }).join('');
+    }
+
+    var timer = 0;
+    function schedule() { clearTimeout(timer); timer = setTimeout(run, 120); }
+    function boot() {
+      ['ru-wr', 'ru-rr', 'ru-risk', 'ru-ruin', 'ru-n'].forEach(function (id) { var el = $(id); if (el) el.addEventListener('input', schedule); });
+      ['ru-sizing', 'ru-from'].forEach(function (id) { var el = $(id); if (el) el.addEventListener('change', schedule); });
+      run();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+  </script>
+</PageLayout>

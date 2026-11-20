@@ -25,6 +25,15 @@ const schema = [
     mainEntity: t.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
   },
 ];
+// İlgili ücretsiz araç (terimin altında "All terms" yanında)
+const toolFor: Record<string, { href: string; name: string }> = {
+  'risk-reward-ratio': { href: '/tools/position-size-calculator', name: 'Position size calculator' },
+  'r-multiple': { href: '/tools/position-size-calculator', name: 'Position size calculator' },
+  'expectancy': { href: '/tools/risk-of-ruin-calculator', name: 'Risk of ruin calculator' },
+  'win-rate': { href: '/tools/risk-of-ruin-calculator', name: 'Risk of ruin calculator' },
+  'payoff-ratio': { href: '/tools/risk-of-ruin-calculator', name: 'Risk of ruin calculator' },
+  'max-drawdown': { href: '/tools/prop-firm-drawdown-calculator', name: 'Prop firm drawdown calculator' },
+};
 ---
 <PageLayout
   title={`${t.title} | Wawe Journal`}
@@ -91,7 +100,10 @@ const schema = [
           <a class="fp-item gl-card" href={`/glossary/${r.slug}`}><h3>{r.term}</h3><p>{r.short}</p></a>
         ))}
       </div>
-      <div class="fp-related"><a href="/glossary" class="btn btn-line">All terms →</a></div>
+      <div class="fp-related">
+        {toolFor[t.slug] && <a href={toolFor[t.slug].href} class="btn btn-line">{toolFor[t.slug].name} →</a>}
+        <a href="/glossary" class="btn btn-line">All terms →</a>
+      </div>
     </section>
 
     <section class="cta reveal">
