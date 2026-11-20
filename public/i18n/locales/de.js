@@ -349,6 +349,7 @@ export default {
   "dashboard.card.profit_tag": "Gewinn",
   "dashboard.card.loss_tag": "Verlust",
   "nav.report_bug": "Fehler Melden",
+  "nav.help": "Hilfe-Center",
   "bug_report.title": "Fehlerbericht & Feedback",
   "bug_report.subtitle": "Melden Sie ein aufgetretenes Problem oder schlagen Sie eine Verbesserung vor. Unser Team wird es prüfen.",
   "bug_report.badge": "Feedback & Support",

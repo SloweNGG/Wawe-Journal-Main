@@ -251,6 +251,7 @@
           "privacy": "Privacy",
           "terms": "Terms",
           "contact": "Contact",
+          "support": "Support",
           "tm": "MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.",
           "risk_h": "<strong>Risk disclosure:</strong> Trading forex, futures, stocks and crypto involves substantial risk and is not suitable for everyone. You can lose some or all of your capital. Past and backtested performance does not guarantee future results. Wawe Journal does not provide investment advice."
         }
@@ -457,7 +458,8 @@
         location_title: 'Location',
         support_title: 'Support Requests',
         support_desc: 'For technical help, account issues, or feature suggestions, feel free to drop us an email. We will get back to you promptly.',
-        support_reply: 'Average response time: 24 hours (weekdays)'
+        support_reply: 'Average response time: 24 hours (weekdays)',
+        help_center: 'Help center →'
       },
       footer: {
         desc: 'A modern trading journal built for professional traders.',
@@ -713,6 +715,7 @@
           "privacy": "Gizlilik",
           "terms": "Şartlar",
           "contact": "İletişim",
+          "support": "Destek",
           "tm": "MetaTrader, cTrader, TradingView, FTMO ve diğer aracı kurum, platform ve prop firma adları ilgili sahiplerinin ticari markalarıdır. Wawe Journal bu şirketlerle bağlantılı değildir ve onlar tarafından desteklenmez.",
           "risk_h": "<strong>Risk bildirimi:</strong> Forex, vadeli işlem, hisse senedi ve kripto ticareti önemli risk içerir ve herkes için uygun değildir. Sermayenin bir kısmını veya tamamını kaybedebilirsin. Geçmiş ve backtest performansı gelecekteki sonuçları garanti etmez. Wawe Journal yatırım tavsiyesi vermez."
         }
@@ -913,7 +916,8 @@
         location_title: 'Konum',
         support_title: 'Destek Talepleri',
         support_desc: 'Teknik destek, hesap sorunları veya önerileriniz için bize e-posta gönderebilirsiniz. En kısa sürede dönüş yapacağız.',
-        support_reply: 'Ortalama yanıt süresi: 24 saat (hafta içi)'
+        support_reply: 'Ortalama yanıt süresi: 24 saat (hafta içi)',
+        help_center: 'Yardım merkezi →'
       },
       footer: {
         desc: 'Profesyonel traderlar için tasarlanmış modern bir trading günlüğü.',
@@ -1169,6 +1173,7 @@
           "privacy": "Datenschutz",
           "terms": "AGB",
           "contact": "Kontakt",
+          "support": "Hilfe",
           "tm": "MetaTrader, cTrader, TradingView, FTMO und andere Broker-, Plattform- und Prop-Firm-Namen sind Marken ihrer jeweiligen Inhaber. Wawe Journal ist mit ihnen weder verbunden noch wird es von ihnen unterstützt.",
           "risk_h": "<strong>Risikohinweis:</strong> Der Handel mit Forex, Futures, Aktien und Krypto ist mit erheblichem Risiko verbunden und nicht für jeden geeignet. Du kannst einen Teil oder dein gesamtes Kapital verlieren. Vergangene und gebacktestete Ergebnisse garantieren keine zukünftigen Ergebnisse. Wawe Journal bietet keine Anlageberatung."
         }
@@ -1370,7 +1375,8 @@
         location_title: 'Standort',
         support_title: 'Support-Anfragen',
         support_desc: 'Für technischen Support, Kontofragen oder Feedback schreiben Sie uns eine E-Mail.',
-        support_reply: 'Durchschnittliche Antwortzeit: 24 Stunden (werktags)'
+        support_reply: 'Durchschnittliche Antwortzeit: 24 Stunden (werktags)',
+        help_center: 'Hilfe-Center →'
       },
       footer: {
         desc: 'Ein modernes Trading-Journal für professionelle Trader.',

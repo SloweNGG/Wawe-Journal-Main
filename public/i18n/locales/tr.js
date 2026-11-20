@@ -336,6 +336,7 @@ export default {
   "dashboard.card.profit_tag": "Kazanç",
   "dashboard.card.loss_tag": "Kayıp",
   "nav.report_bug": "Hata Bildir",
+  "nav.help": "Yardım Merkezi",
   "bug_report.title": "Hata Bildir & Geri Bildirim",
   "bug_report.subtitle": "Karşılaştığınız bir sorunu veya platform için önerinizi bizimle paylaşın. Ekibimiz hızla ilgilenecektir.",
   "bug_report.badge": "Geri Bildirim & Destek",

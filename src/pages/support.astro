@@ -1,0 +1,290 @@
+---
+// Yardım merkezi (/support). Kategori ikonları: Lucide tarzı SVG path'leri (icon alanı). İçerik İngilizce ve sunucuda hazır; arama tarayıcıda (soruları süzer).
+// Cevaplar koddaki davranışla eşleşmeli: fiyat ve limitler pricing.astro + config.js + migration'lar, ödeme/iade
+// terms.astro, gizlilik privacy.astro, içe aktarma integrations/*.astro. Bir özellik değişince buradaki cevabı da güncelle.
+// MT5 otomatik senkron uygulamada var ama sitede "yakında" diye anılıyor (kullanıcı kararı, MQL5 Market listesine kadar).
+import PageLayout from '../layouts/PageLayout.astro';
+
+type QA = { id: string; q: string; a: string };
+type Cat = { id: string; icon: string; name: string; blurb: string; items: QA[] };
+
+const EMAIL = 'support@wawejournal.com';
+const mail = `<a href="mailto:${EMAIL}">${EMAIL}</a>`;
+
+const cats: Cat[] = [
+  {
+    id: 'getting-started', icon: '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/>', name: 'Getting started', blurb: 'Create an account and log your first trades.',
+    items: [
+      { id: 'what-is-wawe', q: 'What is Wawe Journal?', a: 'A trading journal for forex, futures, stocks and crypto traders. It records your trades, calculates your statistics, replays charts for backtesting, tracks prop firm rules and has an AI coach that answers from your own trades. It is not a broker and never places trades on your real accounts.' },
+      { id: 'create-account', q: 'How do I create an account?', a: 'Go to <a href="/register">Sign up</a> and register with your email and a password, or with Google. The free Starter plan starts right away; no card is needed.' },
+      { id: 'first-trades', q: 'How do I get my trades in?', a: 'Three ways: <strong>connect cTrader</strong> for automatic sync, <strong>import a statement file</strong> from your platform or exchange (Add Trade → CSV Import), or <strong>enter trades by hand</strong> with Add Trade. You can mix all three in the same journal. See <a href="#import">Importing trades</a>.' },
+      { id: 'languages', q: 'Which languages are available?', a: 'English, Turkish and German. Change it in Settings → Region & Time, or with the language switch on the website. The AI coach answers in the same three languages.' },
+      { id: 'mobile', q: 'Is there a mobile app?', a: 'There is no App Store or Google Play app. Wawe Journal runs in any modern browser on phone, tablet and desktop, and you can add it to your home screen from the browser menu to open it like an app.' },
+    ],
+  },
+  {
+    id: 'journals', icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>', name: 'Journals & settings', blurb: 'Accounts, time zone, currency and theme.',
+    items: [
+      { id: 'what-is-journal', q: 'What is a journal, and how many can I have?', a: 'A journal is one trading account in Wawe, for example your FTMO challenge or your personal broker account. Each has its own trades and statistics. The Starter plan includes 2 journals and Pro up to 10. Create one on the Journals page; the wizard asks for the account details, optional prop firm tracking and an optional broker connection.' },
+      { id: 'trade-scope', q: 'What does the trade scope of a journal mean?', a: 'It decides which trades the journal shows: normal trades only, trades copied from linked backtest accounts only, or both together. Your real statistics only include backtest trades if you choose so.' },
+      { id: 'timezone', q: 'Why are my trade times or daily results off by a few hours?', a: 'Check Settings → Region & Time. There you set your own time zone, the hour your trading day starts (with a forex-day preset for a 17:00 New York rollover), and the time zone of the files you import. Most MetaTrader brokers write their reports in server time, often GMT+2 or GMT+3. Daily P&L, the calendar and prop firm daily limits all use these settings.' },
+      { id: 'currency', q: 'Can I change the currency?', a: 'Settings → Region & Time lets you pick the currency symbol shown in the app ($, €, ₺, £ or ₿) and set a commission per lot. The symbol only changes the display; amounts are not converted between currencies.' },
+      { id: 'theme', q: 'Is there a light theme?', a: 'Yes. Switch between dark and light in Settings → Appearance. Pro adds Theme Studio for your own colours and font size.' },
+    ],
+  },
+  {
+    id: 'import', icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>', name: 'Importing trades', blurb: 'Statement files from your platform or exchange.',
+    items: [
+      { id: 'platforms', q: 'Which platforms and brokers can I import from?', a: 'MetaTrader 4 and 5, cTrader (automatic sync), TradingView, Binance, Bybit, Interactive Brokers, OANDA, XTB and any CSV or Excel file with your trades. Each one has a step-by-step guide under <a href="/integrations">Integrations</a>. Imports are free and unlimited on every plan.' },
+      { id: 'how-import', q: 'How do I import a file?', a: 'Open Add Trade, choose the CSV Import tab and drop your file. It accepts .csv, .xlsx, .xls, .htm, .html and .txt. Columns are recognised automatically and you see a preview before anything is saved. Trades that are already in the journal are skipped, so importing the same report twice does not create duplicates.' },
+      { id: 'metatrader', q: 'How do I import from MetaTrader 4 or 5?', a: 'In MetaTrader, open your account history, pick the period and save the closed positions as an Excel, HTML or CSV file. Upload it as it is: the positions table is found automatically, and only closed positions are imported. If times look shifted, set the time zone of imported files to your broker’s server time. Full steps: <a href="/integrations/metatrader">MetaTrader guide</a>. Automatic MetaTrader sync is on the way; until then, import the report file.' },
+      { id: 'tradingview', q: 'Why does my TradingView export fail?', a: 'TradingView’s Strategy Tester trade list has no symbol column. Add a column named “Symbol” with the instrument before you upload. The Profit column is ignored; the result is recalculated from prices and size. See the <a href="/integrations/tradingview">TradingView guide</a>.' },
+      { id: 'crypto', q: 'How do Binance and Bybit imports work?', a: 'Binance trade history is paired into round trips first-in-first-out, with fees subtracted. For Bybit, use the Closed P&L export for derivatives or the trade history for spot. There is no API connection for these exchanges; you import a file. Guides: <a href="/integrations/binance">Binance</a>, <a href="/integrations/bybit">Bybit</a>.' },
+      { id: 'ibkr', q: 'How do I import from Interactive Brokers?', a: 'Use a report with one row per closed round trip (a closed trades or realised P&L view). Single executions are not paired into trades. See the <a href="/integrations/interactive-brokers">Interactive Brokers guide</a>.' },
+      { id: 'excel', q: 'My file isn’t recognised. What can I do?', a: 'Excel files are read from the first sheet only, and HTML files from their largest table, so move your trades there. Make sure the file contains closed trades with at least symbol, direction, open and close time, prices and size. The <a href="/integrations/csv-excel">CSV and Excel guide</a> lists the columns. If it still fails, email the file to ' + mail + ' and we will look at it.' },
+      { id: 'manual', q: 'Can I add trades by hand?', a: 'Yes. Add Trade opens a form for the symbol, direction, size, entry and exit, stop loss, take profit, commission, strategy and notes. With both a stop loss and a take profit, the risk-reward ratio is saved with the trade.' },
+    ],
+  },
+  {
+    id: 'ctrader', icon: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>', name: 'cTrader auto-sync', blurb: 'Connect once, trades arrive by themselves.',
+    items: [
+      { id: 'connect-ctrader', q: 'How do I connect cTrader?', a: 'Create or edit a journal and choose cTrader in the Connect Broker step. You sign in on cTrader’s own page and pick the accounts to link; Wawe never sees your password. You can link several cTrader accounts. More on the <a href="/ctrader-trading-journal">cTrader journal page</a>.' },
+      { id: 'sync-frequency', q: 'How often are trades synced?', a: 'Automatically when you open Wawe Journal and the last sync is more than 30 minutes old, and any time you press Sync on the journal. Auto-sync can be switched off on the journal card.' },
+      { id: 'read-only', q: 'Can Wawe place or close trades on my account?', a: 'No. The connection is read-only: it imports your trading history and nothing else. The only orders you place in Wawe are simulated ones in backtest accounts.' },
+      { id: 'disconnect', q: 'How do I disconnect cTrader?', a: 'Open the journal’s broker connection and press Disconnect. Trades that were already imported stay in your journal.' },
+      { id: 'missing-trades', q: 'A cTrader trade is missing. What should I do?', a: 'Press Sync on the journal and wait a few seconds. If it still doesn’t appear, disconnect and connect the account again to renew cTrader’s authorisation. If that doesn’t help, send us the account number and the trade time at ' + mail + '.' },
+    ],
+  },
+  {
+    id: 'analytics', icon: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>', name: 'Analytics & reports', blurb: 'Statistics, exports and PDF reports.',
+    items: [
+      { id: 'metrics', q: 'Which statistics does Wawe calculate?', a: 'Net P&L, win rate, profit factor, expectancy, average win and loss, payoff ratio, average risk-reward, max drawdown, best and worst trades, streaks, and breakdowns by symbol, strategy, direction, hour and weekday. Results are net: commission and swap are subtracted when your file contains them or you enter them. The <a href="/glossary">trading glossary</a> explains each one with its formula.' },
+      { id: 'analytics-pro', q: 'What is the difference between the Dashboard and Analytics?', a: 'The Dashboard with the core statistics, the P&L calendar and the charts is free. The Analytics page with strategy comparison and the advanced breakdowns is part of Pro.' },
+      { id: 'rr-empty', q: 'Why does average R:R show “—”?', a: 'The risk-reward ratio is saved only for trades that have both a stop loss and a take profit. Add them to your trades (or import files that contain them) and the average appears.' },
+      { id: 'export', q: 'Can I export my trades?', a: 'Yes. Export CSV or PDF from the Dashboard, a day from the Calendar, and a strategy from the Strategies page. Pro adds the detailed PDF report with a date range picker on the Analytics page.' },
+      { id: 'backtest-in-stats', q: 'Do backtest trades change my real statistics?', a: 'Only if you want them to. Use the journal’s trade scope to see live trades, backtest trades or both.' },
+    ],
+  },
+  {
+    id: 'prop', icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>', name: 'Prop firm tracker', blurb: 'Daily loss, drawdown and targets, checked for you.',
+    items: [
+      { id: 'prop-presets', q: 'Which prop firms have presets?', a: 'FTMO 2-Step and 1-Step; FundedNext Stellar 2-Step, 1-Step and Lite; FundingPips 2-Step Standard and Pro. For any other firm, choose Custom rules and enter its limits. Every preset value can be edited, and each phase (challenge, verification, funded) has its own rules.' },
+      { id: 'prop-tracks', q: 'What does the tracker check?', a: 'The daily loss limit with the firm’s reset time, static or trailing max drawdown, the profit target, trading days and the consistency rule where a firm has one. It shows how much room is left today and warns you when a limit gets close. See the <a href="/prop-firm-tracker">prop firm tracker page</a>.' },
+      { id: 'prop-count', q: 'How many challenges can I track?', a: 'One prop firm tracker on the Starter plan and up to 10 on Pro.' },
+      { id: 'pass-probability', q: 'How is the pass probability calculated?', a: 'With a Monte Carlo simulation of the rest of the challenge on your own closed trades, once the challenge has at least 20 trades. You can try the same engine without an account in the free <a href="/tools/prop-firm-pass-probability">pass probability calculator</a>.' },
+    ],
+  },
+  {
+    id: 'backtest', icon: '<polygon points="6 3 20 12 6 21 6 3"/>', name: 'Backtest replay', blurb: 'Practise on past candles.',
+    items: [
+      { id: 'backtest-what', q: 'How does backtesting work in Wawe?', a: 'You replay a chart candle by candle and place simulated orders with stop loss and take profit. Timeframes from M1 to D1, replay speed from 0.1x to 10x. Every simulated trade is recorded with the same statistics as your live journal. More on the <a href="/backtesting">backtesting page</a>.' },
+      { id: 'backtest-data', q: 'Where does the backtest data come from?', a: 'Two options per backtest account: Wawe’s synthetic data, generated in your browser, for EURUSD, GBPUSD, USDJPY, XAUUSD, BTC and ETH, so you can start right away; or real candles from your connected cTrader broker, up to the previous day.' },
+      { id: 'backtest-limits', q: 'What are the backtest limits?', a: 'The Starter plan includes 1 backtest account and a monthly allowance of trades on real-data backtests. Pro includes up to 10 backtest accounts and unlimited real-data trades.' },
+      { id: 'backtest-link', q: 'Can backtest trades go into my journal?', a: 'Backtest accounts on real data can be linked to a journal; their trades are copied there and marked as backtest. Synthetic-data accounts can’t be linked. The journal’s trade scope decides whether you see them.' },
+    ],
+  },
+  {
+    id: 'coach', icon: '<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/><path d="M19 3v4"/><path d="M21 5h-4"/>', name: 'AI coach', blurb: 'Answers from your own trades.',
+    items: [
+      { id: 'coach-what', q: 'What can the AI coach do?', a: 'It answers questions about your trading from your own journal, such as your win rate by hour, which strategy to drop or what trades without a stop cost you, with tables and charts. It also sends live alerts (losing streak, bigger size after a loss, a broken plan rule, a prop limit getting close), checks your trading plan and daily promises, and writes a weekly review. You can attach chart screenshots or dictate questions. More on the <a href="/ai-trading-coach">AI coach page</a>.' },
+      { id: 'coach-personas', q: 'What are the coach personas?', a: 'Five coaches with different focus: Kai (all-round), Mira (psychology), Rex (overtrading), Atlas (discipline) and Nova (risk), each in a soft, balanced or strict tone.' },
+      { id: 'coach-limits', q: 'How many messages can I send?', a: 'Every plan has a daily message allowance; Pro includes more messages every day. The allowance resets daily.' },
+      { id: 'coach-data', q: 'What data does the coach see, and where does it go?', a: 'When you send a message, the coach uses your question and a summary of your journal: statistics, strategies, recent and largest trades with their notes, prop challenges and backtests. Never your email, name, payment data or broker tokens. Answers come from Google’s Gemini models, and from a free model through OpenRouter when Gemini is busy. Under the terms of the free tiers we use, these providers may use what you send to improve their products, and human reviewers may read it, so don’t write personal details into notes or chats. The coach is optional, and you can delete one chat or all of them at any time. Details in the <a href="/privacy">privacy policy</a>.' },
+      { id: 'coach-advice', q: 'Is the AI coach investment advice?', a: 'No. It analyses your past trades and can be wrong. Treat its answers as a second look at your journal, not as advice on what to trade.' },
+    ],
+  },
+  {
+    id: 'calendar', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>', name: 'Economic calendar', blurb: 'Upcoming news for your pairs.',
+    items: [
+      { id: 'calendar-where', q: 'Where do I see upcoming news?', a: 'A badge in the app’s navigation counts down to the next release for the pairs you trade and opens the week’s events with their impact. You can choose which pairs it follows. The Calendar page shows how many releases each day had next to your P&L, and the AI coach can tell you what is coming up.' },
+      { id: 'calendar-source', q: 'Where does the calendar data come from?', a: 'From the public weekly calendars of Forex Factory, CryptoCraft, MetalsMine and EnergyExch, refreshed every 30 minutes. The calendar shows times, impact, forecast and previous values; it does not show the actual released numbers. Read more in <a href="/blog/trading-the-news-economic-calendar">trading the news</a>.' },
+    ],
+  },
+  {
+    id: 'billing', icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>', name: 'Plans & billing', blurb: 'Pro, payments, cancelling and refunds.',
+    items: [
+      { id: 'free-vs-pro', q: 'What is free and what does Pro add?', a: 'Starter is free forever: unlimited trades, imports, cTrader sync, core analytics, the P&L calendar, 2 journals, 1 prop firm tracker, 1 backtest account and a daily AI coach allowance. Pro adds up to 10 journals, prop trackers and backtest accounts, the Analytics page with strategy comparison, unlimited real-data backtest trades, more AI coach messages, overtrade and daily loss alerts, a customisable dashboard, the detailed PDF report and Theme Studio. Compare everything on the <a href="/pricing">pricing page</a>.' },
+      { id: 'price', q: 'How much is Pro?', a: '$12 a month, or $99 a year (about $8.25 a month).' },
+      { id: 'upgrade', q: 'How do I upgrade?', a: 'In the app, open Settings → Plan, or choose Upgrade to Pro in the profile menu. Pick monthly or yearly, then the payment method. If you have a promotion or partner code, enter it at checkout.' },
+      { id: 'payment-methods', q: 'How can I pay?', a: 'By card through Creem, our Merchant of Record, which issues the receipt and handles sales tax; card plans renew automatically. Or with crypto (Bitcoin or Litecoin) through NOWPayments: a one-time payment for one period that does not renew.' },
+      { id: 'cancel', q: 'How do I cancel?', a: 'Settings → Plan → Cancel Subscription. Renewal stops and Pro stays active until the end of the period you paid for. You can also manage the subscription through the link in your Creem receipt email. Crypto payments don’t renew, so there is nothing to cancel.' },
+      { id: 'refund', q: 'Can I get a refund?', a: 'Yes, a full refund within 14 days of your first payment: email ' + mail + '. Renewals are not refundable. Crypto refunds are sent in the same coin, minus network fees. The full terms are in the <a href="/terms">Terms of Service</a>.' },
+      { id: 'pro-ends', q: 'What happens when Pro ends?', a: 'Your account moves to the Starter plan. Nothing is deleted: your trades, journals and accounts stay. Pro features switch off, and you can’t create new accounts beyond the Starter limits until you upgrade again. You get a reminder in the app when 7 days or less are left.' },
+    ],
+  },
+  {
+    id: 'account', icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', name: 'Account & privacy', blurb: 'Password, data, deletion and security.',
+    items: [
+      { id: 'reset-password', q: 'I forgot my password.', a: 'Use <a href="/forgot-password">Forgot password</a> on the sign-in page. We email you a link to set a new one. If you signed up with Google, sign in with Google instead.' },
+      { id: 'change-password', q: 'How do I change my password?', a: 'Settings → Password. Enter your new password and save.' },
+      { id: 'change-email', q: 'How do I change my email address?', a: 'Email ' + mail + ' from your current address with the new one, and we will change it for you.' },
+      { id: 'delete-data', q: 'How do I delete my data or my account?', a: 'You can delete single trades, journals and other records at any time in the app, and Settings has a Danger Zone to delete all trade data at once. To delete your whole account and everything in it, email ' + mail + ' from the address linked to your account. Deactivating the account instead keeps your data but blocks sign-in until support reactivates it.' },
+      { id: 'privacy', q: 'Is my data private?', a: 'Yes. We never sell your data or share it for advertising. It is stored with Supabase, protected by Row Level Security so no user can read another user’s records, and every connection is encrypted with HTTPS. We only use cookies that are needed to keep you signed in and remember your preferences. The only time trading data leaves our infrastructure providers is when you use the optional AI coach. Read the <a href="/privacy">privacy policy</a>.' },
+      { id: 'data-rights', q: 'How do I request a copy of my data?', a: 'Export your trades yourself as CSV from the Dashboard at any time. For any other data request, email ' + mail + '; we reply within 30 days.' },
+      { id: 'age', q: 'Is there an age limit?', a: 'Yes. Wawe Journal is for people aged 18 and over.' },
+    ],
+  },
+  {
+    id: 'troubleshooting', icon: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>', name: 'Troubleshooting', blurb: 'When something doesn’t look right.',
+    items: [
+      { id: 'old-version', q: 'The app looks outdated or a fix isn’t showing.', a: 'Reload the page with a hard refresh: Cmd + Shift + R on Mac, Ctrl + Shift + R on Windows. The app caches files for speed and picks up a new version on reload.' },
+      { id: 'wrong-day', q: 'A trade shows up on the wrong day.', a: 'Your trading day follows your time zone and start-of-day hour in Settings → Region & Time. For imported files, also check the time zone of imported files. See <a href="#timezone">trade times off by a few hours</a>.' },
+      { id: 'login-problem', q: 'I can’t sign in.', a: 'Check that you use the same method you signed up with (email and password, or Google). Reset your password if needed. If your account was deactivated, contact ' + mail + '.' },
+      { id: 'report-bug', q: 'How do I report a bug?', a: 'Signed in, open the profile menu and choose Report Bug. Describe what happened, add a screenshot if you can, and follow the answer in the ticket history. You can also email ' + mail + '.' },
+    ],
+  },
+];
+
+const strip = (h: string) => h.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
+const total = cats.reduce((n, c) => n + c.items.length, 0);
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/support#faq',
+    mainEntity: cats.flatMap((c) => c.items.map((i) => ({ '@type': 'Question', name: i.q, acceptedAnswer: { '@type': 'Answer', text: strip(i.a) } }))),
+  },
+];
+---
+<PageLayout
+  title="Help Center & Support | Wawe Journal"
+  description="Wawe Journal help center: getting started, importing trades, cTrader sync, analytics, prop firm tracker, backtest, AI coach, billing, privacy and how to contact support."
+  crumb="Support"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Support</span></nav>
+      <h1 class="anim wide" style="--d:.1s">How can we help?</h1>
+      <p class="page-lead anim" style="--d:.2s">Answers to {total} common questions about Wawe Journal. Search, pick a topic, or write to us.</p>
+      <div class="sp-search anim" style="--d:.28s" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="sp-q" type="search" placeholder="Search, e.g. “refund”, “MetaTrader”, “time zone”" aria-label="Search the help center" autocomplete="off" />
+      </div>
+      <p class="sp-count" id="sp-count" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <nav class="sp-cats anim" style="--d:.34s" aria-label="Help topics" id="sp-cats">
+      {cats.map((c) => (
+        <a class="sp-cat" href={`#${c.id}`} data-cat={c.id}>
+          <span class="sp-ic" aria-hidden="true"><svg viewBox="0 0 24 24" set:html={c.icon} /></span>
+          <span class="sp-cat-t"><b>{c.name}</b><small>{c.blurb}</small></span>
+          <span class="sp-n">{c.items.length}</span>
+        </a>
+      ))}
+    </nav>
+
+    {cats.map((c) => (
+      <section class="fp-sec sp-sec" id={c.id} data-sec>
+        <h2><span class="sp-ic" aria-hidden="true"><svg viewBox="0 0 24 24" set:html={c.icon} /></span>{c.name}</h2>
+        <div class="fp-faq">
+          {c.items.map((i) => (
+            <details id={i.id} data-q>
+              <summary>{i.q}</summary>
+              <div class="a" set:html={i.a} />
+            </details>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <div class="sp-empty" id="sp-empty" hidden>
+      <p>No answer matches your search. Write to us at <a href={`mailto:${EMAIL}`}>{EMAIL}</a> and we’ll help.</p>
+    </div>
+
+    <section class="fp-sec" id="contact-support">
+      <h2>Still need help? <span class="dim">Talk to a person.</span></h2>
+      <div class="fp-grid">
+        <a class="fp-item gl-card" href={`mailto:${EMAIL}`}><span class="num">EMAIL</span><h3>{EMAIL}</h3><p>For anything: questions, import files that don’t work, billing and data requests. We usually reply within 24 hours on weekdays (09:00–18:00).</p></a>
+        <a class="fp-item gl-card" href="/report-bug.html"><span class="num">IN THE APP</span><h3>Report a bug</h3><p>Signed in, use Report Bug in the profile menu. Add a screenshot and follow the answer in your ticket history.</p></a>
+        <a class="fp-item gl-card" href="https://instagram.com/wawejournal" rel="noopener" target="_blank"><span class="num">SOCIAL</span><h3>@wawejournal</h3><p>News, updates and quick questions on Instagram.</p></a>
+      </div>
+      <div class="fp-related">
+        <a href="/contact" class="btn btn-line">Contact page →</a>
+        <a href="/integrations" class="btn btn-line">Import guides →</a>
+        <a href="/blog" class="btn btn-line">Trading guides →</a>
+      </div>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Not using Wawe Journal yet?</h2>
+      <p>Free to start: journal, analytics, backtest replay, prop firm tracking and an AI coach.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+
+  <style is:global>
+    .sp-search{position:relative;max-width:560px;margin:30px auto 0}
+    .sp-search svg{position:absolute;left:18px;top:50%;width:18px;height:18px;transform:translateY(-50%);fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
+    .sp-search input{width:100%;height:54px;padding:0 18px 0 48px;border:1px solid var(--line2,rgba(255,255,255,.14));border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:16px;transition:border-color .15s}
+    .sp-search input:focus{outline:none;border-color:var(--accent)}
+    .sp-search input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .sp-count{min-height:20px;margin-top:10px;font-size:13px;color:var(--faint)}
+    .sp-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:980px;margin:clamp(32px,4vw,48px) auto 0}
+    .sp-cat{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);transition:border-color .15s,transform .15s}
+    .sp-cat:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .sp-cat:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .sp-cat-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .sp-cat-t b{font-size:15px;font-weight:500;color:var(--ink)}
+    .sp-cat-t small{font-size:12.5px;line-height:1.35;color:var(--muted)}
+    .sp-n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+    .sp-ic{display:inline-grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:10px;background:rgba(139,123,255,.12);color:var(--accent);font-size:16px;line-height:1}
+    .sp-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .sp-sec{scroll-margin-top:96px}
+    .sp-sec > h2{display:flex;align-items:center;gap:14px;font-size:clamp(22px,2.6vw,30px)}
+    .sp-sec details{scroll-margin-top:96px}
+    .sp-sec details:target summary{color:var(--accent)}
+    .sp-empty{max-width:980px;margin:48px auto 0;padding:22px;border:1px solid var(--line);border-radius:var(--r);text-align:center;color:var(--muted)}
+    .sp-empty a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+    #contact-support .gl-card h3{overflow-wrap:anywhere}
+    @media (max-width:900px){.sp-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.sp-cats{grid-template-columns:minmax(0,1fr)}.sp-cat{padding:13px 14px}.sp-cat-t small{display:none}}
+  </style>
+
+  <script is:inline>
+  // Yardım merkezi: arama (soru + cevap metninde, tüm kelimeler), adres çubuğundaki #soru açılır
+  (function () {
+    'use strict';
+    function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    function boot() {
+      var input = document.getElementById('sp-q');
+      var qs = Array.prototype.slice.call(document.querySelectorAll('[data-q]'));
+      var secs = Array.prototype.slice.call(document.querySelectorAll('[data-sec]'));
+      var cats = document.getElementById('sp-cats');
+      var empty = document.getElementById('sp-empty');
+      var count = document.getElementById('sp-count');
+      var text = qs.map(function (d) { return norm(d.textContent); });
+      function apply() {
+        var words = norm(input.value).split(/\s+/).filter(Boolean);
+        if (!words.length) {
+          qs.forEach(function (d) { d.hidden = false; d.open = false; });
+          secs.forEach(function (s) { s.hidden = false; });
+          cats.hidden = false; empty.hidden = true; count.textContent = '';
+          openHash();
+          return;
+        }
+        var hits = 0;
+        qs.forEach(function (d, i) {
+          var ok = words.every(function (w) { return text[i].indexOf(w) !== -1; });
+          d.hidden = !ok; d.open = ok; if (ok) hits++;
+        });
+        secs.forEach(function (s) { s.hidden = !s.querySelector('[data-q]:not([hidden])'); });
+        cats.hidden = true;
+        empty.hidden = hits > 0;
+        count.textContent = hits ? hits + (hits === 1 ? ' answer' : ' answers') : '';
+      }
+      function openHash() {
+        var id = decodeURIComponent(location.hash.slice(1));
+        var el = id && document.getElementById(id);
+        if (el && el.tagName === 'DETAILS') { el.open = true; }
+      }
+      var t = 0;
+      input.addEventListener('input', function () { clearTimeout(t); t = setTimeout(apply, 80); });
+      window.addEventListener('hashchange', openHash);
+      openHash();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  })();
+  </script>
+</PageLayout>

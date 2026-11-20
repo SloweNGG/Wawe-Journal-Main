@@ -363,6 +363,7 @@ export default {
   "dashboard.card.profit_tag": "Profit",
   "dashboard.card.loss_tag": "Loss",
   "nav.report_bug": "Report Bug",
+  "nav.help": "Help Center",
   "bug_report.title": "Bug Report & Feedback",
   "bug_report.subtitle": "Report an issue you encountered or suggest an improvement. Our team will look into it promptly.",
   "bug_report.badge": "Feedback & Support",

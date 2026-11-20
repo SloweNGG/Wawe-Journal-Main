@@ -1260,6 +1260,10 @@ function getNavbarHTML(translations) {
             <i data-lucide="bug" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.report_bug">${tt('nav.report_bug', 'Hata Bildir')}</span>
           </a>
+          <a href="/support" class="dropdown-item">
+            <i data-lucide="life-buoy" style="width:16px;height:16px;"></i>
+            <span data-i18n="nav.help">${tt('nav.help', 'Yardım Merkezi')}</span>
+          </a>
           <span id="admin-link" style="display:none;">
             <a href="/admin.html" class="dropdown-item">
               <i data-lucide="shield" style="width:16px;height:16px;"></i>
@@ -1361,6 +1365,9 @@ function getNavbarHTML(translations) {
           </a>
           <a href="/report-bug.html" onclick="closeMobileMenuAndNavigate(event, '/report-bug.html')">
             <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">${tt('nav.report_bug', 'Hata Bildir')}</span>
+          </a>
+          <a href="/support">
+            <i data-lucide="life-buoy" style="width:16px;height:16px;"></i> <span data-i18n="nav.help">${tt('nav.help', 'Yardım Merkezi')}</span>
           </a>
           <span id="admin-link-mobile" style="display:none;">
             <a href="/admin.html" onclick="closeMobileMenuAndNavigate(event, '/admin.html')">
