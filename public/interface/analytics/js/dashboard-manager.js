@@ -417,7 +417,7 @@ export function renderKpiBar(trades) {
     if (elRr) {
       // R:R girilmemişse 0.00 yerine "—" (yanıltıcı sıfır gösterilmez)
       elRr.textContent = m.avgRR === null ? '—' : m.avgRR.toFixed(2);
-      elRr.title = m.avgRR === null ? _t('analytics_dash.no_rr_hint', 'R:R verisi yok — işlemlere stop loss ekleyin') : '';
+      elRr.title = m.avgRR === null ? _t('analytics_dash.no_rr_hint', 'R:R verisi yok — işlemlere stop loss ve take profit ekleyin') : '';
     }
   } catch(e) {}
 }

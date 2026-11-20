@@ -789,7 +789,11 @@ function wwAccent() {
       m.maxDrawdown > 0 ? 'negative' : '');
     if (ddEl) ddEl.title = m.maxDrawdown > 0 ? formatCurrency(-m.maxDrawdown) : '';
     var rrEl = safeEl('kpi-rr');
-    if (rrEl) rrEl.textContent = m.avgRR === null ? '—' : m.avgRR.toFixed(2);
+    if (rrEl) {
+      rrEl.textContent = m.avgRR === null ? '—' : m.avgRR.toFixed(2);
+      // R:R is saved from stop loss + take profit; say what is missing instead of a bare dash (same hint as analytics)
+      rrEl.title = m.avgRR === null ? (i18n.t('analytics_dash.no_rr_hint') || 'R:R verisi yok — işlemlere stop loss ve take profit ekleyin') : '';
+    }
 
     var goalPercentEl = safeEl('goal-percent');
     if (goalPercentEl) {

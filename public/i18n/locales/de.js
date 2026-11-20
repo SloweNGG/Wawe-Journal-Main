@@ -1282,7 +1282,7 @@ export default {
   "analytics_dash.sub.gross": "Brutto {w} / {l}",
   "analytics_dash.sub.sharpe": "Pro Trade",
   "analytics_dash.kpi.payoff": "Gewinn/Verlust-Verhältnis",
-  "analytics_dash.no_rr_hint": "Keine C/R-Daten — Stop-Loss zu Trades hinzufügen",
+  "analytics_dash.no_rr_hint": "Keine R:R-Daten — Stop-Loss und Take-Profit zu den Trades hinzufügen",
   "analytics_dash.meta.trades": "{n} geschlossene Trades",
   "analytics_dash.meta.last_trade": "Letzter Trade {date}",
   "analytics_dash.subtitle": "Erweiterte Analyse und Strategieverfolgung",

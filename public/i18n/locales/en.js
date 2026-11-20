@@ -1316,7 +1316,7 @@ export default {
   "analytics_dash.sub.gross": "Gross {w} / {l}",
   "analytics_dash.sub.sharpe": "Per trade",
   "analytics_dash.kpi.payoff": "Win/Loss Ratio",
-  "analytics_dash.no_rr_hint": "No R:R data — add stop losses to your trades",
+  "analytics_dash.no_rr_hint": "No R:R data — add a stop loss and take profit to your trades",
   "analytics_dash.meta.trades": "{n} closed trades",
   "analytics_dash.meta.last_trade": "Last trade {date}",
   "analytics_dash.subtitle": "Advanced analysis and strategy tracking",

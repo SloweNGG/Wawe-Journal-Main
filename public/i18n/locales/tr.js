@@ -1259,7 +1259,7 @@ export default {
   "analytics_dash.sub.gross": "Brüt {w} / {l}",
   "analytics_dash.sub.sharpe": "İşlem bazlı",
   "analytics_dash.kpi.payoff": "Kazanç/Kayıp Oranı",
-  "analytics_dash.no_rr_hint": "R:R verisi yok — işlemlere stop loss ekleyin",
+  "analytics_dash.no_rr_hint": "R:R verisi yok — işlemlere stop loss ve take profit ekleyin",
   "analytics_dash.meta.trades": "{n} kapanmış işlem",
   "analytics_dash.meta.last_trade": "Son işlem {date}",
   "analytics_dash.subtitle": "Gelişmiş analiz ve strateji takibi",
