@@ -7,7 +7,7 @@
 /* Chart cards open large on click (js/chart-expand.js → shared WwChartViewer) */
 .grid-item:is([data-widget="cumulative"], [data-widget="winloss"], [data-widget="daily"], [data-widget="symbol"],
   [data-widget="direction"], [data-widget="hourly"], [data-widget="dow"], [data-widget="rr"], [data-widget="lot"],
-  [data-widget="drawdown"], [data-widget="monthly"]) .chart-wrap { cursor: zoom-in; }
+  [data-widget="drawdown"], [data-widget="monthly"]) .chart-wrap { cursor: pointer; }
 
 /* ============================================================
    PDF REPORT PERIOD DIALOG (js/export-dialog.js)

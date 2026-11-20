@@ -1064,7 +1064,7 @@ export function renderCumulativeChart(trades) {
     },
     crosshair: {
       mode: LightweightCharts.CrosshairMode.Magnet,
-      vertLine: { labelVisible: true },
+      vertLine: { visible: false, labelVisible: false },
       horzLine: { labelVisible: true },
     },
     handleScroll: false,

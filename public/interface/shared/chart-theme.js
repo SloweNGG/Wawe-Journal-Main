@@ -115,7 +115,9 @@
       xaxis: {
         labels: { style: axisLabels() },
         axisBorder: { show: false },
-        axisTicks: { show: false }
+        axisTicks: { show: false },
+        // no vertical hover line / column band on any chart (owner, 2026-11-20); the tooltip and marker are enough
+        crosshairs: { show: false }
       },
       yaxis: {
         labels: { style: axisLabels() }
@@ -177,8 +179,9 @@
         vertLines: { visible: false },
         horzLines: { color: c.grid }
       },
+      // no vertical hover line on any chart (owner, 2026-11-20). The backtest candle chart turns it back on.
       crosshair: {
-        vertLine: { color: c.muted, width: 1, style: 3, labelBackgroundColor: c.surface },
+        vertLine: { visible: false, labelVisible: false, color: c.muted, width: 1, style: 3, labelBackgroundColor: c.surface },
         horzLine: { color: c.muted, width: 1, style: 3, labelBackgroundColor: c.surface }
       },
       rightPriceScale: { borderVisible: false },

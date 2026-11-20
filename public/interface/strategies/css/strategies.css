@@ -987,4 +987,4 @@ body:not(.light-theme) .modal-box .btn-modal-cancel:hover {
 }
 
 /* Comparison charts open large on click (shared WwChartViewer) */
-#comparison-section .comparison-card { cursor: zoom-in; }
+#comparison-section .comparison-card { cursor: pointer; }

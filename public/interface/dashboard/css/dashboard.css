@@ -1647,7 +1647,7 @@ body.light-theme .mini-cal-day.loss:hover {
 
 .chart-card.expandable,
 .donut-mobile-slide.expandable {
-  cursor: zoom-in;
+  cursor: pointer;   /* not zoom-in: the magnifier cursor over charts annoyed the owner (2026-11-20) */
   transition: border-color 0.2s ease, transform 0.15s ease;
 }
 

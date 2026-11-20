@@ -1852,7 +1852,8 @@
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: v === R ? 8 : 6,
         shiftVisibleRangeOnNewBar: true, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: tickLabelFor(v) },
       localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) },
-      crosshair: { mode: window.LightweightCharts.CrosshairMode.Normal },
+      // the trading chart keeps its full crosshair; every other chart hides the vertical line (WwChart.lwc)
+      crosshair: { mode: window.LightweightCharts.CrosshairMode.Normal, vertLine: { visible: true, labelVisible: true } },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: { time: true, price: true } }
     }), LK.chartOptions(lk, c)));
