@@ -5,15 +5,16 @@
 // MT5 otomatik senkron uygulamada var ama sitede "yakında" diye anılıyor (kullanıcı kararı, MQL5 Market listesine kadar).
 import PageLayout from '../layouts/PageLayout.astro';
 
-type QA = { id: string; q: string; a: string; steps?: string[] };
-type Cat = { id: string; icon: string; name: string; blurb: string; items: QA[] };
+type Shot = { src: string; w: number; h: number; alt: string; cap: string };
+type QA = { id: string; q: string; a: string; steps?: string[]; shot?: Shot };
+type Cat = { id: string; icon: string; name: string; blurb: string; items: QA[]; shot?: Shot };
 
 const EMAIL = 'support@wawejournal.com';
 const mail = `<a href="mailto:${EMAIL}">${EMAIL}</a>`;
 
 const cats: Cat[] = [
   {
-    id: 'getting-started', icon: '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/>', name: 'Getting started', blurb: 'Create an account and log your first trades.',
+    id: 'getting-started', icon: '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/>', name: 'Getting started', blurb: 'Create an account and log your first trades.', shot: { src: '/images/landing/dashboard.webp', w: 1600, h: 1059, alt: 'Wawe Journal dashboard with totals, the cumulative P&L curve and daily results', cap: 'The dashboard after your first trades: totals, the cumulative P&L curve and daily results.' },
     items: [
       { id: 'what-is-wawe', q: 'What is Wawe Journal?', a: 'A trading journal for forex, futures, stocks and crypto traders. It records your trades, calculates your statistics, replays charts for backtesting, tracks prop firm rules and has an AI coach that answers from your own trades. It is not a broker and never places trades on your real accounts.' },
       { id: 'create-account', q: 'How do I create an account?', a: 'Go to <a href="/register">Sign up</a> and register with your email and a password, or with Google. The free Starter plan starts right away; no card is needed.' },
@@ -27,13 +28,13 @@ const cats: Cat[] = [
     items: [
       { id: 'what-is-journal', q: 'What is a journal, and how many can I have?', a: 'A journal is one trading account in Wawe, for example your FTMO challenge or your personal broker account. Each has its own trades and statistics. The Starter plan includes 2 journals and Pro up to 10. Create one on the Journals page; the wizard asks for the account details, optional prop firm tracking and an optional broker connection.' },
       { id: 'trade-scope', q: 'What does the trade scope of a journal mean?', a: 'It decides which trades the journal shows: normal trades only, trades copied from linked backtest accounts only, or both together. Your real statistics only include backtest trades if you choose so.' },
-      { id: 'timezone', q: 'Why are my trade times or daily results off by a few hours?', a: 'Check Settings → Region & Time. There you set your own time zone, the hour your trading day starts (with a forex-day preset for a 17:00 New York rollover), and the time zone of the files you import. Most MetaTrader brokers write their reports in server time, often GMT+2 or GMT+3. Daily P&L, the calendar and prop firm daily limits all use these settings.' },
+      { id: 'timezone', q: 'Why are my trade times or daily results off by a few hours?', a: 'Check Settings → Region & Time. There you set your own time zone, the hour your trading day starts (with a forex-day preset for a 17:00 New York rollover), and the time zone of the files you import. Most MetaTrader brokers write their reports in server time, often GMT+2 or GMT+3. Daily P&L, the calendar and prop firm daily limits all use these settings.', shot: { src: '/images/support/settings-region.webp', w: 1600, h: 1069, alt: 'Region and Time settings with language, currency, time zone and day start', cap: 'Settings → Region & Time: language, currency, commission, your time zone, the start of your trading day and the time zone of imported files.' } },
       { id: 'currency', q: 'Can I change the currency?', a: 'Settings → Region & Time lets you pick the currency symbol shown in the app ($, €, ₺, £ or ₿) and set a commission per lot. The symbol only changes the display; amounts are not converted between currencies.' },
       { id: 'theme', q: 'Is there a light theme?', a: 'Yes. Switch between dark and light in Settings → Appearance. Pro adds Theme Studio for your own colours and font size.' },
     ],
   },
   {
-    id: 'import', icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>', name: 'Importing trades', blurb: 'Statement files from your platform or exchange.',
+    id: 'import', icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>', name: 'Importing trades', blurb: 'Statement files from your platform or exchange.', shot: { src: '/images/landing/screen-trades.webp', w: 1800, h: 947, alt: 'Trades list in Wawe Journal after an import', cap: 'Imported trades in the Trades list, with symbol, direction, size, prices and P&L.' },
     items: [
       { id: 'platforms', q: 'Which platforms and brokers can I import from?', a: 'MetaTrader 4 and 5, cTrader (automatic sync), TradingView, Binance, Bybit, Interactive Brokers, OANDA, XTB and any CSV or Excel file with your trades. Each one has a step-by-step guide under <a href="/integrations">Integrations</a>. Imports are free and unlimited on every plan.' },
       { id: 'how-import', q: 'How do I import a file?', a: 'Statement files go in through the CSV Import tab, and a preview shows every trade before anything is saved. Importing the same report twice does not create duplicates: trades already in the journal are skipped.', steps: ['Open <strong>Add Trade</strong> and switch to the <strong>CSV Import</strong> tab.', 'Drop your file (.csv, .xlsx, .xls, .htm, .html or .txt) or choose it from your computer.', 'Check the preview. Columns are recognised automatically.', 'Press <strong>Import</strong>.'] },
@@ -56,7 +57,7 @@ const cats: Cat[] = [
     ],
   },
   {
-    id: 'analytics', icon: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>', name: 'Analytics & reports', blurb: 'Statistics, exports and PDF reports.',
+    id: 'analytics', icon: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>', name: 'Analytics & reports', blurb: 'Statistics, exports and PDF reports.', shot: { src: '/images/landing/analytics.webp', w: 1600, h: 783, alt: 'Performance Analytics page with key numbers and charts', cap: 'Performance Analytics (Pro): key numbers, the cumulative P&L, strategy comparison and the win/loss split.' },
     items: [
       { id: 'metrics', q: 'Which statistics does Wawe calculate?', a: 'Net P&L, win rate, profit factor, expectancy, average win and loss, payoff ratio, average risk-reward, max drawdown, best and worst trades, streaks, and breakdowns by symbol, strategy, direction, hour and weekday. Results are net: commission and swap are subtracted when your file contains them or you enter them. The <a href="/glossary">trading glossary</a> explains each one with its formula.' },
       { id: 'analytics-pro', q: 'What is the difference between the Dashboard and Analytics?', a: 'The Dashboard with the core statistics, the P&L calendar and the charts is free. The Analytics page with strategy comparison and the advanced breakdowns is part of Pro.' },
@@ -66,7 +67,7 @@ const cats: Cat[] = [
     ],
   },
   {
-    id: 'prop', icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>', name: 'Prop firm tracker', blurb: 'Daily loss, drawdown and targets, checked for you.',
+    id: 'prop', icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>', name: 'Prop firm tracker', blurb: 'Daily loss, drawdown and targets, checked for you.', shot: { src: '/images/landing/screen-dashboard.webp', w: 1800, h: 947, alt: 'Dashboard with an FTMO challenge card', cap: 'A prop firm challenge on the dashboard: balance, profit target, daily loss and total loss used.' },
     items: [
       { id: 'prop-presets', q: 'Which prop firms have presets?', a: 'FTMO 2-Step and 1-Step; FundedNext Stellar 2-Step, 1-Step and Lite; FundingPips 2-Step Standard and Pro. For any other firm, choose Custom rules and enter its limits. Every preset value can be edited, and each phase (challenge, verification, funded) has its own rules.' },
       { id: 'prop-tracks', q: 'What does the tracker check?', a: 'The daily loss limit with the firm’s reset time, static or trailing max drawdown, the profit target, trading days and the consistency rule where a firm has one. It shows how much room is left today and warns you when a limit gets close. See the <a href="/prop-firm-tracker">prop firm tracker page</a>.' },
@@ -75,7 +76,7 @@ const cats: Cat[] = [
     ],
   },
   {
-    id: 'backtest', icon: '<polygon points="6 3 20 12 6 21 6 3"/>', name: 'Backtest replay', blurb: 'Practise on past candles.',
+    id: 'backtest', icon: '<polygon points="6 3 20 12 6 21 6 3"/>', name: 'Backtest replay', blurb: 'Practise on past candles.', shot: { src: '/images/landing/backtest.webp', w: 1600, h: 1059, alt: 'Backtest replay chart with the order panel', cap: 'Backtest replay: the chart moves candle by candle, with the order panel and open positions.' },
     items: [
       { id: 'backtest-what', q: 'How does backtesting work in Wawe?', a: 'You replay a chart candle by candle and place simulated orders with stop loss and take profit. Timeframes from M1 to D1, replay speed from 0.1x to 10x. Every simulated trade is recorded with the same statistics as your live journal. More on the <a href="/backtesting">backtesting page</a>.' },
       { id: 'backtest-data', q: 'Where does the backtest data come from?', a: 'Two options per backtest account: Wawe’s synthetic data, generated in your browser, for EURUSD, GBPUSD, USDJPY, XAUUSD, BTC and ETH, so you can start right away; or real candles from your connected cTrader broker, up to the previous day.' },
@@ -94,7 +95,7 @@ const cats: Cat[] = [
     ],
   },
   {
-    id: 'calendar', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>', name: 'Economic calendar', blurb: 'Upcoming news for your pairs.',
+    id: 'calendar', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>', name: 'Economic calendar', blurb: 'Upcoming news for your pairs.', shot: { src: '/images/landing/screen-calendar.webp', w: 1800, h: 947, alt: 'Trading calendar with daily P&L', cap: 'The trading calendar: every day’s P&L at a glance.' },
     items: [
       { id: 'calendar-where', q: 'Where do I see upcoming news?', a: 'A badge in the app’s navigation counts down to the next release for the pairs you trade and opens the week’s events with their impact. You can choose which pairs it follows. The Calendar page shows how many releases each day had next to your P&L, and the AI coach can tell you what is coming up.' },
       { id: 'calendar-source', q: 'Where does the calendar data come from?', a: 'From the public weekly calendars of Forex Factory, CryptoCraft, MetalsMine and EnergyExch, refreshed every 30 minutes. The calendar shows times, impact, forecast and previous values; it does not show the actual released numbers. Read more in <a href="/blog/trading-the-news-economic-calendar">trading the news</a>.' },
@@ -118,7 +119,7 @@ const cats: Cat[] = [
       { id: 'reset-password', q: 'I forgot my password.', a: 'If you signed up with Google, sign in with Google instead.', steps: ['On the sign-in page, choose <a href="/forgot-password">Forgot password</a>.', 'Enter the email address of your account.', 'Open the link in the email and set a new password.'] },
       { id: 'change-password', q: 'How do I change my password?', a: 'Settings → Password. Enter your new password and save.' },
       { id: 'change-email', q: 'How do I change my email address?', a: 'Email ' + mail + ' from your current address with the new one, and we will change it for you.' },
-      { id: 'delete-data', q: 'How do I delete my data or my account?', a: 'You can delete single trades, journals and other records at any time in the app, and Settings has a Danger Zone to delete all trade data at once. To delete your whole account and everything in it, email ' + mail + ' from the address linked to your account. Deactivating the account instead keeps your data but blocks sign-in until support reactivates it.' },
+      { id: 'delete-data', q: 'How do I delete my data or my account?', a: 'You can delete single trades, journals and other records at any time in the app, and Settings has a Danger Zone to delete all trade data at once. To delete your whole account and everything in it, email ' + mail + ' from the address linked to your account. Deactivating the account instead keeps your data but blocks sign-in until support reactivates it.', shot: { src: '/images/support/settings-danger.webp', w: 1600, h: 614, alt: 'Danger Zone settings with Delete Data and Deactivate Account', cap: 'Settings → Danger Zone: delete all trade data, or deactivate the account and keep the data.' } },
       { id: 'privacy', q: 'Is my data private?', a: 'Yes. We never sell your data or share it for advertising. It is stored with Supabase, protected by Row Level Security so no user can read another user’s records, and every connection is encrypted with HTTPS. We only use cookies that are needed to keep you signed in and remember your preferences. The only time trading data leaves our infrastructure providers is when you use the optional AI coach. Read the <a href="/privacy">privacy policy</a>.' },
       { id: 'data-rights', q: 'How do I request a copy of my data?', a: 'Export your trades yourself as CSV from the Dashboard at any time. For any other data request, email ' + mail + '; we reply within 30 days.' },
       { id: 'age', q: 'Is there an age limit?', a: 'Yes. Wawe Journal is for people aged 18 and over.' },
@@ -151,7 +152,7 @@ const schema = [
   schema={schema}
 >
   <section class="page-hero sp-hero">
-    <div class="wrap">
+    <div class="wrap sp-wide">
       <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Support</span></nav>
       <h1 class="anim wide" style="--d:.1s">Help center</h1>
       <p class="page-lead anim" style="--d:.2s">How Wawe Journal works, from your first import to cancelling Pro. Search, or pick a topic.</p>
@@ -163,7 +164,7 @@ const schema = [
     </div>
   </section>
 
-  <div class="wrap">
+  <div class="wrap sp-wide">
     <div class="sp-layout">
       <aside class="sp-nav" aria-label="Help topics">
         <nav id="sp-nav">
@@ -184,6 +185,12 @@ const schema = [
               <span class="sp-ic" aria-hidden="true"><svg viewBox="0 0 24 24" set:html={c.icon} /></span>
               <div><h2>{c.name}</h2><p>{c.blurb}</p></div>
             </header>
+            {c.shot && (
+              <figure class="sp-shot">
+                <a href={c.shot.src} target="_blank" rel="noopener" aria-label="Open the full-size screenshot"><img src={c.shot.src} width={c.shot.w} height={c.shot.h} alt={c.shot.alt} loading="lazy" decoding="async" /></a>
+                <figcaption>{c.shot.cap}</figcaption>
+              </figure>
+            )}
             {c.items.map((i) => (
               <article class="sp-item" id={i.id} data-q>
                 <h3><a href={`#${i.id}`}>{i.q}</a></h3>
@@ -193,6 +200,12 @@ const schema = [
                   </ol>
                 )}
                 {i.a && <p class="sp-a" set:html={i.a} />}
+                {i.shot && (
+                  <figure class="sp-shot">
+                    <a href={i.shot.src} target="_blank" rel="noopener" aria-label="Open the full-size screenshot"><img src={i.shot.src} width={i.shot.w} height={i.shot.h} alt={i.shot.alt} loading="lazy" decoding="async" /></a>
+                    <figcaption>{i.shot.cap}</figcaption>
+                  </figure>
+                )}
               </article>
             ))}
           </section>
@@ -222,15 +235,19 @@ const schema = [
   </div>
 
   <style is:global>
-    .sp-hero h1{max-width:none}
-    .sp-search{position:relative;max-width:560px;margin:30px auto 0}
+    .sp-wide{max-width:calc(1280px + var(--gutter)*2)}
+    .sp-hero{text-align:left}
+    .sp-hero .crumbs{justify-content:flex-start}
+    .sp-hero h1{max-width:none;margin-left:0;margin-right:0}
+    .sp-hero .page-lead{margin-left:0;margin-right:0;max-width:60ch}
+    .sp-search{position:relative;max-width:620px;margin:30px 0 0}
     .sp-search svg{position:absolute;left:18px;top:50%;width:18px;height:18px;transform:translateY(-50%);fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
     .sp-search input{width:100%;height:54px;padding:0 18px 0 48px;border:1px solid var(--line2,rgba(255,255,255,.14));border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:16px;transition:border-color .15s}
     .sp-search input:focus{outline:none;border-color:var(--accent)}
     .sp-search input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     .sp-count{min-height:20px;margin-top:10px;font-size:13px;color:var(--faint)}
 
-    .sp-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px;max-width:1080px;margin:clamp(36px,4vw,56px) auto 0;align-items:start}
+    .sp-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px;margin:clamp(36px,4vw,56px) 0 0;align-items:start}
     .sp-nav{position:sticky;top:100px;display:flex;flex-direction:column;gap:18px}
     .sp-nav nav{display:flex;flex-direction:column;gap:2px}
     .sp-nav nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;font-size:14px;color:var(--muted);transition:color .15s,background .15s}
@@ -257,14 +274,20 @@ const schema = [
     .sp-item h3 a{color:var(--ink)}
     .sp-item h3 a:hover{color:var(--accent)}
     .sp-item:target{background:linear-gradient(90deg,rgba(139,123,255,.07),transparent 70%);margin:0 -16px;padding-left:16px;padding-right:16px;border-radius:12px}
-    .sp-a{margin-top:10px;max-width:72ch;font-size:15.5px;line-height:1.7;color:var(--muted)}
+    .sp-a{margin-top:10px;max-width:80ch;font-size:15.5px;line-height:1.7;color:var(--muted)}
     .sp-a a,.sp-steps a,.sp-empty a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
     .sp-a strong,.sp-steps strong{font-weight:500;color:var(--ink)}
-    .sp-steps{counter-reset:st;display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:0;list-style:none;max-width:72ch}
+    .sp-steps{counter-reset:st;display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:0;list-style:none;max-width:80ch}
     .sp-steps li{counter-increment:st;position:relative;padding:11px 14px 11px 50px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:15px;line-height:1.55;color:var(--muted)}
     .sp-steps li::before{content:counter(st);position:absolute;left:12px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(139,123,255,.16);color:var(--accent);font-family:var(--mono);font-size:12px}
     .sp-steps + .sp-a{margin-top:14px}
 
+    .sp-shot{margin:20px 0 4px}
+    .sp-topic-h + .sp-shot{margin:24px 0 8px}
+    .sp-shot a{display:block;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#050507;transition:border-color .15s}
+    .sp-shot a:hover{border-color:rgba(139,123,255,.5)}
+    .sp-shot img{display:block;width:100%;height:auto}
+    .sp-shot figcaption{margin-top:10px;font-size:13px;line-height:1.5;color:var(--faint)}
     .sp-empty{margin-top:8px;padding:22px;border:1px solid var(--line);border-radius:var(--r);text-align:center;color:var(--muted)}
     .sp-contact{margin-top:80px;padding:28px;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
     .sp-contact h2{font-size:24px;font-weight:600;letter-spacing:-.02em}
