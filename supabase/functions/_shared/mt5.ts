@@ -115,7 +115,10 @@ export function parseAccount(a: any): { ok: true; value: AccountInfo } | { ok: f
   const currency = a.currency != null ? String(a.currency).trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12) || null : null;
   // ACCOUNT_TRADE_MODE: 0 demo, 1 contest, 2 real
   const tm = a.trade_mode != null ? num(a.trade_mode) : NaN;
-  const isLive = tm === 2 ? true : (tm === 0 || tm === 1) ? false : null;
+  // Bazı brokerların demo sunucusu kendini gerçek diye bildirir (Pepperstone-Demo02, MT4: trade_mode 2 ve IsDemo() false).
+  // Sunucu adında "demo" geçiyorsa hesap demo sayılır.
+  const demoServer = /demo/i.test(server);
+  const isLive = demoServer ? false : tm === 2 ? true : (tm === 0 || tm === 1) ? false : null;
   const money = (v: unknown) => finite(v) && Math.abs(num(v)) < 1e15 ? Number(num(v).toFixed(8)) : null;
   return { ok: true, value: { login, server, broker, currency, isLive, balance: money(a.balance), equity: money(a.equity) } };
 }

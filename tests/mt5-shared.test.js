@@ -205,6 +205,16 @@ describe('buildSyncRows', () => {
   });
 });
 
+describe('demo sunucusu', () => {
+  it('sunucu adında "demo" varsa trade_mode gerçek dese de demo', () => {
+    assert.equal(M.parseAccount({ login: 85379958, server: 'Pepperstone-Demo02', trade_mode: 2 }).value.isLive, false);
+    assert.equal(M.parseAccount({ login: 1, server: 'ICMarketsSC-DEMO', trade_mode: 2 }).value.isLive, false);
+    assert.equal(M.parseAccount({ login: 1, server: 'ICMarketsSC-Live07', trade_mode: 2 }).value.isLive, true);
+    assert.equal(M.parseAccount({ login: 1, server: 'FTMO-Server', trade_mode: 0 }).value.isLive, false);
+    assert.equal(M.parseAccount({ login: 1, server: 'Broker-Real' }).value.isLive, null);
+  });
+});
+
 describe('MetaTrader 4 (platform)', () => {
   it('parsePlatform: yalnızca "mt4" MT4, gerisi (eski EA: alan yok) MT5', () => {
     assert.equal(M.parsePlatform('mt4'), 'mt4');

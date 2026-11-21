@@ -30,14 +30,14 @@
 //+------------------------------------------------------------------+
 #property copyright   "Wawe Journal"
 #property link        "https://wawejournal.com"
-#property version     "1.00"
+#property version     "1.01"
 #property description "Wawe Journal: kapanan işlemlerinizi otomatik olarak defterinize aktarır."
 #property description "Yalnızca okur; işlem açmaz ve kapatmaz. MT4 şifreniz istenmez."
 #property strict
 
 #define WAWE_HOST      "https://odasapyhtdopbnlfhwde.supabase.co"
 #define WAWE_ENDPOINT  "https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/mt5-bridge"
-#define WAWE_VERSION   "1.00"
+#define WAWE_VERSION   "1.01"
 #define MAX_BATCH      500
 #define SYNC_EVERY_MS  60000
 #define PANEL_PREFIX   "WaweSync_"
@@ -333,7 +333,7 @@ string AccountJson()
           ",\"server\":\"" + JEsc(AccountInfoString(ACCOUNT_SERVER)) + "\"" +
           ",\"company\":\"" + JEsc(AccountInfoString(ACCOUNT_COMPANY)) + "\"" +
           ",\"currency\":\"" + JEsc(AccountInfoString(ACCOUNT_CURRENCY)) + "\"" +
-          ",\"trade_mode\":" + IntegerToString(AccountInfoInteger(ACCOUNT_TRADE_MODE)) +
+          ",\"trade_mode\":" + (IsDemo() ? "0" : "2") +   // MT4: ACCOUNT_TRADE_MODE demo hesapta da 2 dönebiliyor (Pepperstone), IsDemo() güvenilir
           ",\"balance\":" + JNum(AccountInfoDouble(ACCOUNT_BALANCE), 2) +
           ",\"equity\":" + JNum(AccountInfoDouble(ACCOUNT_EQUITY), 2) + "}";
   }
@@ -799,7 +799,7 @@ void ShowStatus()
          return;
         }
       string last = (g_lastSyncOk > 0) ? TimeToString(g_lastSyncOk, TIME_MINUTES) : "-";
-      ShowPanel(T("Bağlı ✓", "Connected ✓"),
+      ShowPanel(T("Bağlı", "Connected"),   // MT4 ✓ işaretini çizemiyor ("?" çıkıyor)
                 T("Kapanan işlemler otomatik aktarılıyor. Defter:", "Closed trades are imported automatically. Journal:"),
                 g_journal,
                 T("Son kontrol: ", "Last check: ") + last + T("  ·  Bu oturumda aktarılan: ", "  ·  Imported this session: ") + IntegerToString(g_totalInserted),
