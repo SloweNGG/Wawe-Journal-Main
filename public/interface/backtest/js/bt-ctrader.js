@@ -133,10 +133,15 @@
           return null;
         });
       },
-      put: function (k, m, persist) {
+      // info: { partial, feedEnd }. A month still in progress is stored too, with the feed end (00:00 UTC of the day it was
+      // fetched): the source uses it at once and refreshes it in the background on a later day (createCTraderSource).
+      // Records written before 2026-11-22 carry no flag; only complete months were persisted then.
+      put: function (k, m, info) {
+        info = info || {};
         var rec = { k: userId + '|' + k, u: userId, n: m.n, t: m.t, o: m.o, h: m.h, l: m.l, c: m.c };
+        if (info.partial) { rec.partial = true; rec.feedEnd = info.feedEnd || 0; }
         mem[k] = rec;
-        return persist ? tx('readwrite', function (st) { return st.put(rec); }) : Promise.resolve(null);
+        return tx('readwrite', function (st) { return st.put(rec); });
       },
       getMeta: function (k) {
         return tx('readonly', function (st) { return st.get(userId + '|meta|' + k); }).then(function (rec) { return rec && rec.u === userId ? rec.v : null; });
@@ -188,7 +193,7 @@
     var C = global.WwBtCandles;
     var api = o.api, cache = o.cache, acc = o.account, sym = o.sym;
     var nowMs = typeof o.now === 'function' ? o.now : function () { return Date.now(); };
-    var mem = {}, order = [], inflight = {}, covPromise = null;
+    var mem = {}, order = [], inflight = {}, refreshing = {}, listeners = [], covPromise = null;   // mem[k] = { m, info }
     var ckey = function (key) { return acc.ctid + '|' + acc.symbolId + '|' + sym.digits + '|' + key; };
 
     function endOfFeedSec() { return Math.floor(nowMs() / 86400000) * 86400; }     // 00:00 UTC today (exclusive): complete days only
@@ -206,6 +211,38 @@
         p.then(function (v) { signal.removeEventListener('abort', onAbort); resolve(v); }, function (e) { signal.removeEventListener('abort', onAbort); reject(e); });
       });
     }
+    // A month is fresh when it is complete or was fetched on the current feed day (the feed only has complete UTC days).
+    function fresh(info) { return !info.partial || info.feedEnd >= endOfFeedSec(); }
+    function usable(e, minT) { return fresh(e.info) || !minT || (e.m.n > 0 && e.m.t[e.m.n - 1] >= minT); }
+    function remember(k, m, info) { mem[k] = { m: m, info: info }; touch(k); }
+    function serve(key, e) {
+      if (!fresh(e.info)) refresh(key).catch(function () {});                 // background; the stored copy is shown meanwhile
+      return e.m;
+    }
+    function download(key) {
+      var k = ckey(key);
+      return api.month(acc.id, key).then(function (j) {
+        var m = columnsToMinutes(j, key, sym.digits);
+        if (!m.n) throw fail('NOT_FOUND', 'no data for ' + key);
+        var complete = C.monthStart(C.nextMonth(key)) <= endOfFeedSec();
+        var info = complete ? { partial: false } : { partial: true, feedEnd: endOfFeedSec() };
+        Promise.resolve(cache.put(k, m, info)).catch(function () {});
+        remember(k, m, info);
+        return m;
+      });
+    }
+    function refresh(key) {
+      var k = ckey(key);
+      if (!refreshing[k]) {
+        refreshing[k] = download(key).then(function (m) {
+          delete refreshing[k];
+          listeners.forEach(function (fn) { try { fn(key, m); } catch (e) { /* a listener never breaks the source */ } });
+          return m;
+        }, function (e) { delete refreshing[k]; throw e; });
+      }
+      return refreshing[k];
+    }
+
     var src = {
       kind: 'ctrader',
       provider: function () { return 'cTrader'; },
@@ -227,26 +264,30 @@
         return covPromise;
       },
       isCached: function (symbolId, key) { return !!mem[ckey(key)]; },
+      // opt: { signal, minT }. minT (UTC s): the caller needs bars up to at least this time (the replay cursor). A month still in
+      // progress that was stored on an earlier day is returned AT ONCE when it reaches minT (no minT: always) and is refreshed in
+      // the background; onUpdate listeners then get the longer month. When it does not reach minT the caller waits for the download.
       getMonthMinutes: function (symbolId, key, opt) {
-        var k = ckey(key), signal = opt && opt.signal;
+        var k = ckey(key), signal = opt && opt.signal, minT = opt && opt.minT;
         if (signal && signal.aborted) return Promise.reject(fail('ABORTED'));
-        if (mem[k]) { touch(k); return Promise.resolve(mem[k]); }
-        if (!inflight[k]) {
+        if (mem[k] && usable(mem[k], minT)) { touch(k); return Promise.resolve(serve(key, mem[k])); }
+        if (!mem[k] && !inflight[k]) {
           // the shared load is not tied to one caller's AbortSignal (another caller may still want the month)
           inflight[k] = Promise.resolve(cache.get(k)).catch(function () { return null; }).then(function (rec) {
             var cached = rec ? { n: rec.n, t: rec.t, o: rec.o, h: rec.h, l: rec.l, c: rec.c, bad: 0 } : null;
-            if (cached && C.validMinutes(cached)) return cached;               // an invalid cached month is fetched again (and overwritten)
-            return api.month(acc.id, key).then(function (j) {
-              var m = columnsToMinutes(j, key, sym.digits);
-              if (!m.n) throw fail('NOT_FOUND', 'no data for ' + key);
-              var complete = C.monthStart(C.nextMonth(key)) <= endOfFeedSec();     // a month still in progress is never persisted
-              Promise.resolve(cache.put(k, m, complete)).catch(function () {});
-              return m;
-            });
-          }).then(function (m) { mem[k] = m; touch(k); delete inflight[k]; return m; }, function (e) { delete inflight[k]; throw e; });
+            if (cached && C.validMinutes(cached)) { remember(k, cached, { partial: !!rec.partial, feedEnd: rec.feedEnd || 0 }); return; }
+            return download(key);                                              // an invalid cached month is fetched again (and overwritten)
+          }).then(function () { delete inflight[k]; }, function (e) { delete inflight[k]; throw e; });
         }
-        return withAbort(inflight[k], signal);
+        var p = (inflight[k] || Promise.resolve()).then(function () {
+          var e = mem[ckey(key)];
+          if (e && usable(e, minT)) return serve(key, e);
+          return refresh(key);                                                 // stored on an earlier day and too short: wait
+        });
+        return withAbort(p, signal);
       },
+      // fn(key, minutes): a month stored on an earlier day was downloaded again (it now ends later)
+      onUpdate: function (fn) { if (typeof fn === 'function') listeners.push(fn); },
       getMonth: function (symbolId, key, opt) {
         return src.getMonthMinutes(symbolId, key, opt).then(function (m) {
           var scale = Math.pow(10, sym.digits), rows = new Array(m.n);

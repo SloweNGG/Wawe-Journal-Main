@@ -211,13 +211,48 @@ describe('createCTraderSource', () => {
     assert.equal(m.o[0], 108300);
   });
 
-  it('the month still in progress is never persisted (it grows every day)', async () => {
+  it('the month still in progress is persisted with its feed day; the same day a new page load reads it without any network call', async () => {
     const idb = fakeIdb();
     const s1 = mkSrc(fakeApi(), X.createCache({ indexedDB: idb, userId: U1 }));
     await s1.getMonthMinutes(1, '2026-10'); await flush();
-    assert.equal([...idb.data.keys()].filter((k) => k.includes('2026-10')).length, 0);
+    const rec = [...idb.data.values()].find((v) => v.k.includes('2026-10'));
+    assert.equal(rec.partial, true);
+    assert.equal(rec.feedEnd, Math.floor(NOW / 86400000) * 86400);
     await s1.getMonthMinutes(1, '2026-09'); await flush();
-    assert.equal([...idb.data.keys()].filter((k) => k.includes('2026-09')).length, 1);
+    assert.equal([...idb.data.values()].find((v) => v.k.includes('2026-09')).partial, undefined, 'a complete month has no partial flag');
+    const api2 = fakeApi({ month: async () => { throw new Error('network must not be used'); } });
+    const m = await mkSrc(api2, X.createCache({ indexedDB: idb, userId: U1 })).getMonthMinutes(1, '2026-10', { minT: Date.UTC(2026, 9, 25) / 1000 });
+    assert.equal(m.n, 2); assert.equal(api2.calls.length, 0, 'fresh the same feed day, even for a cursor past its end');
+  });
+
+  it('a day later the stored month in progress is shown at once and refreshed in the background (onUpdate gets the longer month)', async () => {
+    const idb = fakeIdb();
+    await mkSrc(fakeApi(), X.createCache({ indexedDB: idb, userId: U1 })).getMonthMinutes(1, '2026-10'); await flush();
+    let release; const gate = new Promise((r) => { release = r; });
+    const longer = cols([[0, 108300, 108350, 108290, 108320], [1, 108320, 108330, 108310, 108325], [2, 108325, 108340, 108320, 108330]], '2026-10');
+    const api2 = fakeApi({ month: async () => { await gate; return longer; } });
+    const s2 = mkSrc(api2, X.createCache({ indexedDB: idb, userId: U1 }), { now: () => NOW + 86400000 });
+    const updates = []; s2.onUpdate((key, m) => updates.push([key, m.n]));
+    const firstBar = Date.UTC(2026, 9, 1) / 1000;
+    const m = await s2.getMonthMinutes(1, '2026-10', { minT: firstBar });   // the cursor lies inside the stored copy
+    assert.equal(m.n, 2, 'the stored copy, without waiting for the download');
+    assert.equal(api2.calls.length, 1, 'the refresh started');
+    release(); await flush();
+    assert.deepEqual(updates, [['2026-10', 3]]);
+    assert.equal((await s2.getMonthMinutes(1, '2026-10')).n, 3);
+    assert.equal(api2.calls.length, 1, 'one download for the refresh');
+    assert.equal([...idb.data.values()].find((v) => v.k.includes('2026-10')).n, 3, 'the refreshed month is stored');
+  });
+
+  it('a day later a cursor past the end of the stored month waits for the download (never a wrong position)', async () => {
+    const idb = fakeIdb();
+    await mkSrc(fakeApi(), X.createCache({ indexedDB: idb, userId: U1 })).getMonthMinutes(1, '2026-10'); await flush();
+    const longer = cols([[0, 108300, 108350, 108290, 108320], [1, 108320, 108330, 108310, 108325], [5000, 108325, 108340, 108320, 108330]], '2026-10');
+    const api2 = fakeApi({ month: async () => longer });
+    const s2 = mkSrc(api2, X.createCache({ indexedDB: idb, userId: U1 }), { now: () => NOW + 86400000 });
+    const m = await s2.getMonthMinutes(1, '2026-10', { minT: Date.UTC(2026, 9, 3) / 1000 });
+    assert.equal(m.n, 3);
+    assert.equal(api2.calls.length, 1);
   });
 
   it('the cache key carries the broker account, symbol and digits: another account or symbol never shares a month', async () => {

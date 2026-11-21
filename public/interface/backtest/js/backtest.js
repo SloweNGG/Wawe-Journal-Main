@@ -417,6 +417,7 @@
         api: L.ctApi, cache: L.ctCache, sym: S.get(acc.symbol),
         account: { id: acc.id, ctid: acc.source.ctid, symbolId: acc.source.symbolId, symbolName: acc.source.symbolName, brokerName: acc.source.brokerName, isLive: acc.source.isLive }
       });
+      if (L.srcs[acc.id].onUpdate) L.srcs[acc.id].onUpdate(function (key, m) { monthUpdated(acc.id, key, m); });
     }
     return L.srcs[acc.id];
   }
@@ -1049,8 +1050,20 @@
 
   // ---------------------------------------------------------------- cursor and windows
   function barAt(k) { var W = R.win; return [W.t[k], W.o[k], W.h[k], W.l[k], W.c[k]]; }
-  function monthMinutes(key, tok) {
-    return R.src.getMonthMinutes(R.sym.id, key, { signal: R.abort.signal }).then(function (m) { return stale(tok) ? null : m; });
+  // minT: the replay needs bars up to this time (the cTrader source may answer at once with a month stored on an earlier day)
+  function monthMinutes(key, tok, minT) {
+    return R.src.getMonthMinutes(R.sym.id, key, { signal: R.abort.signal, minT: minT }).then(function (m) { return stale(tok) ? null : m; });
+  }
+  // A cTrader month that was shown from the browser's copy was downloaded again in the background: the new bars (after the
+  // last one in the window) are appended, and a replay that stopped at the end of the data can go on.
+  function monthUpdated(accId, key, m) {
+    if (!R || R.acc.id !== accId || !R.win || !R.win.n || !m || !m.n) return;
+    if (R.winMonths[R.winMonths.length - 1] !== key) return;          // only the newest month of the window can grow at its end
+    var from = C.indexAtOrAfter(m, R.win.t[R.win.n - 1] + 1);
+    if (from >= m.n) return;
+    R.win = C.concatMinutes(R.win, C.sliceMinutes(m, from));
+    if (R.nextState && R.nextState.kind === 'end') { R.nextState = null; hideDataBanner(); }
+    updateControls();
   }
   function nearestPresent(months, key, dir) {
     if (months.indexOf(key) >= 0) return key;
@@ -1071,7 +1084,8 @@
     want = Math.min(Math.max(want, cov.firstT), cov.lastT);
     var key = nearestPresent(cov.months, C.monthKey(want), mode === 'goto' ? 1 : -1);
     var m, k, pm;
-    try { m = await monthMinutes(key, tok); } catch (e) { return dataFailed(e); }
+    // the month that holds the cursor must reach it (a copy stored on an earlier day may end before it)
+    try { m = await monthMinutes(key, tok, key === C.monthKey(want) ? want : undefined); } catch (e) { return dataFailed(e); }
     if (stale(tok) || !m) return;
     k = mode === 'goto' ? C.indexAtOrAfter(m, want) : C.indexAtOrBefore(m, want);
     R.winMonths = [key];
