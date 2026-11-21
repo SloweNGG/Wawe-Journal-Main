@@ -9,12 +9,29 @@
 //   sync        {action, account, server_offset_sec, positions[]}  + Authorization: Bearer <token>
 //               -> {ok, linked, inserted, duplicates, rejected, since, history_days, journal}
 // Zamanlar EA'dan MT5 SUNUCU SAATİ (saniye) olarak gelir; `since` da aynı birimde döner.
+//
+// MetaTrader 4: aynı köprü ve aynı tablolar (mt5_accounts ...). WaweSync.mq4 her istekte `platform: "mt4"` gönderir;
+// MT4'te pozisyon numarası, kısmi kapamalarla oluşan emir zincirinin İLK emir numarasıdır (EA birleştirir).
+// `platform` yoksa (eski MT5 EA'ları) 'mt5' sayılır. İşlemler platform_source = 'mt4' ve import_hash 'mt4:...' alır;
+// hesabın platformu ea_version önekinden okunur ('mt4-1.00'), veritabanında ayrı sütun yoktur.
 
 export const MAX_POSITIONS_PER_REQUEST = 500;
 export const MAX_BODY_BYTES = 1_000_000;
 export const HISTORY_DAYS = 90;
 export const TOKEN_RE = /^wwm5_[0-9a-f]{64}$/;
 export const POLL_SECRET_RE = /^[0-9a-f]{64}$/;
+
+export type Platform = 'mt4' | 'mt5';
+export function parsePlatform(v: unknown): Platform {
+  return String(v ?? '').trim().toLowerCase() === 'mt4' ? 'mt4' : 'mt5';
+}
+
+// EA sürümü hesapta saklanır; MT4 EA'sının sürümü 'mt4-' önekiyle (site kart logosunu buradan seçer)
+export function eaVersionTag(v: unknown, platform: Platform): string | null {
+  const clean = typeof v === 'string' ? v.replace(/[^\w.\-]/g, '').slice(0, 12) : '';
+  if (!clean) return null;
+  return platform === 'mt4' ? 'mt4-' + clean.replace(/^mt4-/i, '') : clean;
+}
 
 // ------------------------------------------------------------------ enstrüman (ctrader-sync ile aynı mantık)
 export const MULTIPLIER_MAP: Record<string, number> = { forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 };
@@ -147,8 +164,8 @@ export function validatePosition(p: any, nowServerSec: number): { ok: true; valu
 }
 
 // ------------------------------------------------------------------ pozisyon -> trades satırı
-export function importHash(server: string, login: number, positionId: string): string {
-  return `mt5:${String(server).trim().toLowerCase()}:${login}:${positionId}`;
+export function importHash(server: string, login: number, positionId: string, platform: Platform = 'mt5'): string {
+  return `${platform}:${String(server).trim().toLowerCase()}:${login}:${positionId}`;
 }
 
 const round = (v: number, d: number) => Number((Math.round(v * 10 ** d) / 10 ** d).toFixed(d));
@@ -157,7 +174,8 @@ const round = (v: number, d: number) => Number((Math.round(v * 10 ** d) / 10 ** 
 // (iade/rebate varsa negatif kalabilir). Net: pnl = gross_pnl - commission + swap  (ctrader-sync ile aynı).
 // position_id NULL: trades_platform_unique / idx_trades_journal_position çakışmasın (hesap başka deftere taşınınca
 // aynı pozisyon yeni deftere de yazılabilmeli). Pozisyon numarası import_hash içinde.
-export function positionToTrade(p: Mt5Position, ctx: { userId: string; journalId: string; login: number; server: string; offsetSec: number }) {
+export function positionToTrade(p: Mt5Position, ctx: { userId: string; journalId: string; login: number; server: string; offsetSec: number; platform?: Platform }) {
+  const platform: Platform = ctx.platform === 'mt4' ? 'mt4' : 'mt5';
   const instrument = guessInstrument(p.symbol);
   const commission = -(p.commission + p.fee);
   const closeIso = new Date(serverToUtcMs(p.close_ts, ctx.offsetSec)).toISOString();
@@ -179,16 +197,16 @@ export function positionToTrade(p: Mt5Position, ctx: { userId: string; journalId
     trade_date: closeIso,             // ctrader-sync ve dosya içe aktarma ile aynı: işlem günü = kapanış
     exit_date: closeIso,
     multiplier: MULTIPLIER_MAP[instrument] || 1,
-    platform_source: 'mt5',
+    platform_source: platform,
     position_id: null,
-    import_hash: importHash(ctx.server, ctx.login, p.id),
+    import_hash: importHash(ctx.server, ctx.login, p.id, platform),
     is_quick_entry: false,
   };
 }
 
 // Bir senkron isteğindeki pozisyonları satırlara çevirir. Geçersiz pozisyonlar KALICI olarak atlanır (EA tekrar
 // gönderse de geçersiz kalır), bu yüzden imleç (maxCloseTs) onları da kapsar; aksi halde EA aynı partiyi sonsuza dek yollar.
-export function buildSyncRows(positions: unknown, ctx: { userId: string; journalId: string; login: number; server: string; offsetSec: number; nowServerSec: number }) {
+export function buildSyncRows(positions: unknown, ctx: { userId: string; journalId: string; login: number; server: string; offsetSec: number; nowServerSec: number; platform?: Platform }) {
   const list = Array.isArray(positions) ? positions : [];
   const rows: ReturnType<typeof positionToTrade>[] = [];
   const rejected: { id: string; reason: string }[] = [];

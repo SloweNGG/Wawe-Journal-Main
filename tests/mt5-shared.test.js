@@ -205,6 +205,38 @@ describe('buildSyncRows', () => {
   });
 });
 
+describe('MetaTrader 4 (platform)', () => {
+  it('parsePlatform: yalnızca "mt4" MT4, gerisi (eski EA: alan yok) MT5', () => {
+    assert.equal(M.parsePlatform('mt4'), 'mt4');
+    assert.equal(M.parsePlatform(' MT4 '), 'mt4');
+    assert.equal(M.parsePlatform('mt5'), 'mt5');
+    assert.equal(M.parsePlatform(undefined), 'mt5');
+    assert.equal(M.parsePlatform('mt6'), 'mt5');
+  });
+  it('eaVersionTag: MT4 sürümü mt4- önekiyle, MT5 aynen; bozuk karakterler atılır', () => {
+    assert.equal(M.eaVersionTag('1.00', 'mt4'), 'mt4-1.00');
+    assert.equal(M.eaVersionTag('mt4-1.00', 'mt4'), 'mt4-1.00');
+    assert.equal(M.eaVersionTag('1.00', 'mt5'), '1.00');
+    assert.equal(M.eaVersionTag('<b>1.0', 'mt5'), 'b1.0');
+    assert.equal(M.eaVersionTag('', 'mt4'), null);
+    assert.equal(M.eaVersionTag(5, 'mt5'), null);
+  });
+  it('MT4 satırı: platform_source mt4, import_hash mt4: öneki (MT5 ile çakışmaz)', () => {
+    const ctx = { userId: 'u1', journalId: 'j1', login: 51234567, server: 'FTMO-Demo', offsetSec: 7200, platform: 'mt4' };
+    const t = M.positionToTrade(M.validatePosition(POS, NOW).value, ctx);
+    assert.equal(t.platform_source, 'mt4');
+    assert.equal(t.import_hash, 'mt4:ftmo-demo:51234567:123456789');
+    assert.equal(t.trade_date, '2026-11-05T12:30:00.000Z');
+    const r = M.buildSyncRows([POS], { ...ctx, nowServerSec: NOW });
+    assert.equal(r.rows[0].platform_source, 'mt4');
+  });
+  it('platform verilmezse MT5 (geriye uyumluluk)', () => {
+    assert.equal(M.importHash('S', 1, '2'), 'mt5:s:1:2');
+    const r = M.buildSyncRows([POS], { userId: 'u', journalId: 'j', login: 1, server: 'S', offsetSec: 0, nowServerSec: NOW });
+    assert.equal(r.rows[0].platform_source, 'mt5');
+  });
+});
+
 describe('token ve yardımcılar', () => {
   it('bearerToken yalnızca wwm5_ + 64 hex kabul eder', () => {
     const tok = 'wwm5_' + 'a'.repeat(64);

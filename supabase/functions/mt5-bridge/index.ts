@@ -1,5 +1,6 @@
 // supabase/functions/mt5-bridge/index.ts
-// WaweSync EA (kullanıcının kendi MT5'inde çalışır) ile Wawe Journal arasındaki köprü. Kullanıcıdan MT5 şifresi İSTENMEZ.
+// WaweSync EA (kullanıcının kendi MT5'inde ya da MT4'ünde çalışır) ile Wawe Journal arasındaki köprü. Kullanıcıdan
+// MetaTrader şifresi İSTENMEZ. MT4 EA'sı (WaweSync.mq4) her istekte platform: "mt4" gönderir; yoksa MT5 sayılır.
 //   pair_start : EA 6 haneli eşleşme kodu alır (grafikte gösterir) + yalnızca EA'nın bildiği bir sorgu sırrı
 //   pair_poll  : EA, kullanıcı kodu sitede girene kadar sorar; girilince cihaz token'ı BİR KEZ teslim edilir
 //   sync       : EA, token ile kapanmış pozisyonları gönderir; bağlı deftere trades satırı olarak yazılır
@@ -11,8 +12,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { runCoachAlerts } from '../_shared/coach-alerts.ts';
 import { loadPropContexts } from '../_shared/prop-context.ts';
 import {
-  HISTORY_DAYS, MAX_BODY_BYTES, POLL_SECRET_RE, bearerToken, buildSyncRows, formatCode, parseAccount, roundOffset,
-  sha256Hex,
+  HISTORY_DAYS, MAX_BODY_BYTES, POLL_SECRET_RE, bearerToken, buildSyncRows, eaVersionTag, formatCode, parseAccount,
+  parsePlatform, roundOffset, sha256Hex,
 } from '../_shared/mt5.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -95,7 +96,8 @@ async function sync(req: Request, body: any) {
   const offsetSec = roundOffset(body.server_offset_sec);
   const nowIso = new Date().toISOString();
   const nowServerSec = Math.floor(Date.now() / 1000) + offsetSec;
-  const eaVersion = typeof body.ea_version === 'string' ? body.ea_version.replace(/[^\w.\-]/g, '').slice(0, 16) || null : null;
+  const platform = parsePlatform(body.platform);
+  const eaVersion = eaVersionTag(body.ea_version, platform);
 
   const heartbeat: Record<string, unknown> = { last_seen_at: nowIso };
   if (eaVersion) heartbeat.ea_version = eaVersion;
@@ -118,7 +120,7 @@ async function sync(req: Request, body: any) {
   }
 
   const built = buildSyncRows(body.positions, {
-    userId: account.user_id, journalId: journal.id, login: a.login, server: a.server, offsetSec, nowServerSec,
+    userId: account.user_id, journalId: journal.id, login: a.login, server: a.server, offsetSec, nowServerSec, platform,
   });
 
   let inserted = 0;

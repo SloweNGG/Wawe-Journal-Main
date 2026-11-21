@@ -103,6 +103,46 @@ describe('barHtml', () => {
   });
 });
 
+describe('MetaTrader 4', () => {
+  const M = load();
+  const h = { now: NOW, rel: () => 'şimdi', abs: () => 'ABS' };
+  const base = { id: 'x', login: 7001, server: 'ICMarketsSC-Demo02', connected: true, last_seen_at: iso(NOW - 3600e3), last_sync_at: iso(NOW - 3600e3), balance: 10 };
+  it('platformOf: ea_version mt4- öneki MT4, gerisi MT5', () => {
+    assert.equal(M.platformOf({ ea_version: 'mt4-1.00' }), 'mt4');
+    assert.equal(M.platformOf({ ea_version: 'MT4-2.0' }), 'mt4');
+    assert.equal(M.platformOf({ ea_version: '1.00' }), 'mt5');
+    assert.equal(M.platformOf({ ea_version: null }), 'mt5');
+    assert.equal(M.platformOf(null), 'mt5');
+  });
+  it('forPlatform: MT5 / MetaTrader 5 / MQL5 -> MT4; MT5 için aynen', () => {
+    assert.equal(M.forPlatform("MT5'te Dosya → MQL5 → Experts", 'mt4'), "MT4'te Dosya → MQL4 → Experts");
+    assert.equal(M.forPlatform('MetaTrader 5 bağla', 'mt4'), 'MetaTrader 4 bağla');
+    assert.equal(M.forPlatform('MT5 kapalı', 'mt5'), 'MT5 kapalı');
+    // Türkçe ek uyumu: beş -> dört
+    assert.equal(M.forPlatform("MT5'i yeniden başlatın", 'mt4'), "MT4'ü yeniden başlatın");
+    assert.equal(M.forPlatform("MT5'in ayarı", 'mt4'), "MT4'ün ayarı");
+    assert.equal(M.forPlatform("MT5'e ekleyin, MT5'te açın", 'mt4'), "MT4'e ekleyin, MT4'te açın");
+    assert.equal(M.forPlatform("MT5's settings", 'mt4'), "MT4's settings");
+  });
+  it('kart: MT4 logosu, adı ve "MT4 kapalı"', () => {
+    const html = M.barHtml({ ...base, ea_version: 'mt4-1.00' }, h);
+    assert.match(html, /data-platform="mt4"/);
+    assert.match(html, /images\/platforms\/mt4\.png/);
+    assert.match(html, /ct-name">MetaTrader 4/);
+    assert.match(html, /MT4 kapalı/);
+    assert.doesNotMatch(html, /MT5|MetaTrader 5/);
+  });
+  it('kart: sürümsüz hesap MT5 kalır', () => {
+    const html = M.barHtml(base, h);
+    assert.match(html, /ct-name">MetaTrader 5/);
+    assert.match(html, /MT5 kapalı/);
+  });
+  it('indirme adresleri', () => {
+    assert.equal(M.PLATFORMS.mt4.ea, '/downloads/WaweSync.ex4');
+    assert.equal(M.PLATFORMS.mt5.ea, '/downloads/WaweSync.ex5');
+  });
+});
+
 describe('fetchStatus / disconnect', () => {
   it('başarılı cevap önbelleğe yazılır; hata/zaman aşımında önbellek döner', async () => {
     const st = memStorage();
