@@ -3726,3 +3726,13 @@ body.light-theme .nav .bell-badge { box-shadow: 0 0 0 2px #fff; }
 @media (max-width: 374px) {
   .nav { --pill-x: 4px; --pill-y: 4px; --pill-pad: 8px; --pill-radius: 12px; }
 }
+
+/* Hesaplar menüsü: bağlı brokerın küçük logosu, hesap işaretinin sağ alt köşesinde (cTrader / MT4 / MT5) */
+.journal-dropdown .journal-icon-wrap.has-broker { position: relative; overflow: visible; }
+.journal-dropdown .journal-broker-badge {
+  position: absolute; right: -4px; bottom: -4px;
+  width: 14px; height: 14px; border-radius: 4px; object-fit: contain;
+  background: rgb(12, 12, 20); box-shadow: 0 0 0 2px rgb(12, 12, 20);   /* .journal-dropdown arka planı */
+  pointer-events: none;
+}
+.light-theme .journal-dropdown .journal-broker-badge { background: #fff; box-shadow: 0 0 0 2px #fff; }

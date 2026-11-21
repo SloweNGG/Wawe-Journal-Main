@@ -2161,7 +2161,28 @@ function getPropBadgeHtml(propAcc) {
   return '<span class="nav-prop-tag">PROP</span>';
 }
 
-function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
+// Defterin bağlı olduğu broker: { id, name, logo, live } ya da null. ctAcc: get_ctrader_status satırı,
+// mtAcc: get_mt5_status'tan küçültülmüş { platform: 'mt4' | 'mt5', is_live } (bkz. mt5MapFrom).
+function navBrokerOf(ctAcc, mtAcc) {
+  if (ctAcc) return { id: 'ctrader', name: 'cTrader', logo: '/images/platforms/ctrader_icon.png', live: ctAcc.is_live === true };
+  if (mtAcc) {
+    var mt4 = mtAcc.platform === 'mt4';
+    return { id: mtAcc.platform, name: mt4 ? 'MetaTrader 4' : 'MetaTrader 5', logo: mt4 ? '/images/platforms/mt4.png' : '/images/platforms/mt5.png', live: mtAcc.is_live === true };
+  }
+  return null;
+}
+
+// get_mt5_status hesaplarından { journalId: { platform, is_live } } (önbelleğe yalnızca bu kadarı yazılır)
+function mt5MapFrom(accounts) {
+  var m = {};
+  (Array.isArray(accounts) ? accounts : []).forEach(function(a) {
+    if (a && a.journal_id) m[a.journal_id] = { platform: /^mt4-/i.test(String(a.ea_version || '')) ? 'mt4' : 'mt5', is_live: a.is_live === true };
+  });
+  return m;
+}
+
+function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap, mt5Map) {
+  mt5Map = mt5Map || {};
   if (!journals || journals.length === 0 || !activeJ) return;
   var switcher = document.getElementById('nav-journal-switcher');
   var wasOpen = switcher ? switcher.classList.contains('open') : false;
@@ -2252,14 +2273,20 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
       var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
       var pInfo = (pa && typeof resolver === 'function') ? resolver((pa.rules && pa.rules.firm) || pa.template_key) : null;
       var ctAcc = ctraderMap[j.id];
+      var broker = navBrokerOf(ctAcc, mt5Map[j.id]);
 
-      // Hesap işareti: hesabın renginde nokta; prop firma / broker bağlıysa yanıp söner
-      var iconWrapClass = 'journal-icon-wrap';
+      // Hesap işareti: hesabın renginde nokta; prop firma / broker bağlıysa yanıp söner.
+      // Broker bağlıysa işaretin sağ alt köşesinde brokerın küçük logosu durur.
+      var iconWrapClass = 'journal-icon-wrap' + (broker ? ' has-broker' : '');
       var iconWrapStyle = 'background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;';
-      var iconInner = journalMarkHtml(j, pa, !!ctAcc, 12);
+      var iconInner = journalMarkHtml(j, pa, !!broker, 12) +
+        (broker ? '<img class="journal-broker-badge" src="' + broker.logo + '" alt="' + broker.name + '" title="' + broker.name + '" width="14" height="14" loading="lazy" />' : '');
 
       var ctBadgeHtml = '';
       var ctSyncBtnHtml = '';
+      if (broker && !ctAcc) {
+        ctBadgeHtml = '<span class="ctrader-nav-tag ' + (broker.live ? 'live' : 'demo') + '">' + (broker.live ? 'LIVE' : 'DEMO') + '</span>';
+      }
       if (ctAcc) {
         ctBadgeHtml = '<span class="ctrader-nav-tag ' + (ctAcc.is_live ? 'live' : 'demo') + '">' + (ctAcc.is_live ? 'LIVE' : 'DEMO') + '</span>';
         // NOT: kart bir <button>; içine ikinci bir <button> koymak geçersiz HTML'dir (innerHTML ayrıştırıcısı dıştaki
@@ -2343,6 +2370,7 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
     localStorage.setItem('ww_cached_journals_list', JSON.stringify(journals));
     localStorage.setItem('ww_cached_props_map', JSON.stringify(propMap));
     localStorage.setItem('ww_cached_ctrader_map', JSON.stringify(ctraderMap));
+    localStorage.setItem('ww_cached_nav_mt5_map', JSON.stringify(mt5Map));
   } catch(e) {}
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -2362,11 +2390,13 @@ function renderNavbarFromCache() {
       var journals = JSON.parse(rawJournals);
       var propMap = rawProps ? JSON.parse(rawProps) : {};
       var ctraderMap = rawCtrader ? JSON.parse(rawCtrader) : {};
+      var rawMt5 = localStorage.getItem('ww_cached_nav_mt5_map');
+      var mt5Map = rawMt5 ? JSON.parse(rawMt5) : {};
       if (Array.isArray(journals) && journals.length > 0) {
         var activeJ = (activeId && journals.find(function(j) { return j.id === activeId; }))
           || journals.find(function(j) { return j.is_default; })
           || journals[0];
-        renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap);
+        renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap, mt5Map);
       }
     }
   } catch(e) {}
@@ -2433,10 +2463,24 @@ async function updateNavbarJournal(retries) {
       return { data: { accounts: [] } };
     })();
 
-    var [journals, activeProps, ctStatus] = await Promise.all([
+    // MetaTrader 4/5 hesapları (yalnızca hangi defterin hangi platforma bağlı olduğu için; zaman aşımında önbellek kalır)
+    var mt5Promise = (async function() {
+      if (window.sb && typeof window.sb.rpc === 'function') {
+        try {
+          return await Promise.race([
+            window.sb.rpc('get_mt5_status'),
+            new Promise(function(r) { setTimeout(function() { r(null); }, 1200); })
+          ]);
+        } catch(e) { return null; }
+      }
+      return null;
+    })();
+
+    var [journals, activeProps, ctStatus, mt5Status] = await Promise.all([
       journalsPromise,
       propPromise,
-      ctraderPromise
+      ctraderPromise,
+      mt5Promise
     ]);
 
     if (!journals || journals.length === 0) return;
@@ -2455,7 +2499,14 @@ async function updateNavbarJournal(retries) {
       });
     }
 
-    renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap);
+    var mt5Map;
+    if (mt5Status && !mt5Status.error && mt5Status.data && Array.isArray(mt5Status.data.accounts)) {
+      mt5Map = mt5MapFrom(mt5Status.data.accounts);
+    } else {
+      try { mt5Map = JSON.parse(localStorage.getItem('ww_cached_nav_mt5_map') || '{}') || {}; } catch(e) { mt5Map = {}; }
+    }
+
+    renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap, mt5Map);
     maybeAutoSyncCtrader(ctStatus && ctStatus.data);
   } catch(err) {
     if (typeof wwLog !== 'undefined') wwLog.error('updateNavbarJournal err', err);

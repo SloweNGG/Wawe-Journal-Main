@@ -2153,3 +2153,64 @@ body.light-theme .mt5-step p.mt5-step-tip { color: #b45309; }
   .mt5-code-form { flex-direction: column; }
   .mt5-code { max-width: none; }
 }
+
+/* ============================================================
+   ACCOUNT CARDS v3 (2026-11-22): compact cards
+   - one header row: account mark, name + description, actions
+   - an empty description takes no space
+   - no broker: a slim dashed "Connect broker" row instead of empty space, so cards in a row line up
+   ============================================================ */
+.journal-card { padding: 1rem 1.1rem 0.9rem; min-height: 0; border-radius: 16px; }
+
+.journal-card-top { display: flex; align-items: center; gap: 11px; margin-bottom: 0.85rem; }
+.journal-card-top .journal-icon-wrap { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
+.journal-icon-wrap.has-prop-logo { width: 38px !important; height: 38px !important; border-radius: 11px !important; }
+
+.journal-card-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.journal-card-title .journal-card-name { font-size: 1rem; line-height: 1.25; margin: 0; padding-right: 0; }
+.journal-card-title .journal-card-desc {
+  font-size: 0.76rem; line-height: 1.35; margin: 0; min-height: 0; flex: none;
+  -webkit-line-clamp: 1; line-clamp: 1;
+}
+.journal-card-actions { flex-shrink: 0; gap: 4px; }
+.journal-card-badge { padding: 3px 8px; font-size: 0.65rem; }
+
+.journal-card-prop-badge { margin: 0 0 0.75rem; align-self: flex-start; }
+
+.journal-card-bottom { margin-top: auto; display: flex; flex-direction: column; }
+.journal-card-bottom .journal-card-ctrader-bar { margin: 0 0 0.75rem; }
+.journal-card-stats { padding-top: 0.7rem !important; }
+
+/* "Connect broker" row (cards without a broker) */
+.journal-card-connect {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  margin: 0 0 0.75rem; padding: 0.6rem 0.75rem; min-height: 40px;
+  border: 1px dashed var(--border); border-radius: 12px; background: transparent;
+  color: var(--muted); font-family: var(--font); font-size: 0.78rem; font-weight: 600; text-align: left; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.journal-card-connect > span:nth-child(2) { flex: 1; }
+.journal-card-connect svg, .journal-card-connect i { width: 15px; height: 15px; }
+.journal-card-connect:hover, .journal-card-connect:focus-visible {
+  border-color: color-mix(in srgb, var(--accent, var(--ac)) 60%, transparent);
+  background: color-mix(in srgb, var(--accent, var(--ac)) 6%, transparent);
+  color: var(--text);
+}
+.journal-card-connect:focus-visible { outline: 2px solid var(--accent, var(--ac)); outline-offset: 2px; }
+.jcc-logos { display: inline-flex; align-items: center; }
+.jcc-logos img {
+  width: 18px; height: 18px; border-radius: 5px; object-fit: contain;
+  background: var(--surface); box-shadow: 0 0 0 2px var(--surface);
+}
+.jcc-logos img + img { margin-left: -5px; }
+.journal-card-connect:not(:hover) .jcc-logos img { filter: grayscale(0.35); opacity: 0.85; }
+
+/* broker row: "MetaTrader 4" must not break into "MetaTrader / 4" on narrow cards */
+.journal-card-ctrader-bar { gap: 8px; }
+.journal-card-ctrader-bar .ct-name { white-space: nowrap; min-width: 0; }
+.journal-card-ctrader-bar .ct-env { flex-shrink: 0; }
+.journal-card-ctrader-bar .mt5-state { flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .journal-card { padding: 0.9rem 0.95rem 0.8rem; }
+}

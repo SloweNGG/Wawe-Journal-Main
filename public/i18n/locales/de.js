@@ -2762,6 +2762,7 @@ export default {
   "mt4.wiz.create_connect": "Erstellen & MT4 verbinden",
   "mt4.history": "Klicken Sie in MT4 im Terminal-Fenster unten mit der rechten Maustaste auf den Reiter Kontoverlauf und wählen Sie Gesamter Verlauf. WaweSync sieht nur den Verlauf, den MT4 geladen hat.",
   "mt4.help.weekend": "Wenn Sie es bei geschlossenem Markt (z. B. am Wochenende) einrichten, werden die ersten Trades gesendet, sobald MT4 den ersten Kurs erhält.",
+  "journal.card.connect": "Broker verbinden",
   "aiCoach.open": "{coach} · KI-Coach",
   "aiCoach.title": "KI-Coach",
   "aiCoach.history": "Frühere Chats",

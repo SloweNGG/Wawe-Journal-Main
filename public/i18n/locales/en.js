@@ -2796,6 +2796,7 @@ export default {
   "mt4.wiz.create_connect": "Create & Connect MT4",
   "mt4.history": "In MT4, right-click the Account History tab in the Terminal window at the bottom and choose All History. WaweSync only sees the history MT4 has loaded.",
   "mt4.help.weekend": "If you set it up while the market is closed (e.g. at the weekend), the first trades are sent when MT4 receives its first price.",
+  "journal.card.connect": "Connect broker",
   "aiCoach.open": "{coach} · AI Coach",
   "aiCoach.title": "AI Coach",
   "aiCoach.history": "Past chats",

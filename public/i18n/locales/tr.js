@@ -2741,6 +2741,7 @@ export default {
   "mt4.wiz.create_connect": "Hesabı Oluştur & MT4'e Bağlan",
   "mt4.history": "MT4'te alttaki Terminal penceresinde Hesap Geçmişi sekmesine sağ tıklayıp Tüm Geçmiş'i seçin. WaweSync yalnızca MT4'ün yüklediği geçmişi görebilir.",
   "mt4.help.weekend": "Piyasa kapalıyken (ör. hafta sonu) kurduysanız ilk işlemler, MT4'e ilk fiyat geldiğinde aktarılır.",
+  "journal.card.connect": "Broker bağla",
   "aiCoach.open": "{coach} · AI Koç",
   "aiCoach.title": "AI Koç",
   "aiCoach.history": "Geçmiş sohbetler",
