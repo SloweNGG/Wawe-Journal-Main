@@ -1859,7 +1859,7 @@ export function renderRecentTradesWidget(trades) {
     var pnlHtml = closed
       ? '<span class="rt-pnl ' + (pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '')) + '">' + formatCurrency(pnl) + '</span>'
       : '<span class="rt-open">' + _t('analytics_dash.recent.open', 'Açık') + '</span>';
-    return '<a class="rt-row" href="/trades.html">' +
+    return '<a class="rt-row" href="/trades">' +
       '<span class="rt-date">' + sanitizeInsight(when) + '</span>' +
       '<span class="rt-sym">' + sanitizeInsight((t.symbol || '—').toUpperCase()) + '</span>' +
       '<span class="rt-dir ' + (isLong ? 'long' : 'short') + '">' + (isLong ? _t('direction.long', 'Long') : _t('direction.short', 'Short')) + '</span>' +
@@ -1870,7 +1870,7 @@ export function renderRecentTradesWidget(trades) {
 
   container.innerHTML = '<div class="rt">' +
     '<div class="rt-list">' + rows + '</div>' +
-    '<a class="rt-all" href="/trades.html">' + _t('analytics_dash.recent.view_all', 'Tüm işlemler →') + '</a>' +
+    '<a class="rt-all" href="/trades">' + _t('analytics_dash.recent.view_all', 'Tüm işlemler →') + '</a>' +
   '</div>';
 }
 

@@ -173,7 +173,7 @@ import Layout from '../layouts/Layout.astro';
       </p>
       <div id="cb-panel" class="cb-panel" style="display: none;"></div>
       <div id="action-container" style="display: none;">
-        <a href="/journals.html" class="callback-btn" id="action-btn">Hesaplarıma Dön</a>
+        <a href="/journals" class="callback-btn" id="action-btn">Hesaplarıma Dön</a>
       </div>
     </div>
   </main>
@@ -263,7 +263,7 @@ import Layout from '../layouts/Layout.astro';
       if (!session) {
         showError(tt('ctrader.cb.err_no_session', 'Oturumunuz bulunamadı. Lütfen önce giriş yapın.'));
         setTimeout(function() {
-          window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.href);
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
         }, 1500);
         return;
       }
@@ -334,7 +334,7 @@ import Layout from '../layouts/Layout.astro';
         panel.style.display = revokedNote ? 'block' : 'none';
         actionContainer.style.display = 'block';
         actionBtn.textContent = tt('ctrader.cb.go_accounts', 'Hesaplarıma Git');
-        if (!revokedNote) setTimeout(function() { window.location.href = '/journals.html'; }, 2500);
+        if (!revokedNote) setTimeout(function() { window.location.href = '/journals'; }, 2500);
         return;
       }
 
@@ -369,7 +369,7 @@ import Layout from '../layouts/Layout.astro';
         html += revokedNote;
         html += '<div class="cb-actions">' +
           '<button type="button" class="callback-btn" id="cb-go"' + (selectedId ? '' : ' disabled') + '>' + esc(tt('ctrader.cb.link_sync', 'Bağla ve İşlemleri Aktar')) + '</button>' +
-          '<a href="/journals.html" class="callback-btn secondary">' + esc(tt('ctrader.cb.later', 'Sonra')) + '</a></div>';
+          '<a href="/journals" class="callback-btn secondary">' + esc(tt('ctrader.cb.later', 'Sonra')) + '</a></div>';
         panel.innerHTML = html;
         panel.style.display = 'block';
 
@@ -495,7 +495,7 @@ import Layout from '../layouts/Layout.astro';
         actionContainer.style.display = 'block';
         actionBtn.textContent = tt('ctrader.cb.go_accounts', 'Hesaplarıma Git');
         if (anyOk && allOk && !lines.some(function(l) { return l[0] === 'warn'; })) {
-          setTimeout(function() { window.location.href = '/journals.html'; }, 3500);
+          setTimeout(function() { window.location.href = '/journals'; }, 3500);
         }
       }
 

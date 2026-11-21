@@ -2,6 +2,7 @@
 // Özellik sayfası: backtest tekrarı. İçerik İngilizce ve sunucuda hazır (arama motoru JS beklemeden okur).
 // Buradaki her iddia uygulamadaki gerçek davranışla aynı olmalı (bkz. public/interface/backtest/js, en.js backtest.*).
 import PageLayout from '../layouts/PageLayout.astro';
+import { srcsetFor } from '../data/responsive-images';
 
 const faq = [
   {
@@ -54,7 +55,7 @@ const schema = [
 
   <div class="wrap">
     <div class="frame fp-shot anim" style="--d:.35s">
-      <img src="/images/landing/screen-backtest.webp" alt="Wawe Journal backtest workspace replaying EURUSD H1 candles with balance, equity and a buy/sell order panel" width="1800" height="947" loading="eager" decoding="async" />
+      <img src="/images/landing/screen-backtest.webp" srcset={srcsetFor("/images/landing/screen-backtest.webp")} sizes="(max-width: 1120px) calc(100vw - 40px), 1080px" alt="Wawe Journal backtest workspace replaying EURUSD H1 candles with balance, equity and a buy/sell order panel" width="1800" height="947" loading="eager" decoding="async" />
     </div>
 
     <section class="fp-sec reveal">

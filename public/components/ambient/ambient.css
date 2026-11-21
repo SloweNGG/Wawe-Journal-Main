@@ -1,0 +1,166 @@
+/* ============================================================
+   ARKA PLAN (Ayarlar > Görünüm > Arka plan) — katmanlar Layout.astro #wj-ambient-backdrop
+   Renkler ve görseller CSS değişkeni olarak <html> üzerinde (public/components/ambient/ambient.js yazar,
+   ilk karede BaseHead'deki satır içi betik ww_bg_snap'ten):
+     --wwbg-base         taban (düz renk, gradyan, gökyüzü)
+     --wwbg-scene        sahne görseli url(...), --wwbg-scene-filter, --wwbg-scene-o (saydamlık)
+     --wwbg-scrim        sahnenin karartması (0..1)
+     --amb-c1..3, --amb-k   ışık topları (r,g,b) ve şiddet
+     --pnl-c1..3, --pnl-k   K/Z ışığı (üst parıltı + alt aurora)
+   Öznitelikler: data-ww-bg (stil), data-ww-orbs, data-ww-glow (on/off), data-ambient-state (profit/loss/neutral),
+   data-ambient-tier (soft/mid/strong).
+   Kartlar opak (--card-bg): arka plan yalnızca boşluklarda ve kenarlarda görünür, okunurluğu bozmaz.
+   ============================================================ */
+.wj-ambient-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  transition: opacity .6s ease;
+}
+
+html.ambient-disabled .wj-ambient-backdrop,
+body.ambient-disabled .wj-ambient-backdrop { display: none !important; }
+
+/* eski sabit mor arka plan ışığı (styles.css body::before): arka plan açıkken onun yerine bu katmanlar */
+html.ambient-enabled body::before,
+body.ambient-enabled::before { display: none !important; }
+
+.wj-bg-base,
+.wj-bg-scene,
+.wj-bg-scrim {
+  position: absolute;
+  inset: 0;
+}
+
+.wj-bg-base {
+  background: var(--wwbg-base, transparent);
+  transition: background .6s ease;
+}
+
+.wj-bg-scene {
+  background-image: var(--wwbg-scene, none);
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: var(--wwbg-scene-filter, none);
+  opacity: var(--wwbg-scene-o, 1);
+  transition: opacity .8s ease, filter 1.2s ease;
+}
+
+/* okunurluk: üst (menü + başlıklar) daha koyu, alt sahne daha görünür */
+.wj-bg-scrim {
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, calc(var(--wwbg-scrim, 0) + .2)) 0%,
+    rgba(0, 0, 0, var(--wwbg-scrim, 0)) 45%,
+    rgba(0, 0, 0, calc(var(--wwbg-scrim, 0) * .5)) 100%);
+  opacity: 1;
+}
+html:not([data-ww-bg="forest"]):not([data-ww-bg="mountain"]):not([data-ww-bg="daytime"]) .wj-bg-scrim { display: none; }
+html.light-theme .wj-bg-scrim { display: none; }
+
+/* ── ışık topları ─────────────────────────────────────────── */
+.wj-ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+  pointer-events: none;
+  transition: background .9s cubic-bezier(.16, 1, .3, 1), opacity .9s ease;
+}
+html[data-ww-orbs="off"] .wj-ambient-orb { opacity: 0; }
+
+.wj-ambient-orb-1 {
+  width: min(720px, 58vw);
+  height: min(720px, 58vw);
+  top: -120px;
+  right: 3%;
+  background: radial-gradient(circle at 45% 45%, rgba(var(--amb-c1, var(--ac-rgb)), calc(.5 * var(--amb-k, .9))) 0%, transparent 68%);
+  animation: ambientFloat1 22s ease-in-out infinite alternate;
+}
+.wj-ambient-orb-2 {
+  width: min(640px, 52vw);
+  height: min(640px, 52vw);
+  top: 30%;
+  left: -80px;
+  background: radial-gradient(circle at 50% 50%, rgba(var(--amb-c2, var(--ac-i1-rgb)), calc(.36 * var(--amb-k, .9))) 0%, transparent 68%);
+  animation: ambientFloat2 26s ease-in-out infinite alternate;
+}
+/* üçüncü, küçük vurgu ışığı: güçlü kârda altın, güçlü zararda turuncu (paletten) */
+.wj-ambient-orb-3 {
+  width: min(420px, 36vw);
+  height: min(420px, 36vw);
+  bottom: -60px;
+  right: 22%;
+  background: radial-gradient(circle at 50% 50%, rgba(var(--amb-c3, var(--ac-p2-rgb)), calc(.3 * var(--amb-k, .9))) 0%, transparent 70%);
+  animation: ambientFloat3 30s ease-in-out infinite alternate;
+}
+
+/* ── K/Z ışığı: üstten parıltı + alttan aurora bandı ─────── */
+.wj-ambient-mesh {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60vh;
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(var(--pnl-c1, var(--ac-rgb)), calc(.26 * var(--pnl-k, .8))) 0%, transparent 72%),
+    radial-gradient(ellipse 40% 35% at 85% -5%, rgba(var(--pnl-c3, var(--ac-p2-rgb)), calc(.16 * var(--pnl-k, .8))) 0%, transparent 70%);
+  transition: opacity .6s ease;
+}
+.wj-ambient-aurora {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -18vh;
+  height: 42vh;
+  background:
+    radial-gradient(ellipse 45% 60% at 25% 60%, rgba(var(--pnl-c1, var(--ac-rgb)), calc(.22 * var(--pnl-k, .8))) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 55% at 70% 55%, rgba(var(--pnl-c2, var(--ac-i1-rgb)), calc(.18 * var(--pnl-k, .8))) 0%, transparent 70%);
+  filter: blur(30px);
+  animation: ambientAurora 18s ease-in-out infinite alternate;
+  transition: opacity .6s ease;
+}
+html[data-ww-glow="off"] .wj-ambient-mesh,
+html[data-ww-glow="off"] .wj-ambient-aurora { opacity: 0; }
+/* hafif kademede alt bant yok (yalnızca üst parıltı), güçlüde ışıklar biraz büyür */
+html[data-ambient-tier="soft"] .wj-ambient-aurora,
+html[data-ambient-state="neutral"] .wj-ambient-aurora { opacity: .45; }
+html[data-ambient-tier="strong"] .wj-ambient-orb-1 { transform: scale(1.08); }
+html[data-ww-glow="off"][data-ambient-state] .wj-ambient-aurora { opacity: 0; }
+
+/* açık tema: aynı katmanlar, daha soluk */
+html.light-theme .wj-ambient-orb,
+body.light-theme .wj-ambient-orb { opacity: .55; }
+html.light-theme[data-ww-orbs="off"] .wj-ambient-orb { opacity: 0; }
+
+@keyframes ambientFloat1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-60px, 70px, 0) scale(1.08); }
+  100% { transform: translate3d(-25px, 35px, 0) scale(.96); }
+}
+@keyframes ambientFloat2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(65px, -55px, 0) scale(1.1); }
+  100% { transform: translate3d(30px, -20px, 0) scale(.94); }
+}
+@keyframes ambientFloat3 {
+  0% { transform: translate3d(0, 0, 0) scale(.95); }
+  100% { transform: translate3d(-80px, -40px, 0) scale(1.1); }
+}
+@keyframes ambientAurora {
+  0% { transform: translate3d(-3%, 0, 0) scaleY(1); }
+  100% { transform: translate3d(3%, -2vh, 0) scaleY(1.15); }
+}
+
+#app-scroll-container {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wj-ambient-orb,
+  .wj-ambient-aurora { animation: none !important; }
+}

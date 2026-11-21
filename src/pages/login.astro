@@ -8,7 +8,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- Preconnect & Prefetch for Speed -->
   <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
   <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
-  <link rel="prefetch" href="dashboard.html" />
+  <link rel="prefetch" href="/dashboard" />
 
   <!-- Turnstile Callbacks (Global Scope) -->
   <script is:inline>
@@ -565,7 +565,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="field">
             <div class="field-head">
               <label for="password" data-at="common.password_label">Password</label>
-              <a href="forgot-password.html" class="forgot-link" data-at="login.forgot">Forgot password?</a>
+              <a href="/forgot-password" class="forgot-link" data-at="login.forgot">Forgot password?</a>
             </div>
             <div class="input-wrap">
               <input type="password" id="password" placeholder="Enter your password" data-at-ph="login.password_ph" autocomplete="current-password" />
@@ -593,7 +593,7 @@ import Layout from '../layouts/Layout.astro';
           <button type="submit" class="btn-auth" id="login-btn" data-at="login.submit">Log In</button>
         </form>
 
-        <p class="auth-switch"><span data-at="login.no_account">Don't have an account?</span><a href="register.html" data-at="login.signup">Sign up</a></p>
+        <p class="auth-switch"><span data-at="login.no_account">Don't have an account?</span><a href="/register" data-at="login.signup">Sign up</a></p>
       </div>
     </section>
 
@@ -654,7 +654,7 @@ import Layout from '../layouts/Layout.astro';
           window.history.replaceState(null, '', window.location.pathname);
         }
       } else if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-        window.location.replace('dashboard.html' + window.location.search + window.location.hash);
+        window.location.replace('/dashboard' + window.location.search + window.location.hash);
       }
     })();
 
@@ -673,7 +673,7 @@ import Layout from '../layouts/Layout.astro';
         plan = sessionStorage.getItem('ww_plan_intent');
         sessionStorage.removeItem('ww_plan_intent');
       } catch (e) {}
-      return (plan === 'monthly' || plan === 'yearly') ? 'settings.html?plan=' + plan + '#panel-plan' : 'dashboard.html';
+      return (plan === 'monthly' || plan === 'yearly') ? '/settings?plan=' + plan + '#panel-plan' : '/dashboard';
     }
 
     function getSupabase() {

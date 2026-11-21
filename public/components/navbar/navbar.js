@@ -15,8 +15,8 @@ function wwOpenAddTrade() {
     window.quickAddOpen();
     return;
   }
-  if (window.PageTransition && typeof window.PageTransition.exit === 'function') window.PageTransition.exit('/add-trade.html');
-  else window.location.href = '/add-trade.html';
+  if (window.PageTransition && typeof window.PageTransition.exit === 'function') window.PageTransition.exit('/add-trade');
+  else window.location.href = '/add-trade';
 }
 window.wwOpenAddTrade = wwOpenAddTrade;
 
@@ -191,7 +191,7 @@ window.wwGoToOvertradeSettings = function(e) {
       window.location.hash = 'panel-overtrade';
     }
   } else {
-    window.location.href = '/settings.html#panel-overtrade';
+    window.location.href = '/settings#panel-overtrade';
   }
 };
 
@@ -1142,7 +1142,7 @@ function getNavbarHTML(translations) {
 
   return `
     <nav class="nav">
-      <a href="/dashboard.html" class="nav-logo" title="Wawe Journal - Dashboard">
+      <a href="/dashboard" class="nav-logo" title="Wawe Journal - Dashboard">
         <img class="nav-logo-mark" src="/resim.svg" alt="Wawe Journal" width="26" height="26" />
       </a>
       
@@ -1155,12 +1155,12 @@ function getNavbarHTML(translations) {
           <div class="journal-dropdown" id="journal-dropdown"></div>
         </div>
       <div class="nav-links">
-        <a href="/dashboard.html" data-page="dashboard"><span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span></a>
-        <a href="/trades.html" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
-        <a href="/strategies.html" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
-        <a href="/calendar.html" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
-        <a href="/backtest.html" data-page="backtest" id="nav-backtest-link" style="display:none;"><span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span></a>
-        <a href="/analytics.html" data-page="analytics" data-pro-link><span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span></a>
+        <a href="/dashboard" data-page="dashboard"><span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span></a>
+        <a href="/trades" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
+        <a href="/strategies" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
+        <a href="/calendar" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
+        <a href="/backtest" data-page="backtest" id="nav-backtest-link" style="display:none;"><span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span></a>
+        <a href="/analytics" data-page="analytics" data-pro-link><span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span></a>
       </div>
       <div class="nav-right">
         <div class="nav-econ" id="nav-econ"></div>
@@ -1215,7 +1215,7 @@ function getNavbarHTML(translations) {
               </div>
             </div>
             <div class="bell-panel-footer">
-              <a href="/settings.html#panel-overtrade" class="bell-footer-link" onclick="window.wwGoToOvertradeSettings(event)">
+              <a href="/settings#panel-overtrade" class="bell-footer-link" onclick="window.wwGoToOvertradeSettings(event)">
                 <i data-lucide="sliders-horizontal"></i>
                 <span data-i18n="noti.overtrade_settings">${tt('noti.overtrade_settings', 'Overtrade ve Risk Ayarları')}</span>
               </a>
@@ -1223,7 +1223,7 @@ function getNavbarHTML(translations) {
           </div>
         </div>
         
-        <a href="/settings.html#panel-plan" class="plan-badge" id="plan-badge" aria-label="${tt('nav.plan', 'Abonelik planı')}">
+        <a href="/settings#panel-plan" class="plan-badge" id="plan-badge" aria-label="${tt('nav.plan', 'Abonelik planı')}">
           <span class="plan-dot"></span>
           <span class="plan-text" id="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
         </a>
@@ -1244,19 +1244,19 @@ function getNavbarHTML(translations) {
             <span id="plan-tooltip-sub">${tt('nav.plan_tooltip_free_desc', 'Sınırsız Süre')}</span>
           </div>
           <div class="dropdown-divider"></div>
-          <a href="/settings.html#panel-profile" class="dropdown-item">
+          <a href="/settings#panel-profile" class="dropdown-item">
             <i data-lucide="user" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.profile">${tt('nav.profile', 'Profil')}</span>
           </a>
-          <a href="/settings.html" class="dropdown-item">
+          <a href="/settings" class="dropdown-item">
             <i data-lucide="settings" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.settings">${tt('nav.settings', 'Ayarlar')}</span>
           </a>
-          <a href="/my-earnings.html" class="dropdown-item">
+          <a href="/my-earnings" class="dropdown-item">
             <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
           </a>
-          <a href="/report-bug.html" class="dropdown-item">
+          <a href="/report-bug" class="dropdown-item">
             <i data-lucide="bug" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.report_bug">${tt('nav.report_bug', 'Hata Bildir')}</span>
           </a>
@@ -1265,13 +1265,13 @@ function getNavbarHTML(translations) {
             <span data-i18n="nav.help">${tt('nav.help', 'Yardım Merkezi')}</span>
           </a>
           <span id="admin-link" style="display:none;">
-            <a href="/admin.html" class="dropdown-item">
+            <a href="/admin" class="dropdown-item">
               <i data-lucide="shield" style="width:16px;height:16px;"></i>
               <span data-i18n="nav.admin">${tt('nav.admin', 'Admin')}</span>
             </a>
           </span>
           <div class="dropdown-divider nav-upgrade-divider" id="avatar-upgrade-divider"></div>
-          <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
+          <a href="/settings#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
             <i data-lucide="crown" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.upgrade_pro">${tt('nav.upgrade_pro', "Pro'ya Geç →")}</span>
           </a>
@@ -1305,7 +1305,7 @@ function getNavbarHTML(translations) {
           </div>
         </div>
 
-        <a href="/journals.html" class="menu-journal-link" id="menu-journal-link" onclick="closeMobileMenuAndNavigate(event, '/journals.html')">
+        <a href="/journals" class="menu-journal-link" id="menu-journal-link" onclick="closeMobileMenuAndNavigate(event, '/journals')">
           <span class="menu-journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
           <span class="menu-journal-info">
             <span class="menu-journal-label" data-i18n="nav.current_account">${tt('nav.current_account', 'Aktif Hesap')}</span>
@@ -1316,61 +1316,61 @@ function getNavbarHTML(translations) {
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_general">${menuGeneral}</div>
-          <a href="/index.html" onclick="closeMobileMenuAndNavigate(event, '/index.html')">
+          <a href="/" onclick="closeMobileMenuAndNavigate(event, '/')">
             <i data-lucide="home" style="width:16px;height:16px;"></i> <span data-i18n="nav.home">${tt('nav.home', 'Ana Sayfa')}</span>
           </a>
-          <a href="/dashboard.html" onclick="closeMobileMenuAndNavigate(event, '/dashboard.html')">
+          <a href="/dashboard" onclick="closeMobileMenuAndNavigate(event, '/dashboard')">
             <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span>
           </a>
-          <a href="/trades.html" onclick="closeMobileMenuAndNavigate(event, '/trades.html')">
+          <a href="/trades" onclick="closeMobileMenuAndNavigate(event, '/trades')">
             <i data-lucide="list" style="width:16px;height:16px;"></i> <span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span>
           </a>
-          <a href="/strategies.html" onclick="closeMobileMenuAndNavigate(event, '/strategies.html')">
+          <a href="/strategies" onclick="closeMobileMenuAndNavigate(event, '/strategies')">
             <i data-lucide="target" style="width:16px;height:16px;"></i> <span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span>
           </a>
-          <a href="/calendar.html" onclick="closeMobileMenuAndNavigate(event, '/calendar.html')">
+          <a href="/calendar" onclick="closeMobileMenuAndNavigate(event, '/calendar')">
             <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span>
           </a>
-          <a href="/backtest.html" id="nav-backtest-link-mobile" style="display:none;" onclick="closeMobileMenuAndNavigate(event, '/backtest.html')">
+          <a href="/backtest" id="nav-backtest-link-mobile" style="display:none;" onclick="closeMobileMenuAndNavigate(event, '/backtest')">
             <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span>
           </a>
         </div>
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_pro">${menuPro}</div>
-          <a href="/analytics.html" data-pro-link onclick="closeMobileMenuAndNavigate(event, '/analytics.html')">
+          <a href="/analytics" data-pro-link onclick="closeMobileMenuAndNavigate(event, '/analytics')">
             <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span>
           </a>
-          <a href="/settings.html#panel-appearance" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-appearance')">
+          <a href="/settings#panel-appearance" onclick="closeMobileMenuAndNavigate(event, '/settings#panel-appearance')">
             <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
           </a>
-          <a href="/settings.html#panel-overtrade" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-overtrade')">
+          <a href="/settings#panel-overtrade" onclick="closeMobileMenuAndNavigate(event, '/settings#panel-overtrade')">
             <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
           </a>
-          <a href="/settings.html#panel-plan" class="go-pro" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-plan')">
+          <a href="/settings#panel-plan" class="go-pro" onclick="closeMobileMenuAndNavigate(event, '/settings#panel-plan')">
             <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_pro">${tt('nav.upgrade_pro', "Pro'ya Geç →")}</span>
           </a>
         </div>
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_account">${menuAccount}</div>
-          <a href="/settings.html#panel-profile" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-profile')">
+          <a href="/settings#panel-profile" onclick="closeMobileMenuAndNavigate(event, '/settings#panel-profile')">
             <i data-lucide="user" style="width:16px;height:16px;"></i> <span data-i18n="nav.profile">${tt('nav.profile', 'Profil')}</span>
           </a>
-          <a href="/settings.html" onclick="closeMobileMenuAndNavigate(event, '/settings.html')">
+          <a href="/settings" onclick="closeMobileMenuAndNavigate(event, '/settings')">
             <i data-lucide="settings" style="width:16px;height:16px;"></i> <span data-i18n="nav.settings">${tt('nav.settings', 'Ayarlar')}</span>
           </a>
-          <a href="/my-earnings.html" onclick="closeMobileMenuAndNavigate(event, '/my-earnings.html')">
+          <a href="/my-earnings" onclick="closeMobileMenuAndNavigate(event, '/my-earnings')">
             <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
           </a>
-          <a href="/report-bug.html" onclick="closeMobileMenuAndNavigate(event, '/report-bug.html')">
+          <a href="/report-bug" onclick="closeMobileMenuAndNavigate(event, '/report-bug')">
             <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">${tt('nav.report_bug', 'Hata Bildir')}</span>
           </a>
           <a href="/support">
             <i data-lucide="life-buoy" style="width:16px;height:16px;"></i> <span data-i18n="nav.help">${tt('nav.help', 'Yardım Merkezi')}</span>
           </a>
           <span id="admin-link-mobile" style="display:none;">
-            <a href="/admin.html" onclick="closeMobileMenuAndNavigate(event, '/admin.html')">
+            <a href="/admin" onclick="closeMobileMenuAndNavigate(event, '/admin')">
               <i data-lucide="shield" style="width:16px;height:16px;"></i> <span data-i18n="nav.admin">${tt('nav.admin', 'Admin')}</span>
             </a>
           </span>
@@ -1771,21 +1771,22 @@ function setActiveNavLink() {
   var currentPath = window.location.pathname;
   var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
 
+  // Linkler temiz adres (/trades); eski ".html" biçimi de aynı sayfa sayılır. "#panel-..." ekli linkler
+  // (ayar kısayolları) bölüm linki değildir, eskisi gibi eşleşmez.
+  var clean = function(p) {
+    return p.replace(/\/index\.html(?=$|[?#])/, '/').replace(/\.html(?=$|[?#])/, '');
+  };
+  var current = clean(currentPath);
+  var SECTIONS = ['/dashboard', '/trades', '/strategies', '/calendar', '/backtest', '/journals', '/settings', '/analytics', '/admin'];
+
   var isLinkMatching = function(href) {
     if (!href) return false;
-    if (currentPath === '/' || currentPath === '/index.html') {
-      return href === '/index.html' || href === '/';
+    var target = clean(href);
+    if (current === '/') return target === '/';
+    for (var i = 0; i < SECTIONS.length; i++) {
+      if (current.indexOf(SECTIONS[i]) !== -1 && target === SECTIONS[i]) return true;
     }
-    if (currentPath.includes('/dashboard') && href === '/dashboard.html') return true;
-    if (currentPath.includes('/trades') && href === '/trades.html') return true;
-    if (currentPath.includes('/strategies') && href === '/strategies.html') return true;
-    if (currentPath.includes('/calendar') && href === '/calendar.html') return true;
-    if (currentPath.includes('/backtest') && href === '/backtest.html') return true;
-    if (currentPath.includes('/journals') && href === '/journals.html') return true;
-    if (currentPath.includes('/settings') && href === '/settings.html') return true;
-    if (currentPath.includes('/analytics') && href === '/analytics.html') return true;
-    if (currentPath.includes('/admin') && href === '/admin.html') return true;
-    return href === currentPath;
+    return target === current;
   };
 
   navLinks.forEach(function(link) {
@@ -1924,7 +1925,7 @@ function initNavEvents() {
         sessionStorage.removeItem('ww_user_display_name');
         sessionStorage.removeItem('ww_active_journal_id');
       } catch(e) {}
-      window.location.href = '/index.html';
+      window.location.href = '/';
     });
   }
 
@@ -2285,7 +2286,7 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
     html += '</div>';
 
     var manageTxt = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('journal.manage') : 'Hesapları Yönet';
-    html += '<div class="journal-menu-footer"><a href="/journals.html" class="journal-manage-link"><i data-lucide="settings"></i> <span>' + manageTxt + ' →</span></a></div>';
+    html += '<div class="journal-menu-footer"><a href="/journals" class="journal-manage-link"><i data-lucide="settings"></i> <span>' + manageTxt + ' →</span></a></div>';
     dropdown.innerHTML = html;
 
     dropdown.querySelectorAll('.journal-item').forEach(function(btn) {
@@ -2509,88 +2510,15 @@ function maybeAutoSyncCtrader(status) {
 }
 
 // ============================================================
-// ⭐ DYNAMIC AMBIENT GLOW MANAGER (PnL Adaptive)
+// ⭐ ARKA PLAN (K/Z ışığı): asıl motor public/components/ambient/ambient.js (window.WwAmbient).
+// syncAmbientGlow eski çağıranlar için (dashboard K/Z'yi WwAmbient.setPnl ile verir).
 // ============================================================
 function syncAmbientGlow(overridePnl) {
-  var mode = localStorage.getItem('ww_ambient_mode') || 'dynamic'; // 'dynamic' | 'classic' | 'off'
-  var body = document.body;
-  var root = document.documentElement;
-  if (!body && !root) return;
-
-  var setCls = function(add, rem) {
-    if (root) { root.classList.add(add); root.classList.remove(rem); }
-    if (body) { body.classList.add(add); body.classList.remove(rem); }
-  };
-  var setAttr = function(val) {
-    if (root) root.setAttribute('data-ambient-state', val);
-    if (body) body.setAttribute('data-ambient-state', val);
-    try { localStorage.setItem('ww_ambient_state', val); } catch(e) {}
-  };
-
-  if (mode === 'off') {
-    setCls('ambient-disabled', 'ambient-enabled');
-    return;
-  }
-
-  setCls('ambient-enabled', 'ambient-disabled');
-
-  if (mode === 'classic') {
-    setAttr('neutral');
-    return;
-  }
-
-  // mode === 'dynamic'
-  var pnl = overridePnl;
-  if (pnl === undefined || pnl === null) {
-    var raw = localStorage.getItem('ww_cached_pnl');
-    pnl = raw !== null ? parseFloat(raw) : 0;
-  }
-
-  if (isNaN(pnl) || pnl === 0) {
-    setAttr('neutral');
-  } else if (pnl > 0) {
-    setAttr('profit');
-  } else {
-    setAttr('loss');
-  }
+  if (!window.WwAmbient) return;
+  if (overridePnl === undefined || overridePnl === null) window.WwAmbient.apply();
+  else window.WwAmbient.setPnl(overridePnl);
 }
-
 window.syncAmbientGlow = syncAmbientGlow;
-
-window.testAmbientState = function(state) {
-  var body = document.body;
-  if (!body) return;
-  body.classList.remove('ambient-disabled');
-  body.classList.add('ambient-enabled');
-  body.setAttribute('data-ambient-state', state);
-
-  var chips = document.querySelectorAll('.ambient-test-chip');
-  chips.forEach(function(chip) {
-    chip.classList.toggle('active', chip.classList.contains(state));
-  });
-
-  var dot = document.getElementById('ambient-current-indicator');
-  if (dot) {
-    dot.style.display = 'inline-block';
-    dot.className = 'ambient-indicator-dot ' + state;
-  }
-
-  var msg = state === 'profit' ? 'Kâr Ambiyansı (Yeşil)' : (state === 'loss' ? 'Zarar Ambiyansı (Kırmızı)' : 'Nötr Ambiyans (Mor)');
-  if (typeof showMsg === 'function') showMsg(msg, 'success');
-  else if (typeof showToast === 'function') showToast(msg, 'success');
-};
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() { syncAmbientGlow(); });
-} else {
-  syncAmbientGlow();
-}
-
-window.addEventListener('storage', function(e) {
-  if (e.key === 'ww_ambient_mode' || e.key === 'ww_cached_pnl') {
-    syncAmbientGlow();
-  }
-});
 
 // ⭐ cTrader Global Senkronizasyon Tetikleyici
 window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
@@ -2630,7 +2558,7 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
           ? t('ctrader.err.access_revoked', 'Bu cTrader hesabına erişim izni yok. cTrader ile yeniden yetkilendirirken bu hesabı da seçin.')
           : t('ctrader.err.reconnect', 'cTrader yetkilendirme süresi dolmuş. Lütfen hesabı yeniden bağlayın.'), 'warning');
         if (!/\/journals(\.html)?$/.test(window.location.pathname)) {
-          setTimeout(function() { window.location.href = '/journals.html'; }, 1500);
+          setTimeout(function() { window.location.href = '/journals'; }, 1500);
         } else if (typeof window.loadTrades === 'function') {
           window.loadTrades();                       // Hesaplar sayfası: kartın durumunu tazele
         }

@@ -9,6 +9,10 @@
 //   - Kodla kurulan adresler (fetch, script.src, dinamik import): kaynakta `?v=__WW_BUILD_ID__`
 //     yazılır, derlemede gerçek ID ile değiştirilir (geliştirmede olduğu gibi kalır; zararsız).
 //   - CSS:             url(/fonts/...), url(/icons/...), @import "/x.css"  →  ?v=<buildId>
+//   - Görseller:       HTML/JS/CSS/manifest içindeki her "/images/..." adresine ?v=<dosyanın içerik hash'i>.
+//                      Build ID değil içerik hash'i: görsel değişmedikçe adresi de değişmez, deploy'lar arasında
+//                      tarayıcı önbelleği korunur. Görsel değişince (aynı adla) adres kendiliğinden değişir.
+//                      Tam adresle yazılanlar (https://wawejournal.com/images/... — og:image, JSON-LD) damgalanmaz.
 // Aynı ID, SpaRouter'ın <meta name="ww-build"> etiketine (vite define: __WW_BUILD_ID__) ve
 // sw.js'e de yazılır. Böylece _headers'ta bu dosyalar 1 yıl "immutable" önbelleklenebilir:
 // her deploy yeni ID = yeni adres.
@@ -17,6 +21,7 @@
 // değişmemiş __WW_BUILD_ID__ bulunursa derleme HATA verir (immutable önbellekte bayat dosya kalmasın).
 // ============================================================
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,6 +84,39 @@ export function stampCss(css, id) {
     .replace(CSS_IMPORT, (m, pre, q, ref, query) => (isExternal(ref) ? m : pre + q + ref + withVersion(query, id) + q));
 }
 
+// Görseller: içerik hash'i. Önünde tırnak/boşluk/parantez/virgül olan kök-göreli "/images/..." adresleri
+// (HTML öznitelikleri, srcset, CSS url(), JS dizgileri). Tam adresler (…com/images/…) eşleşmez.
+const IMG_REF = /(^|[\s"'(`,])(\/images\/[A-Za-z0-9_\-./]+\.(?:webp|png|jpe?g|gif|svg|avif|ico))(\?[^"'`)\s,]*)?(?=[\s"'`),]|$)/g;
+
+/** hashOf(ref): dist'teki dosyanın içerik hash'i; dosya yoksa null (o adres olduğu gibi bırakılır ve hata sayılır). */
+export function stampImages(text, hashOf) {
+  return text.replace(IMG_REF, (m, pre, ref, query) => {
+    const hash = hashOf(ref);
+    return hash ? pre + ref + withVersion(query, hash) : m;
+  });
+}
+
+export function findUnversionedImages(text, hashOf) {
+  const out = [];
+  for (const m of text.matchAll(IMG_REF)) {
+    const hash = hashOf(m[2]);
+    if (!hash) out.push('olmayan görsel ' + m[2]);
+    else if (!versionOk(m[3], hash)) out.push('sürümsüz görsel ' + m[2] + (m[3] || ''));
+  }
+  return out;
+}
+
+export function imageHasher(distDir) {
+  const cache = new Map();
+  return (ref) => {
+    if (!cache.has(ref)) {
+      const file = path.join(distDir, ref);
+      cache.set(ref, fs.existsSync(file) && fs.statSync(file).isFile() ? crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 10) : null);
+    }
+    return cache.get(ref);
+  };
+}
+
 // ── Doğrulama ────────────────────────────────────────────────
 // Damgalanmış bir dosyada hâlâ sürümsüz kalan yerel varlık referanslarını döndürür.
 const ASSET_EXT = '(?:m?js|css|json|ttf|otf|woff2?)';
@@ -131,6 +169,7 @@ function kindOf(file) {
   if (ext === '.html') return 'html';
   if (ext === '.js' || ext === '.mjs') return 'js';
   if (ext === '.css') return 'css';
+  if (ext === '.webmanifest') return 'manifest';
   return null;
 }
 
@@ -146,6 +185,7 @@ export function versionDist(distDir, id, isCurrent = () => true) {
   const stale = [];
   let files = 0;
   let changed = 0;
+  const hashOf = imageHasher(distDir);
   for (const file of walk(distDir)) {
     const kind = kindOf(file);
     if (!kind) continue;
@@ -154,16 +194,18 @@ export function versionDist(distDir, id, isCurrent = () => true) {
     const isAstro = rel.startsWith('/_astro/');
     const src = fs.readFileSync(file, 'utf8');
     let out = src;
-    if (isAstro) out = replaceToken(src, id);
+    if (isAstro || kind === 'manifest') out = replaceToken(src, id);
     else if (kind === 'html') out = stampHtml(src, id);
     else if (kind === 'js') out = stampJs(src, id);
     else out = stampCss(src, id);
+    out = stampImages(out, hashOf);
     if (out !== src) {
       fs.writeFileSync(file, out, 'utf8');
       changed++;
     }
     files++;
-    const found = isAstro ? (out.includes(TOKEN) ? [TOKEN + ' değiştirilmemiş'] : []) : findUnversioned(out, kind, id);
+    const found = isAstro || kind === 'manifest' ? (out.includes(TOKEN) ? [TOKEN + ' değiştirilmemiş'] : []) : findUnversioned(out, kind, id);
+    found.push(...findUnversionedImages(out, hashOf));
     if (kind === 'html') {
       const meta = out.match(/<meta name="ww-build" content="([^"]*)"/);
       if (meta && meta[1] !== String(id)) found.push('ww-build meta (' + meta[1] + ') build ID ile aynı değil (' + id + ')');

@@ -789,7 +789,7 @@
     
     if ((!trades || !trades.length) && scopeFilter === 'backtest') {
       wrap.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;">' + sanitizeHTML(_tf('trades.no_backtest_trades', 'Bu hesapta backtest işlemi yok.')) +
-        ' <a href="/backtest.html" style="color:var(--accent);">' + sanitizeHTML(_tf('trades.go_backtest', 'Backtest sayfasına git →')) + '</a></p>';
+        ' <a href="/backtest" style="color:var(--accent);">' + sanitizeHTML(_tf('trades.go_backtest', 'Backtest sayfasına git →')) + '</a></p>';
       renderPagination();
       return;
     }

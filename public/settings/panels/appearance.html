@@ -91,46 +91,64 @@
       <input type="checkbox" id="theme-toggle" onchange="toggleTheme()" style="display:none;" />
     </div>
 
-    <!-- 2. ARKA PLAN AMBİYANSI -->
-    <div class="appearance-section">
-      <div class="settings-group-card">
-        <!-- DİNAMİK ARKA PLAN AMBİYANSI (PnL GLOW) -->
-        <div class="pref-row ambient-pref-row">
+    <!-- 2. ARKA PLAN: stil sekmeleri, seçenekler (settings.js initBackgroundStudio, katalog ambient.js) -->
+    <div class="appearance-section bg-studio" id="bg-studio">
+      <div class="appearance-section-header">
+        <span class="appearance-section-title">
+          <span data-i18n="settings.bg_title">Arka plan</span>
+          <span class="ambient-indicator-dot" id="ambient-current-indicator"></span>
+        </span>
+        <span class="appearance-section-subtitle" data-i18n="settings.bg_subtitle">Kâr/zarar ışığı, renkler ve manzaralar</span>
+      </div>
+
+      <div class="bg-tabs" role="tablist" id="bg-tabs" aria-label="Arka plan">
+        <button type="button" role="tab" class="bg-tab" data-bg-style="dynamic" data-i18n="settings.bg_s_dynamic">K/Z ışığı</button>
+        <button type="button" role="tab" class="bg-tab" data-bg-style="gradient" data-i18n="settings.bg_s_gradient">Gradyan</button>
+        <button type="button" role="tab" class="bg-tab" data-bg-style="solid" data-i18n="settings.bg_s_solid">Düz renk</button>
+        <button type="button" role="tab" class="bg-tab" data-bg-style="forest" data-i18n="settings.bg_s_forest">Orman</button>
+        <button type="button" role="tab" class="bg-tab" data-bg-style="mountain" data-i18n="settings.bg_s_mountain">Dağ</button>
+        <button type="button" role="tab" class="bg-tab" data-bg-style="daytime" data-i18n="settings.bg_s_daytime">Günün saati</button>
+        <button type="button" role="tab" class="bg-tab" data-bg-style="off" data-i18n="settings.bg_s_off">Kapalı</button>
+      </div>
+
+      <p class="bg-desc" id="bg-desc"></p>
+      <div class="bg-grid" id="bg-grid" role="radiogroup"></div>
+
+      <div class="settings-group-card bg-options" id="bg-options">
+        <div class="pref-row" id="bg-glow-row">
           <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                <circle cx="12" cy="12" r="9"/>
-                <path d="M12 3a9 9 0 0 1 9 9 9 9 0 0 1-9 9"/>
-              </svg>
-            </div>
             <div>
-              <div class="pref-title" style="display:flex; align-items:center; gap:8px;">
-                <span data-i18n="settings.ambient_title">Arka plan ambiyansı</span>
-                <span class="ambient-indicator-dot" id="ambient-current-indicator"></span>
-              </div>
-              <div class="pref-desc" data-i18n="settings.ambient_desc">Kârda yeşil, zararda kırmızı, nötrde mor ışık</div>
+              <div class="pref-title" data-i18n="settings.bg_glow">K/Z ışığını ekle</div>
+              <div class="pref-desc" data-i18n="settings.bg_glow_desc">Seçili arka planın üstünde kârda yeşil, zararda kırmızı ışık</div>
             </div>
           </div>
-          <div class="ambient-selector-compact" id="settings-ambient-selector">
-            <button type="button" class="ambient-mode-btn" data-mode="dynamic" data-i18n="settings.ambient_dynamic">Dinamik PnL</button>
-            <button type="button" class="ambient-mode-btn" data-mode="classic" data-i18n="settings.ambient_classic">Klasik mor</button>
-            <button type="button" class="ambient-mode-btn" data-mode="off" data-i18n="settings.ambient_off">Kapalı</button>
+          <span class="ot-switch">
+            <input type="checkbox" id="bg-glow-toggle" role="switch" aria-label="K/Z ışığını ekle">
+            <span class="ot-switch-track" aria-hidden="true"></span>
+          </span>
+        </div>
+        <div class="pref-row" id="bg-strength-row">
+          <div class="pref-left">
+            <div>
+              <div class="pref-title" data-i18n="settings.bg_strength">Işık yoğunluğu</div>
+              <div class="pref-desc" data-i18n="settings.bg_strength_desc">Işıkların ne kadar belirgin olacağı</div>
+            </div>
+          </div>
+          <div class="ambient-selector-compact" id="bg-strength">
+            <button type="button" class="ambient-mode-btn" data-strength="1" data-i18n="settings.bg_strength_1">Hafif</button>
+            <button type="button" class="ambient-mode-btn" data-strength="2" data-i18n="settings.bg_strength_2">Normal</button>
+            <button type="button" class="ambient-mode-btn" data-strength="3" data-i18n="settings.bg_strength_3">Güçlü</button>
           </div>
         </div>
-
-        <!-- AMBIYANS ANLIK CANLI TEST ŞERİDİ -->
         <div class="ambient-test-row" id="ambient-test-row">
           <span class="ambient-test-label" data-i18n="settings.ambient_test">Önizle:</span>
-          <div class="ambient-test-chips">
-            <button type="button" class="ambient-test-chip profit" onclick="window.testAmbientState('profit')">
-              <span class="chip-dot"></span> <span data-i18n="settings.ambient_profit">Kâr</span>
-            </button>
-            <button type="button" class="ambient-test-chip loss" onclick="window.testAmbientState('loss')">
-              <span class="chip-dot"></span> <span data-i18n="settings.ambient_loss">Zarar</span>
-            </button>
-            <button type="button" class="ambient-test-chip neutral" onclick="window.testAmbientState('neutral')">
-              <span class="chip-dot"></span> <span data-i18n="settings.ambient_neutral">Nötr</span>
-            </button>
+          <div class="ambient-test-chips" id="bg-preview-chips">
+            <button type="button" class="ambient-test-chip profit strong" data-state="profit" data-tier="2"><span class="chip-dot"></span> <span data-i18n="settings.bg_prev_big_profit">Büyük kâr</span></button>
+            <button type="button" class="ambient-test-chip profit" data-state="profit" data-tier="0"><span class="chip-dot"></span> <span data-i18n="settings.bg_prev_small_profit">Küçük kâr</span></button>
+            <button type="button" class="ambient-test-chip neutral" data-state="neutral" data-tier="0"><span class="chip-dot"></span> <span data-i18n="settings.ambient_neutral">Nötr</span></button>
+            <button type="button" class="ambient-test-chip loss" data-state="loss" data-tier="0"><span class="chip-dot"></span> <span data-i18n="settings.bg_prev_small_loss">Küçük zarar</span></button>
+            <button type="button" class="ambient-test-chip loss strong" data-state="loss" data-tier="2"><span class="chip-dot"></span> <span data-i18n="settings.bg_prev_big_loss">Büyük zarar</span></button>
+            <button type="button" class="ambient-test-chip bg-prev-reset" data-state=""><span data-i18n="settings.bg_prev_reset">Gerçek değer</span></button>
           </div>
         </div>
       </div>

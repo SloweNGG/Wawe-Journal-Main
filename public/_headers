@@ -25,9 +25,12 @@
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Görseller
+# Görseller: 1 yıl, "immutable". GÜVENLİ ÇÜNKÜ derleme (scripts/asset-version.mjs) sitedeki her "/images/..."
+# referansına ?v=<dosyanın içerik hash'i> yazar; görsel değişince adres değişir. Olmayan bir görsele referans
+# derlemeyi durdurur. Damgasız kalanlar yalnızca tam adresli olanlar (og:image, JSON-LD, e-postalar, dış
+# bağlantılar): bunlarda kullanılan bir görseli AYNI ADLA değiştirmeyin, yeni adla ekleyin.
 /images/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=31536000, immutable
 
 # Laptop maketinin çerçevesi (ekranı saydam) ve tabanı: tek başına anlamsız görseller. Google Görseller'de sitenin
 # kartında boş bir laptop olarak çıkıyordu (2026-11-21); dizine alınmasın, Google ekran görüntülerini seçsin.

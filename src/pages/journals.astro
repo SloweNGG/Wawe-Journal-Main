@@ -206,7 +206,7 @@ import Layout from '../layouts/Layout.astro';
           <div>
             <strong data-i18n="prop.quota_title">Prop Hesabı Kotası Doldu</strong>
             <div id="prop-quota-desc" style="font-size:0.75rem;margin-top:2px;" data-i18n="prop.quota_desc">Free planda 1 aktif prop hesabı oluşturabilirsiniz. Daha fazla hesap için Pro'ya yükseltin.</div>
-            <a href="/settings.html#panel-plan" style="color:#fff;text-decoration:underline;font-weight:600;font-size:0.75rem;display:inline-block;margin-top:4px;" data-i18n="prop.upgrade_plan">Planı Yükselt</a>
+            <a href="/settings#panel-plan" style="color:#fff;text-decoration:underline;font-weight:600;font-size:0.75rem;display:inline-block;margin-top:4px;" data-i18n="prop.upgrade_plan">Planı Yükselt</a>
           </div>
         </div>
 
@@ -1732,7 +1732,7 @@ import Layout from '../layouts/Layout.astro';
     if (typeof window.openUpgradeModal === 'function') {
       window.openUpgradeModal({ feature: 'journal' });
     } else {
-      window.location.href = '/settings.html#panel-plan';
+      window.location.href = '/settings#panel-plan';
     }
   }
   
@@ -1829,12 +1829,12 @@ import Layout from '../layouts/Layout.astro';
       card.onclick = function(e) {
         if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown') || e.target.closest('.btn-card-sync') || e.target.closest('.ct-auto')) return;
         if (typeof window.switchJournalWithAnimation === 'function') {
-          window.switchJournalWithAnimation(j, '/dashboard.html');
+          window.switchJournalWithAnimation(j, '/dashboard');
         } else {
           if (window.journal && typeof window.journal.setActiveJournalId === 'function') {
             window.journal.setActiveJournalId(j.id);
           }
-          window.location.href = '/dashboard.html';
+          window.location.href = '/dashboard';
         }
       };
       

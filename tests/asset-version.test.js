@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { stampHtml, stampJs, stampCss, findUnversioned, versionDist, TOKEN } from '../scripts/asset-version.mjs';
+import { stampHtml, stampJs, stampCss, findUnversioned, versionDist, stampImages, findUnversionedImages, TOKEN } from '../scripts/asset-version.mjs';
 
 const ID = '1790000000000';
 
@@ -100,6 +100,49 @@ describe('asset-version: dist pass', () => {
     assert.ok(fs.readFileSync(path.join(dir, 'page.html'), 'utf8').includes('/js/a.js?v=' + ID));
     assert.ok(fs.readFileSync(path.join(dir, 'js', 'a.js'), 'utf8').includes("./b.js?v=" + ID));
     assert.throws(() => versionDist(dir, 'abc'), /rakam/);
+  });
+});
+
+describe('asset-version: images (content hash)', () => {
+  const hashOf = (ref) => (ref.includes('gone') ? null : 'h_' + ref.length);
+
+  it('stamps src, srcset, CSS url() and JS strings with the file hash; leaves absolute URLs alone', () => {
+    const text =
+      '<img src="/images/a.webp" srcset="/images/a-600w.webp 600w, /images/a.webp 1800w">' +
+      '<i style="background:url(/images/b.png)"></i><b style=\'background:url("/images/b.png?v=old")\'></b>' +
+      '<meta property="og:image" content="https://wawejournal.com/images/a.webp">' +
+      "<script>var p={x:'/images/c.svg'};</script>";
+    const out = stampImages(text, hashOf);
+    const v = (ref) => ref + '?v=' + hashOf(ref);
+    assert.ok(out.includes('src="' + v('/images/a.webp') + '"'));
+    assert.ok(out.includes(v('/images/a-600w.webp') + ' 600w, ' + v('/images/a.webp') + ' 1800w'));
+    assert.ok(out.includes('url(' + v('/images/b.png') + ')') && out.includes('url("' + v('/images/b.png') + '")'));
+    assert.ok(out.includes('content="https://wawejournal.com/images/a.webp"'));
+    assert.ok(out.includes("'" + v('/images/c.svg') + "'"));
+    assert.deepEqual(findUnversionedImages(out, hashOf), []);
+  });
+
+  it('reports references to missing images and stale hashes', () => {
+    const found = findUnversionedImages('<img src="/images/gone.webp"><img src="/images/a.webp?v=old">', hashOf);
+    assert.deepEqual(found, ['olmayan görsel /images/gone.webp', 'sürümsüz görsel /images/a.webp?v=old']);
+  });
+
+  it('the dist pass hashes real files and fails on a missing one', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ww-img-'));
+    fs.mkdirSync(path.join(dir, 'images'));
+    fs.writeFileSync(path.join(dir, 'images', 'x.webp'), 'one');
+    fs.writeFileSync(path.join(dir, 'page.html'), '<img src="/images/x.webp"><img src="/images/nope.webp">');
+    fs.writeFileSync(path.join(dir, 'site.webmanifest'), '{"icons":[{"src":"/images/x.webp"}]}');
+    const r = versionDist(dir, ID);
+    const page = fs.readFileSync(path.join(dir, 'page.html'), 'utf8');
+    const v = page.match(/x\.webp\?v=([0-9a-f]{10})"/)[1];
+    assert.ok(fs.readFileSync(path.join(dir, 'site.webmanifest'), 'utf8').includes('/images/x.webp?v=' + v));
+    assert.deepEqual(r.problems, ['/page.html: olmayan görsel /images/nope.webp']);
+    fs.writeFileSync(path.join(dir, 'images', 'x.webp'), 'two');
+    fs.writeFileSync(path.join(dir, 'page.html'), '<img src="/images/x.webp">');
+    versionDist(dir, ID);
+    assert.ok(!fs.readFileSync(path.join(dir, 'page.html'), 'utf8').includes('?v=' + v), 'a changed image gets a new address');
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 });
 

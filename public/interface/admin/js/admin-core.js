@@ -681,7 +681,7 @@ async function initAdmin() {
     var session = sessionRes && sessionRes.data && sessionRes.data.session;
     if (!session) {
       wwLog.warn('Oturum yok, login sayfasına yönlendiriliyor...');
-      window.location.href = 'login.html';
+      window.location.href = '/login';
       return;
     }
 
@@ -691,7 +691,7 @@ async function initAdmin() {
     var role = session.user && session.user.app_metadata && session.user.app_metadata.role;
     if (role !== 'admin') {
       wwLog.warn('Admin yetkisi yok! role:', role);
-      window.location.href = 'dashboard.html';
+      window.location.href = '/dashboard';
       return;
     }
 

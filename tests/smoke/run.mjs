@@ -127,6 +127,7 @@ const SCENARIOS = {
   'shot-resume': ['driver=/__driver-persist.js&role=user&plan=premium&shot=1', DESKTOP, true],
   'shot-resume-phone': ['driver=/__driver-persist.js&role=user&plan=free&shot=1', PHONE, true],
   'shot-light': ['driver=/__driver-shot.js&shot=advanced&light=1', DESKTOP, true],
+  center: ['backend=supabase&driver=/__driver-center.js&role=user&plan=premium&ct=ready&i18n=tr', DESKTOP],
   'shot-phone': ['driver=/__driver-shot.js&shot=simple&plan=free', PHONE, true],
   'shot-phone-fs': ['driver=/__driver-shot.js&shot=fs', PHONE, true]
 };

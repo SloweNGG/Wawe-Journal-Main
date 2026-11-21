@@ -512,6 +512,8 @@ async function loadPanelContent(panelId, url) {
 window.switchPanel = function(panelId) {
   wwLog.log('🔄 switchPanel: ' + panelId);
   if (panelId !== 'panel-appearance' && window.WWThemeStudio) window.WWThemeStudio.flush();
+  // arka plan önizlemesi (Kâr / Zarar düğmeleri) yalnızca Görünüm panelinde; çıkınca gerçek K/Z ışığına dön
+  if (panelId !== 'panel-appearance' && window.WwAmbient) window.WwAmbient.preview(null);
 
   if (!panelId) {
     wwLog.warn('Panel ID boş!');
@@ -2220,7 +2222,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     } catch(e) {}
 
     setTimeout(function() {
-      window.location.href = '/dashboard.html?payment=success';
+      window.location.href = '/dashboard?payment=success';
     }, 3500);
   }
 
@@ -2314,7 +2316,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
   var btnGoDash = wizardRoot.querySelector('#btn-go-dashboard-after-pay');
   if (btnGoDash) {
     btnGoDash.addEventListener('click', function() {
-      window.location.href = '/dashboard.html?payment=success';
+      window.location.href = '/dashboard?payment=success';
     });
   }
 
@@ -2690,7 +2692,7 @@ async function deactivateAccount() {
         sessionStorage.removeItem('ww_user_plan');
         sessionStorage.removeItem('ww_user_plan_time');
       } catch(e) {}
-      window.location.href = '/login.html';
+      window.location.href = '/login';
     }, 1500);
 
   } catch (e) {
@@ -2714,7 +2716,7 @@ async function deactivateAccount() {
 // ============================================================
 function initAppearance() {
   wwLog.log('🎨 Görünüm paneli başlatılıyor...');
-  initAmbientSelector();
+  initBackgroundStudio();
   initStudioDisclosure();
   if (typeof window.updateThemeModeCards === 'function') {
     window.updateThemeModeCards();
@@ -3252,112 +3254,129 @@ function initAdvanced() {
 
 
 // ============================================================
-// ⭐ DİNAMİK ARKA PLAN AMBİYANSI SEÇİCİ
+// ⭐ ARKA PLAN STÜDYOSU (Görünüm > Arka plan)
+// Katalog, hesap ve uygulama: public/components/ambient/ambient.js (window.WwAmbient). Burada yalnızca arayüz.
 // ============================================================
-function initAmbientSelector() {
-  var currentMode = localStorage.getItem('ww_ambient_mode') || 'dynamic';
-  var btns = document.querySelectorAll('.ambient-mode-btn');
-  if (btns.length === 0) return;
+var BG_DESC = {
+  dynamic: ['settings.bg_d_dynamic', 'Seçili dönemdeki kâr/zarara göre ışık: yön rengi, büyüklük şiddeti belirler (küçük kâr açık, büyük kâr parlak). Renk körlüğüne uygun palet: Okyanus & kehribar.'],
+  gradient: ['settings.bg_d_gradient', 'Yavaşça hareket eden renk geçişleri.'],
+  solid: ['settings.bg_d_solid', 'Sade, tek renk zemin.'],
+  forest: ['settings.bg_d_forest', 'Orman manzaraları ve orman renkleri.'],
+  mountain: ['settings.bg_d_mountain', 'Dağ manzaraları. K/Z zirvesi kârda yeşile, zararda kırmızıya döner.'],
+  daytime: ['settings.bg_d_daytime', 'Otomatik: saatine göre şafak, gündüz, gün batımı ve gece manzarası (saat dilimi: Bölge ve saat ayarı).'],
+  off: ['settings.bg_d_off', 'Arka plan ışığı ve görselleri kapalı.']
+};
 
-  function updateBtnStates(m) {
-    btns.forEach(function(b) {
-      b.classList.toggle('active', b.dataset.mode === m);
-    });
-    var dot = document.getElementById('ambient-current-indicator');
-    if (dot) {
-      if (m === 'off') {
-        dot.style.display = 'none';
-      } else {
-        dot.style.display = 'inline-block';
-        var state = document.body.getAttribute('data-ambient-state') || 'neutral';
-        dot.className = 'ambient-indicator-dot ' + state;
+function initBackgroundStudio() {
+  var A = window.WwAmbient;
+  var root = safeEl('bg-studio');
+  if (!root || !A) return;
+  var tabs = root.querySelectorAll('.bg-tab');
+  var grid = safeEl('bg-grid'), desc = safeEl('bg-desc');
+  var glowRow = safeEl('bg-glow-row'), glow = safeEl('bg-glow-toggle');
+  var strengthBtns = root.querySelectorAll('#bg-strength [data-strength]');
+  var chips = root.querySelectorAll('#bg-preview-chips [data-state]');
+  var shown = A.read().style;   // görüntülenen sekme (seçilen stil ile aynı başlar)
+  safeEl('bg-tabs').setAttribute('aria-label', t('settings.bg_title', 'Arka plan'));
+  if (glow) glow.setAttribute('aria-label', t('settings.bg_glow', 'K/Z ışığını ekle'));
+
+  function light() { return document.body.classList.contains('light-theme'); }
+
+  function renderGrid() {
+    var p = A.read(), list = A.presetsOf(shown);
+    grid.innerHTML = '';
+    grid.hidden = !list.length;
+    list.forEach(function (pre) {
+      var sw = A.swatch(shown, pre.id, light());
+      var on = p.style === shown && A.presetId(p, shown) === pre.id;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'bg-swatch' + (on ? ' active' : '');
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.dataset.preset = pre.id;
+      var art = document.createElement('span');
+      art.className = 'bg-swatch-art' + (shown === 'dynamic' ? ' is-pnl' : '');
+      art.style.background = sw.bg;
+      if (sw.filter && sw.filter !== 'none') art.style.filter = sw.filter;
+      var label = document.createElement('span');
+      label.className = 'bg-swatch-label';
+      label.textContent = t('settings.bg_p_' + shown + '_' + pre.id, pre.fb);
+      if (pre.auto && sw.part) {
+        var now = document.createElement('span');
+        now.className = 'bg-swatch-sub';
+        now.textContent = t('settings.bg_p_daytime_' + sw.part, '');
+        label.appendChild(now);
       }
+      var check = document.createElement('span');
+      check.className = 'bg-swatch-check';
+      check.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      b.appendChild(art); b.appendChild(label); b.appendChild(check);
+      b.addEventListener('click', function () {
+        var patch = { style: shown, presets: {} };
+        patch.presets[shown] = pre.id;
+        A.set(patch);
+        sync();
+      });
+      grid.appendChild(b);
+    });
+  }
+
+  function sync() {
+    var p = A.read();
+    tabs.forEach(function (tb) {
+      var s = tb.dataset.bgStyle;
+      tb.classList.toggle('active', s === shown);
+      tb.classList.toggle('is-current', s === p.style);
+      tb.setAttribute('aria-selected', s === shown ? 'true' : 'false');
+    });
+    var d = BG_DESC[shown] || BG_DESC.off;
+    desc.textContent = t(d[0], d[1]);
+    renderGrid();
+    // K/Z ışığı anahtarı: dinamikte zaten açık, kapalıda anlamsız
+    if (glowRow) glowRow.hidden = p.style === 'dynamic' || p.style === 'off';
+    if (glow) glow.checked = !!p.glow;
+    strengthBtns.forEach(function (b) { b.classList.toggle('active', +b.dataset.strength === p.strength); });
+    safeEl('bg-options').hidden = p.style === 'off';
+    var dot = safeEl('ambient-current-indicator');
+    if (dot) {
+      var st = document.documentElement.getAttribute('data-ambient-state') || 'neutral';
+      dot.style.display = p.style === 'off' ? 'none' : 'inline-block';
+      dot.className = 'ambient-indicator-dot ' + st;
     }
   }
 
-  updateBtnStates(currentMode);
-
-  btns.forEach(function(btn) {
-    if (btn._bound) return;
-    btn._bound = true;
-    btn.addEventListener('click', function() {
-      var mode = this.dataset.mode;
-      localStorage.setItem('ww_ambient_mode', mode);
-      updateBtnStates(mode);
-      if (typeof window.syncAmbientGlow === 'function') {
-        window.syncAmbientGlow();
-      }
-      var label = mode === 'dynamic' ? 'Dinamik PnL' : (mode === 'classic' ? 'Klasik Mor' : 'Kapalı');
-      showMsg('Ambiyans modu güncellendi: ' + label, 'success');
+  tabs.forEach(function (tb) {
+    if (tb._bound) return;
+    tb._bound = true;
+    tb.addEventListener('click', function () {
+      shown = tb.dataset.bgStyle;
+      // "Kapalı" ve tek seçenekli olmayan sekmeler: sekmeye geçmek o stili hemen uygular (son seçilen ya da ilk seçenek)
+      var cur = A.read();
+      if (cur.style !== shown) A.set({ style: shown });
+      sync();
     });
   });
-
-  if (typeof window.syncAmbientGlow === 'function') {
-    window.syncAmbientGlow();
+  if (glow && !glow._bound) {
+    glow._bound = true;
+    glow.addEventListener('change', function () { A.set({ glow: glow.checked }); sync(); });
   }
-
-  wwLog.log('✅ Dinamik ambiyans seçici başlatıldı!');
-}
-
-window.testAmbientState = function(state) {
-  var body = document.body;
-  if (!body) return;
-  body.classList.remove('ambient-disabled');
-  body.classList.add('ambient-enabled');
-  body.setAttribute('data-ambient-state', state);
-
-  var chips = document.querySelectorAll('.ambient-test-chip');
-  chips.forEach(function(chip) {
-    chip.classList.toggle('active', chip.classList.contains(state));
+  strengthBtns.forEach(function (b) {
+    if (b._bound) return;
+    b._bound = true;
+    b.addEventListener('click', function () { A.set({ strength: +b.dataset.strength }); sync(); });
   });
-
-  var dot = document.getElementById('ambient-current-indicator');
-  if (dot) {
-    dot.style.display = 'inline-block';
-    dot.className = 'ambient-indicator-dot ' + state;
-  }
-
-  var msg = state === 'profit' ? 'Kâr Ambiyansı Aktif (Yeşil)' : (state === 'loss' ? 'Zarar Ambiyansı Aktif (Kırmızı)' : 'Nötr Ambiyans Aktif (Mor)');
-  if (typeof showMsg === 'function') showMsg(msg, 'success');
-  else if (typeof showToast === 'function') showToast(msg, 'success');
-};
-
-window.syncAmbientGlow = function(overridePnl) {
-  var mode = localStorage.getItem('ww_ambient_mode') || 'dynamic';
-  var body = document.body;
-  if (!body) return;
-
-  if (mode === 'off') {
-    body.classList.add('ambient-disabled');
-    return;
-  }
-
-  body.classList.remove('ambient-disabled');
-
-  if (mode === 'classic') {
-    body.setAttribute('data-ambient-state', 'neutral');
-    return;
-  }
-
-  var pnl = overridePnl;
-  if (pnl === undefined || pnl === null) {
-    var raw = localStorage.getItem('ww_cached_pnl');
-    pnl = raw !== null ? parseFloat(raw) : 0;
-  }
-
-  if (isNaN(pnl) || pnl === 0) {
-    body.setAttribute('data-ambient-state', 'neutral');
-  } else if (pnl > 0) {
-    body.setAttribute('data-ambient-state', 'profit');
-  } else {
-    body.setAttribute('data-ambient-state', 'loss');
-  }
-
-  var dot = document.getElementById('ambient-current-indicator');
-  if (dot) {
-    dot.className = 'ambient-indicator-dot ' + (body.getAttribute('data-ambient-state') || 'neutral');
-  }
-};
+  chips.forEach(function (c) {
+    if (c._bound) return;
+    c._bound = true;
+    c.addEventListener('click', function () {
+      chips.forEach(function (x) { x.classList.toggle('active', x === c && !!c.dataset.state); });
+      A.preview(c.dataset.state || null, +(c.dataset.tier || 0));
+      sync();
+    });
+  });
+  sync();
+}
 
 // ============================================================
 // ⭐ OVER TRADE
@@ -3628,7 +3647,7 @@ async function bootSettings() {
         window.SETTINGS_STATE.isPro = true;
       } else {
         wwLog.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
-        window.location.href = '/index.html';
+        window.location.href = '/';
         return;
       }
     }
@@ -3771,6 +3790,7 @@ if (document.readyState === 'loading') {
 SETTINGS_PAGE.onLeave(function() {
   // Tema stüdyosunda bekleyen otomatik kaydı hemen yap (seçim diğer sayfalarda da geçerli olsun)
   if (window.WWThemeStudio) window.WWThemeStudio.flush();
+  if (window.WwAmbient) window.WwAmbient.preview(null);   // arka plan önizlemesi Ayarlar'da kalır
   if (window.SETTINGS_STATE && window.SETTINGS_STATE.timerInterval) {
     clearInterval(window.SETTINGS_STATE.timerInterval);
     window.SETTINGS_STATE.timerInterval = null;

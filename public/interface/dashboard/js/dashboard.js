@@ -756,11 +756,11 @@ function wwAccent() {
     var totalPnL = m.totalPnL;
     var wins = m.wins, losses = m.losses;
 
+    // Arka plan K/Z ışığı: yön + şiddet (ortalama kapalı işlem büyüklüğüne göre; ambient.js)
     try {
-      localStorage.setItem('ww_cached_pnl', String(totalPnL));
-      if (typeof window.syncAmbientGlow === 'function') {
-        window.syncAmbientGlow(totalPnL);
-      }
+      var avgAbs = total ? (m.grossWin + m.grossLoss) / total : 0;
+      if (window.WwAmbient) window.WwAmbient.setPnl(totalPnL, avgAbs);
+      else localStorage.setItem('ww_cached_pnl', String(totalPnL));
     } catch(e) {}
 
     var wr = m.winRate;
@@ -898,7 +898,7 @@ function wwAccent() {
         <div class="empty-state">
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
           <p class="empty-text">${noText}</p>
-          <a href="/strategies.html" class="empty-link">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.create_strategy_link') : 'Strateji oluştur →'}</a>
+          <a href="/strategies" class="empty-link">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.create_strategy_link') : 'Strateji oluştur →'}</a>
         </div>
       `;
       if (bestWorstEl) bestWorstEl.style.display = 'none';

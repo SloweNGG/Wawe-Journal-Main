@@ -500,7 +500,7 @@
         if (redirectUrl) {
           window.location.href = redirectUrl;
         } else if (window.location.pathname.includes('/journals')) {
-          window.location.href = '/dashboard.html';
+          window.location.href = '/dashboard';
         } else {
           window.location.reload();
         }

@@ -1849,7 +1849,10 @@
     v.chart = window.LightweightCharts.createChart(v.el, window.WwChart.mergeDeep(window.WwChart.lwc({
       autoSize: true,
       rightPriceScale: { borderVisible: false, entireTextOnly: true, scaleMargins: { top: 0.08, bottom: lk.showVolume ? 0.2 : 0.08 } },
+      // rightBarStaysOnScroll: the wheel zooms around the right edge, not the mouse, so the cursor candle stays in place instead
+      // of the view drifting into empty future space. How far out it zooms: fitZoomLimit.
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: v === R ? 8 : 6,
+        rightBarStaysOnScroll: true,
         shiftVisibleRangeOnNewBar: true, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: tickLabelFor(v) },
       localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) },
       // the trading chart keeps its full crosshair; every other chart hides the vertical line (WwChart.lwc)
@@ -1871,6 +1874,7 @@
     v.series.attachPrimitive(v.tlines); v.tlines.setVisible(lk.tradeLines);
     // every chart scrolls, zooms and shows its crosshair on its own (owner, 2026-10-26: the charts are fully independent)
     v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (v === R) updateNowBtn(); });
+    v.chart.timeScale().subscribeSizeChange(function () { fitZoomLimit(v); });
     bindOrderDrag(v);
     var dg = R.sym.digits;
     v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; }, pane: v === R ? 'main' : v.pane,   // drawings stay on their own chart
@@ -1897,6 +1901,16 @@
     });
     rebuildMarkers(); syncPriceLines(); updateAskLine();
   }
+  // Zooming out stops when every loaded candle (plus the right margin) fills the chart: otherwise, while the months before the
+  // window are still loading, the wheel squeezed the few candles of the window into a corner of an empty chart (2026-11-21).
+  // The centered view (CENTER_BARS) always fits: with fewer candles it leaves room on the left for the history on its way.
+  function fitZoomLimit(v) {
+    if (!v || !v.chart) return;
+    var ts = v.chart.timeScale(), w = ts.width(), n = v.bars ? v.bars.length : 0;
+    if (!(w > 0) || !n) return;
+    var min = Math.max(0.5, w / (Math.max(n, CENTER_BARS) + RIGHT_OFFSET));
+    if (Math.abs(ts.options().minBarSpacing - min) > 0.01) ts.applyOptions({ minBarSpacing: min });
+  }
   // v.bars: the candles in prices (legend, drawings, sessions); v.ha: their Heikin Ashi version when that style is on
   function renderChartData(v) {
     if (!v) { views().forEach(renderChartData); return; }
@@ -1914,6 +1928,7 @@
     v.series.setData(window.WwBtLook.toSeriesData(v.look, v.bars, v.ha));
     if (v.vol) v.vol.setData(v.candles.map(function (x) { return volPoint(v, x); }));
     v.dirtyFrom = -1;
+    fitZoomLimit(v);
     if (v === R) renderLegend();
   }
   function volPoint(v, x) {
@@ -1936,6 +1951,7 @@
         v.series.update(seriesPoint(v, i)); if (v.vol) v.vol.update(volPoint(v, v.candles[i]));
       }
       v.dirtyFrom = -1;
+      fitZoomLimit(v);                                     // one more candle: a little further out is allowed
     });
   }
   // appearance change from the drawer: colors and switches in place, a new candle style or volume rebuilds the charts

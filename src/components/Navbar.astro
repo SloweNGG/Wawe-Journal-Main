@@ -17,7 +17,7 @@ const isActive = (page: string) => {
 };
 ---
 <nav class="nav">
-  <a href="/dashboard.html" class="nav-logo" title="Wawe Journal - Dashboard">
+  <a href="/dashboard" class="nav-logo" title="Wawe Journal - Dashboard">
     <img class="nav-logo-mark" src="/resim.svg" alt="Wawe Journal" width="26" height="26" />
   </a>
 
@@ -65,12 +65,12 @@ const isActive = (page: string) => {
   </div>
 
   <div class="nav-links">
-    <a href="/dashboard.html" data-page="dashboard" class={`loaded ${isActive('dashboard') ? 'active' : ''}`}><span data-i18n="nav.dashboard">Dashboard</span></a>
-    <a href="/trades.html" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`}><span data-i18n="nav.trades">İşlemler</span></a>
-    <a href="/strategies.html" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
-    <a href="/calendar.html" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
-    <a href="/backtest.html" data-page="backtest" id="nav-backtest-link" style="display:none;" class={`loaded ${isActive('backtest') ? 'active' : ''}`}><span data-i18n="nav.backtest">Backtest</span></a>
-    <a href="/analytics.html" data-page="analytics" data-pro-link class={`loaded ${isActive('analytics') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span></a>
+    <a href="/dashboard" data-page="dashboard" class={`loaded ${isActive('dashboard') ? 'active' : ''}`}><span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="/trades" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`}><span data-i18n="nav.trades">İşlemler</span></a>
+    <a href="/strategies" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
+    <a href="/calendar" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
+    <a href="/backtest" data-page="backtest" id="nav-backtest-link" style="display:none;" class={`loaded ${isActive('backtest') ? 'active' : ''}`}><span data-i18n="nav.backtest">Backtest</span></a>
+    <a href="/analytics" data-page="analytics" data-pro-link class={`loaded ${isActive('analytics') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span></a>
   </div>
 
   <div class="nav-right">
@@ -126,7 +126,7 @@ const isActive = (page: string) => {
           </div>
         </div>
         <div class="bell-panel-footer">
-          <a href="/settings.html#panel-overtrade" class="bell-footer-link" onclick="window.wwGoToOvertradeSettings && window.wwGoToOvertradeSettings(event)">
+          <a href="/settings#panel-overtrade" class="bell-footer-link" onclick="window.wwGoToOvertradeSettings && window.wwGoToOvertradeSettings(event)">
             <i data-lucide="sliders-horizontal"></i>
             <span data-i18n="noti.overtrade_settings">Overtrade ve Risk Ayarları</span>
           </a>
@@ -134,7 +134,7 @@ const isActive = (page: string) => {
       </div>
     </div>
 
-    <a href="/settings.html#panel-plan" class="plan-badge" id="plan-badge" aria-label="Abonelik planı">
+    <a href="/settings#panel-plan" class="plan-badge" id="plan-badge" aria-label="Abonelik planı">
       <span class="plan-dot"></span>
       <span class="plan-text" id="plan-text">Ücretsiz</span>
     </a>
@@ -155,19 +155,19 @@ const isActive = (page: string) => {
         <span id="plan-tooltip-sub">Sınırsız Süre</span>
       </div>
       <div class="dropdown-divider"></div>
-      <a href="/settings.html#panel-profile" class="dropdown-item">
+      <a href="/settings#panel-profile" class="dropdown-item">
         <i data-lucide="user" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.profile">Profil</span>
       </a>
-      <a href="/settings.html" class="dropdown-item">
+      <a href="/settings" class="dropdown-item">
         <i data-lucide="settings" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.settings">Ayarlar</span>
       </a>
-      <a href="/my-earnings.html" class="dropdown-item">
+      <a href="/my-earnings" class="dropdown-item">
         <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.earnings">Kazançlarım</span>
       </a>
-      <a href="/report-bug.html" class="dropdown-item">
+      <a href="/report-bug" class="dropdown-item">
         <i data-lucide="bug" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.report_bug">Hata Bildir</span>
       </a>
@@ -176,13 +176,13 @@ const isActive = (page: string) => {
         <span data-i18n="nav.help">Yardım Merkezi</span>
       </a>
       <span id="admin-link" style="display:none;">
-        <a href="/admin.html" class="dropdown-item">
+        <a href="/admin" class="dropdown-item">
           <i data-lucide="shield" style="width:16px;height:16px;"></i>
           <span data-i18n="nav.admin">Admin</span>
         </a>
       </span>
       <div class="dropdown-divider nav-upgrade-divider" id="avatar-upgrade-divider"></div>
-      <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
+      <a href="/settings#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
         <i data-lucide="crown" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.upgrade_pro">Pro'ya Geç →</span>
       </a>
@@ -283,7 +283,7 @@ const isActive = (page: string) => {
       </div>
     </div>
 
-    <a href="/journals.html" class="menu-journal-link" id="menu-journal-link">
+    <a href="/journals" class="menu-journal-link" id="menu-journal-link">
       <span class="menu-journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:var(--ac-b1);--mk-ring:rgba(var(--ac-b1-rgb), 0.251)"><span class="ww-mark-dot"></span></span></span>
       <span class="menu-journal-info">
         <span class="menu-journal-label" data-i18n="nav.current_account">Aktif Hesap</span>
@@ -294,61 +294,61 @@ const isActive = (page: string) => {
 
     <div class="menu-section">
       <div class="menu-section-title" data-i18n="nav.menu_general">GENEL</div>
-      <a href="/index.html">
+      <a href="/">
         <i data-lucide="home" style="width:16px;height:16px;"></i> <span data-i18n="nav.home">Ana Sayfa</span>
       </a>
-      <a href="/dashboard.html" class={isActive('dashboard') ? 'active' : ''}>
+      <a href="/dashboard" class={isActive('dashboard') ? 'active' : ''}>
         <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.dashboard">Dashboard</span>
       </a>
-      <a href="/trades.html" class={isActive('trades') ? 'active' : ''}>
+      <a href="/trades" class={isActive('trades') ? 'active' : ''}>
         <i data-lucide="list" style="width:16px;height:16px;"></i> <span data-i18n="nav.trades">İşlemler</span>
       </a>
-      <a href="/strategies.html" class={isActive('strategies') ? 'active' : ''}>
+      <a href="/strategies" class={isActive('strategies') ? 'active' : ''}>
         <i data-lucide="target" style="width:16px;height:16px;"></i> <span data-i18n="nav.strategies">Stratejiler</span>
       </a>
-      <a href="/calendar.html" class={isActive('calendar') ? 'active' : ''}>
+      <a href="/calendar" class={isActive('calendar') ? 'active' : ''}>
         <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">Takvim</span>
       </a>
-      <a href="/backtest.html" id="nav-backtest-link-mobile" style="display:none;" class={isActive('backtest') ? 'active' : ''}>
+      <a href="/backtest" id="nav-backtest-link-mobile" style="display:none;" class={isActive('backtest') ? 'active' : ''}>
         <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">Backtest</span>
       </a>
     </div>
 
     <div class="menu-section">
       <div class="menu-section-title" data-i18n="nav.menu_pro">PRO</div>
-      <a href="/analytics.html" data-pro-link class={isActive('analytics') ? 'active' : ''}>
+      <a href="/analytics" data-pro-link class={isActive('analytics') ? 'active' : ''}>
         <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">Analiz</span>
       </a>
-      <a href="/settings.html#panel-appearance">
+      <a href="/settings#panel-appearance">
         <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
       </a>
-      <a href="/settings.html#panel-overtrade">
+      <a href="/settings#panel-overtrade">
         <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
       </a>
-      <a href="/settings.html#panel-plan" class="go-pro">
+      <a href="/settings#panel-plan" class="go-pro">
         <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_pro">Pro'ya Geç →</span>
       </a>
     </div>
 
     <div class="menu-section">
       <div class="menu-section-title" data-i18n="nav.menu_account">HESAP</div>
-      <a href="/settings.html#panel-profile">
+      <a href="/settings#panel-profile">
         <i data-lucide="user" style="width:16px;height:16px;"></i> <span data-i18n="nav.profile">Profil</span>
       </a>
-      <a href="/settings.html" class={isActive('settings') ? 'active' : ''}>
+      <a href="/settings" class={isActive('settings') ? 'active' : ''}>
         <i data-lucide="settings" style="width:16px;height:16px;"></i> <span data-i18n="nav.settings">Ayarlar</span>
       </a>
-      <a href="/my-earnings.html" class={isActive('my-earnings') ? 'active' : ''}>
+      <a href="/my-earnings" class={isActive('my-earnings') ? 'active' : ''}>
         <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">Kazançlarım</span>
       </a>
-      <a href="/report-bug.html" class={isActive('report-bug') ? 'active' : ''}>
+      <a href="/report-bug" class={isActive('report-bug') ? 'active' : ''}>
         <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">Hata Bildir</span>
       </a>
       <a href="/support">
         <i data-lucide="life-buoy" style="width:16px;height:16px;"></i> <span data-i18n="nav.help">Yardım Merkezi</span>
       </a>
       <span id="admin-link-mobile" style="display:none;">
-        <a href="/admin.html">
+        <a href="/admin">
           <i data-lucide="shield" style="width:16px;height:16px;"></i> <span data-i18n="nav.admin">Admin</span>
         </a>
       </span>

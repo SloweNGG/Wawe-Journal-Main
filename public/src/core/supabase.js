@@ -109,7 +109,7 @@ export async function requireAuth() {
       if (typeof window !== 'undefined' && window.location.search.includes('test=1')) {
         return { id: 'demo-user-id', email: 'demo@wawejournal.com', user_metadata: { username: 'demo' } };
       }
-      window.location.href = '/login.html'; 
+      window.location.href = '/login'; 
       return null; 
     }
     
@@ -187,7 +187,7 @@ export async function requireAdmin() {
   const user = await requireAuth();
   if (!user) return null;
   if (!isAdmin(user)) {
-    window.location.href = '/dashboard.html';
+    window.location.href = '/dashboard';
     return null;
   }
   return user;

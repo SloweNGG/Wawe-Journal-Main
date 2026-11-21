@@ -4,6 +4,7 @@
 // terms.astro, gizlilik privacy.astro, içe aktarma integrations/*.astro. Bir özellik değişince buradaki cevabı da güncelle.
 // MT5 otomatik senkron uygulamada var ama sitede "yakında" diye anılıyor (kullanıcı kararı, MQL5 Market listesine kadar).
 import PageLayout from '../layouts/PageLayout.astro';
+import { srcsetFor } from '../data/responsive-images';
 
 type Shot = { src: string; w: number; h: number; alt: string; cap: string };
 type QA = { id: string; q: string; a: string; steps?: string[]; shot?: Shot };
@@ -187,7 +188,7 @@ const schema = [
             </header>
             {c.shot && (
               <figure class="sp-shot">
-                <a href={c.shot.src} target="_blank" rel="noopener" aria-label="Open the full-size screenshot"><img src={c.shot.src} width={c.shot.w} height={c.shot.h} alt={c.shot.alt} loading="lazy" decoding="async" /></a>
+                <a href={c.shot.src} target="_blank" rel="noopener" aria-label="Open the full-size screenshot"><img src={c.shot.src} srcset={srcsetFor(c.shot.src)} sizes="(max-width: 900px) calc(100vw - 40px), 976px" width={c.shot.w} height={c.shot.h} alt={c.shot.alt} loading="lazy" decoding="async" /></a>
                 <figcaption>{c.shot.cap}</figcaption>
               </figure>
             )}
@@ -202,7 +203,7 @@ const schema = [
                 {i.a && <p class="sp-a" set:html={i.a} />}
                 {i.shot && (
                   <figure class="sp-shot">
-                    <a href={i.shot.src} target="_blank" rel="noopener" aria-label="Open the full-size screenshot"><img src={i.shot.src} width={i.shot.w} height={i.shot.h} alt={i.shot.alt} loading="lazy" decoding="async" /></a>
+                    <a href={i.shot.src} target="_blank" rel="noopener" aria-label="Open the full-size screenshot"><img src={i.shot.src} srcset={srcsetFor(i.shot.src)} sizes="(max-width: 900px) calc(100vw - 40px), 976px" width={i.shot.w} height={i.shot.h} alt={i.shot.alt} loading="lazy" decoding="async" /></a>
                     <figcaption>{i.shot.cap}</figcaption>
                   </figure>
                 )}
@@ -220,7 +221,7 @@ const schema = [
           <p>A person answers every message. We usually reply within 24 hours on weekdays (09:00–18:00).</p>
           <div class="sp-contact-grid">
             <a href={`mailto:${EMAIL}`}><b>Email</b><span>{EMAIL}</span></a>
-            <a href="/report-bug.html"><b>Report a bug</b><span>In the app, with a screenshot</span></a>
+            <a href="/report-bug"><b>Report a bug</b><span>In the app, with a screenshot</span></a>
             <a href="https://instagram.com/wawejournal" rel="noopener" target="_blank"><b>Instagram</b><span>@wawejournal</span></a>
           </div>
         </section>

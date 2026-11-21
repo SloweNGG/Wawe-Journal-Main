@@ -524,7 +524,7 @@ import Layout from '../layouts/Layout.astro';
         <button class="btn btn-ghost" id="bulk-import-btn" style="font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.bulk_import">
           📋 Toplu Ekle
         </button>
-        <a href="trades.html" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.back">
+        <a href="/trades" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           Geri
         </a>
@@ -814,7 +814,7 @@ import Layout from '../layouts/Layout.astro';
         strategiesList = strategies;
 
         if (!strategies || strategies.length === 0) {
-          grid.innerHTML = '\n            <div class="strategy-chip-empty">\n              <span data-i18n="addtrade.no_strategies">Henüz strateji eklenmemiş.</span>\n              <a href="strategies.html" data-i18n="addtrade.create_strategy">Strateji oluştur →</a>\n            </div>\n          ';
+          grid.innerHTML = '\n            <div class="strategy-chip-empty">\n              <span data-i18n="addtrade.no_strategies">Henüz strateji eklenmemiş.</span>\n              <a href="/strategies" data-i18n="addtrade.create_strategy">Strateji oluştur →</a>\n            </div>\n          ';
           i18n.apply();
           return;
         }
@@ -1273,7 +1273,7 @@ import Layout from '../layouts/Layout.astro';
                     (skippedDuplicates > 0 ? ' (' + skippedDuplicates + ' mükerrer atlandı)' : '') + 
                     (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
           showToast(msg, failed > 0 ? 'error' : 'success');
-          setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
+          setTimeout(function() { window.location.href = '/trades'; }, 2000);
         } else if (skippedDuplicates > 0 && failed === 0) {
           showToast('Tüm işlemler (' + skippedDuplicates + ') zaten kayıtlı! Mükerrer kayıt oluşturulmadı.', 'info');
         } else {
@@ -1546,7 +1546,7 @@ import Layout from '../layouts/Layout.astro';
             if (bulkOverlay) bulkOverlay.classList.remove('active');
             if (bulkProgress) bulkProgress.style.display = 'none';
             if (bulkFill) bulkFill.style.width = '0%';
-            window.location.href = 'trades.html';
+            window.location.href = '/trades';
           }, 1500);
           showToast(success + ' işlem başarıyla eklendi!', 'success');
         }
@@ -1671,7 +1671,7 @@ import Layout from '../layouts/Layout.astro';
             }).catch(function() {});
           }
         } catch (e) {}
-        setTimeout(function() { window.location.href = 'trades.html'; }, 1200);
+        setTimeout(function() { window.location.href = '/trades'; }, 1200);
       });
     }
 

@@ -56,7 +56,7 @@
         submitting: 'Signing up…',
         done: 'Account Created! ✓',
         created: 'Account created successfully! Redirecting to dashboard...',
-        terms_html: 'By signing up, you agree to our <a href="terms.html">Terms of Use</a>.',
+        terms_html: 'By signing up, you agree to our <a href="/terms">Terms of Use</a>.',
         have_account: 'Already have an account?',
         login: 'Log in'
       },
@@ -161,7 +161,7 @@
         submitting: 'Kayıt olunuyor…',
         done: 'Hesap oluşturuldu! ✓',
         created: 'Hesabın oluşturuldu! Panele yönlendiriliyorsun...',
-        terms_html: 'Kayıt olarak <a href="terms.html">Kullanım Koşulları</a>\'nı kabul etmiş olursun.',
+        terms_html: 'Kayıt olarak <a href="/terms">Kullanım Koşulları</a>\'nı kabul etmiş olursun.',
         have_account: 'Zaten hesabın var mı?',
         login: 'Giriş yap'
       },
@@ -266,7 +266,7 @@
         submitting: 'Registrierung läuft…',
         done: 'Konto erstellt! ✓',
         created: 'Konto erfolgreich erstellt! Weiterleitung zum Dashboard...',
-        terms_html: 'Mit der Registrierung akzeptierst du unsere <a href="terms.html">Nutzungsbedingungen</a>.',
+        terms_html: 'Mit der Registrierung akzeptierst du unsere <a href="/terms">Nutzungsbedingungen</a>.',
         have_account: 'Bereits ein Konto?',
         login: 'Anmelden'
       },

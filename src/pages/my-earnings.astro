@@ -2433,7 +2433,7 @@ import Layout from '../layouts/Layout.astro';
 
       const { data: { session } } = await client.auth.getSession();
       if (!session) {
-        window.location.href = '/login.html';
+        window.location.href = '/login';
         return;
       }
 

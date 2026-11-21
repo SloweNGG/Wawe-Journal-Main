@@ -57,10 +57,16 @@ const {
       Body'nin başında çalışır; Astro'nun head sonuna eklediği CSS/script'ler de dahil olsun. */}
   {/* data-runtime: head okunurken script'in eklediği eleman (ör. hesap işareti stili) — sunucudan gelmez, işaretlenmez */}
   {spa && <script is:inline>for(var c=document.head.children,i=0;i<c.length;i++)if(!c[i].hasAttribute('data-runtime'))c[i].setAttribute('data-ssr','')</script>}
+  {/* Arka plan katmanları (Ayarlar > Görünüm > Arka plan): public/components/ambient/ambient.js + ambient.css */}
   <div class="wj-ambient-backdrop" id="wj-ambient-backdrop" aria-hidden="true">
-    <div class="wj-ambient-mesh"></div>
+    <div class="wj-bg-base"></div>
+    <div class="wj-bg-scene"></div>
+    <div class="wj-bg-scrim"></div>
     <div class="wj-ambient-orb wj-ambient-orb-1"></div>
     <div class="wj-ambient-orb wj-ambient-orb-2"></div>
+    <div class="wj-ambient-orb wj-ambient-orb-3"></div>
+    <div class="wj-ambient-mesh"></div>
+    <div class="wj-ambient-aurora"></div>
   </div>
   <div id="app-scroll-container">
     {showNavbar && (

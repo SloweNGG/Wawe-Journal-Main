@@ -2136,7 +2136,7 @@ async function fileToCsvText(file) {
         csvPreviewData = null;
         setTimeout(function() {
           closeModal();
-          window.location.href = 'trades.html';
+          window.location.href = '/trades';
         }, 1500);
       }
     } catch(e) {
@@ -2293,7 +2293,7 @@ async function fileToCsvText(file) {
         showToast(t('quickmodal.bulk_complete', { success: success }), 'success');
         setTimeout(function() {
           closeModal();
-          window.location.href = 'trades.html';
+          window.location.href = '/trades';
         }, 1500);
       }
     } catch(e) {
@@ -2684,7 +2684,7 @@ async function fileToCsvText(file) {
     if (createStrategyBtn) {
       createStrategyBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        window.location.href = '/strategies.html';
+        window.location.href = '/strategies';
       });
     }
 
