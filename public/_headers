@@ -29,6 +29,14 @@
 /images/*
   Cache-Control: public, max-age=86400
 
+# Laptop maketinin çerçevesi (ekranı saydam) ve tabanı: tek başına anlamsız görseller. Google Görseller'de sitenin
+# kartında boş bir laptop olarak çıkıyordu (2026-11-21); dizine alınmasın, Google ekran görüntülerini seçsin.
+/images/landing/mba-lid.webp
+  X-Robots-Tag: noindex
+
+/images/landing/mba-base.webp
+  X-Robots-Tag: noindex
+
 /resim.svg
   Cache-Control: public, max-age=86400
 

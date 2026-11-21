@@ -34,8 +34,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 999px; background: var(--btn); border: 1px solid rgba(139,92,246,.55); color: var(--ink); font-family: var(--sans); font-size: 15px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: border-color .2s, box-shadow .2s, transform .2s; }
 .b:hover { color: #fff; border-color: var(--v-l); box-shadow: 0 0 0 4px rgba(139,92,246,.14), 0 0 28px rgba(139,92,246,.35); }
 .b:active { transform: scale(.97); }
-.bp { color: #fff; background: linear-gradient(180deg, #8b5cf6, #6d28d9); border-color: rgba(196,181,253,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 8px 28px rgba(139,92,246,.45); animation: breathe 3.2s ease-in-out infinite; }
-.bp:hover { animation: none; background: linear-gradient(180deg, #9d74f8, #7c3aed); }
+.bp { position: relative; isolation: isolate; color: #fff; background: linear-gradient(180deg, #8b5cf6, #6d28d9); border-color: rgba(196,181,253,.55); box-shadow: inset 0 0 18px rgba(139,92,246,.22), 0 0 18px rgba(139,92,246,.20); }
+/* nefes alan parıltı: box-shadow'u canlandırmak her karede butonu yeniden boyatıyordu (navbar'daki buton hep ekranda, sayfa hiç dinlenmiyordu).
+   En parlak hâli bu katmanda sabit; yalnızca opaklığı canlanır, o da ekran kartında, ana iş parçacığına dokunmadan. */
+.bp::after { content: ""; position: absolute; z-index: -1; inset: -1px; border: 1px solid transparent; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 22px rgba(139,92,246,.32), 0 0 36px rgba(139,92,246,.45); opacity: 0; animation: breathe 3.2s ease-in-out infinite; }
+.bp:hover { background: linear-gradient(180deg, #9d74f8, #7c3aed); }
+.bp:hover::after { animation: none; opacity: 0; }
 .bs { height: 38px; padding: 0 16px; font-size: 14px; }
 .b-lg { height: 52px; padding: 0 28px; font-size: 16px; }
 .b-xl { height: 54px; padding: 0 30px; font-size: 16px; }
@@ -126,8 +130,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .br-url { display: flex; align-items: center; gap: .6cqw; flex: 1; height: 2.5cqw; padding: 0 1.2cqw; border-radius: 99px; background: #0e0e12; color: #a1a1aa; font-size: 1.15cqw; white-space: nowrap; overflow: hidden; }
 .br-url svg { width: 1.05cqw; height: 1.05cqw; color: #71717a; flex: none; }
 .br-host { color: #e4e4e7; }
-.sc-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: top center; opacity: 0; transition: opacity .5s ease; -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, #000 82%, transparent 100%); }
-.sc-shot.is-on { opacity: 1; }
+.sc-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: top center; opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility 0s .5s; -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, #000 82%, transparent 100%); }
+.sc-shot.is-on { opacity: 1; visibility: visible; transition: opacity .5s ease; }
 .sc-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; opacity: clamp(0, calc((var(--lid) - .5) * 2), 1); }
 .sc-tab { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(139,92,246,.25); background: rgba(255,255,255,.03); color: #a1a1aa; font: inherit; font-size: 13px; cursor: pointer; transition: color .3s, background .3s, border-color .3s; }
 .sc-tab:hover { color: #e4e4e7; }
@@ -135,14 +139,21 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .showcase-copy p { margin: 12px auto 0; max-width: 560px; color: var(--body); font-size: clamp(15px, 1.4vw, 17px); }
 @media (prefers-reduced-motion: reduce) { .sc-shot, .sc-cap { transition: none; } .showcase { height: auto !important; padding: 24px 24px 72px; } .showcase-pin { position: static; height: auto; } }
 .hero-device { width: min(1000px, 100%, calc((100vh - 380px) * 1.62)); margin: 0 auto; }
-.mbp { position: relative; perspective: 4200px; perspective-origin: 50% 30%; filter: drop-shadow(0 0 110px rgba(139,92,246,.32)); }
+.mbp { position: relative; isolation: isolate; perspective: 4200px; perspective-origin: 50% 30%; }
+/* mor parıltı: eskiden .mbp'de filter: drop-shadow(0 0 110px) idi ve kapak dönerken HER KAREDE tüm laptop yeniden bulanıklaştırılıyordu.
+   Aynı gölge artık görsellerin opak alanlarına oturan iki sabit kutuda, bir kez çiziliyor:
+   tabanınki burada (mba-base.webp'nin 2080x57'lik gövdesi = .mbp yüksekliğinin %4.54'ü),
+   kapağınki .mbp-lid::before içinde (mba-lid.webp'de x 169–1911 opak = iki yandan %8.125), kapakla birlikte döner. */
+.mbp::before, .mbp-lid::before { content: ""; position: absolute; z-index: -1; pointer-events: none; box-shadow: 0 0 110px rgba(139,92,246,.32); }
+.mbp::before { left: 0; right: 0; bottom: 0; height: 4.54%; border-radius: 0 0 2% 2% / 0 0 40% 40%; }
+.mbp-lid::before { top: 0; bottom: 0; left: 8.125%; right: 8.125%; border-radius: 3.9% 3.9% 0 0 / 5.9% 5.9% 0 0; }
 .mbp::after { content: ""; position: absolute; left: 4%; right: 4%; bottom: -1.4%; height: 3%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.85), rgba(0,0,0,0)); z-index: -1; }
 .mbp-lid { position: relative; transform-origin: 50% 100%; transform: rotateX(calc((1 - var(--lid)) * -86deg)); will-change: transform; transition: transform .35s cubic-bezier(.2,.7,.2,1); }
 .mbp-frame, .mbp-base { position: relative; z-index: 1; display: block; width: 100%; height: auto; filter: drop-shadow(0 0 1px rgba(196,181,253,.45)) drop-shadow(0 -6px 22px rgba(139,92,246,.22)); }
 /* ekran alanı: PSD'deki "Change This" katmanının konumu; çerçeve görselinde ekran (ve çentik) maskesi delik olarak kesildi */
 .mbp-screen { container-type: inline-size; display: flex; flex-direction: column; position: absolute; z-index: 0; left: 10.036%; top: 3.310%; width: 79.927%; height: 90.538%; overflow: hidden; background: #000; }
 
-.mbp-screen::before { content: ""; position: absolute; z-index: 1; inset: 0; background: #000; opacity: calc((1 - var(--lid)) * .9); transition: opacity .35s; pointer-events: none; }
+.mbp-screen::before { content: ""; position: absolute; z-index: 1; inset: 0; background: #000; opacity: calc((1 - var(--lid)) * .9); transition: opacity .35s; pointer-events: none; will-change: opacity; }
 .mbp-screen::after { content: ""; position: absolute; z-index: 2; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 38%); pointer-events: none; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 
@@ -421,7 +432,9 @@ main section:not(.hero-scene) .chat.g:hover { transform: none; border-color: rgb
 @keyframes fxUp { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes drift { 0% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(40px,-30px,0) scale(1.08); } 100% { transform: translate3d(0,0,0) scale(1); } }
 @keyframes shine { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
-@keyframes breathe { 0%, 100% { box-shadow: inset 0 0 18px rgba(139,92,246,.22), 0 0 18px rgba(139,92,246,.20); } 50% { box-shadow: inset 0 0 22px rgba(139,92,246,.32), 0 0 36px rgba(139,92,246,.45); } }
+@keyframes breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+/* ekran dışındaki sonsuz animasyonlar durur (index.astro'daki gözlemci ekler); görününce kaldığı kareden sürer */
+.anim-off, .anim-off::before, .anim-off::after, .anim-off * { animation-play-state: paused !important; }
 @keyframes glyphPulse { 0%, 100% { opacity: .35; transform: translate(-50%, 50%) scale(.92); } 50% { opacity: .85; transform: translate(-50%, 50%) scale(1.06); } }
 @keyframes reveal { from { opacity: 0; transform: translateY(36px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes faqIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
@@ -443,7 +456,8 @@ main section:not(.hero-scene) .g:hover { transform: translateY(-3px); border-col
   .showcase { height: 470vh; padding: 0 12px; }
   .lp-foot { padding-bottom: 290px; background-size: auto, 920px auto, auto; }
   .sc-tab { padding: 6px 10px; font-size: 12px; }
-  .hero-device { width: calc(100% + 24px); margin: 0 -12px; }
+  /* taban görseli ekranın kenarına değince yuvarlak uçları kesiliyordu: kenar boşluğunun içinde kalsın */
+  .hero-device { width: 100%; margin: 0 auto; }
 }
 @media (max-width: 860px) {
   .navlinks { display: none; }
@@ -463,9 +477,13 @@ main section:not(.hero-scene) .g:hover { transform: translateY(-3px); border-col
   .navbar.g { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .drift { animation: none; will-change: auto; }
   .bp, .shine { animation: none; }
+  .bp { box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 8px 28px rgba(139,92,246,.45); }
+  .bp::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  .bp { box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 8px 28px rgba(139,92,246,.45); }
+  .bp::after { display: none; }
 }
 
 /* "Ayrıntılar" bağlantıları: bölümden ilgili özellik sayfasına (/backtesting, /prop-firm-tracker, /pricing) */

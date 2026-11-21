@@ -18,7 +18,9 @@
           "coach": "AI Coach",
           "prop": "Prop firms",
           "signin": "Sign in",
-          "start": "Start for free"
+          "start": "Start for free",
+          "dashboard": "Dashboard",
+          "account": "Account settings"
         },
         "hero": {
           "new": "NEW",
@@ -26,7 +28,8 @@
           "title_h": "Never make the same<br><span class=\"shine\">mistake twice.</span>",
           "sub": "Wawe Journal is a free trading journal with analytics, an AI coach, prop firm tracking and backtest replay. All in one place.",
           "start": "Start for free",
-          "signin": "Sign in"
+          "signin": "Sign in",
+          "dashboard": "Go to dashboard"
         },
         "plat": {
           "more": "See every integration →",
@@ -482,7 +485,9 @@
           "coach": "AI Koç",
           "prop": "Prop firmalar",
           "signin": "Giriş yap",
-          "start": "Ücretsiz başla"
+          "start": "Ücretsiz başla",
+          "dashboard": "Dashboard",
+          "account": "Hesap ayarları"
         },
         "hero": {
           "new": "YENİ",
@@ -490,7 +495,8 @@
           "title_h": "Aynı hatayı<br><span class=\"shine\">bir daha asla yapma.</span>",
           "sub": "Wawe Journal; analiz, AI koç, prop firma takibi ve backtest replay içeren ücretsiz bir işlem günlüğü. Hepsi tek bir yerde.",
           "start": "Ücretsiz başla",
-          "signin": "Giriş yap"
+          "signin": "Giriş yap",
+          "dashboard": "Dashboard'a git"
         },
         "plat": {
           "more": "Tüm entegrasyonları gör →",
@@ -940,7 +946,9 @@
           "coach": "KI-Coach",
           "prop": "Prop-Firmen",
           "signin": "Anmelden",
-          "start": "Kostenlos starten"
+          "start": "Kostenlos starten",
+          "dashboard": "Dashboard",
+          "account": "Kontoeinstellungen"
         },
         "hero": {
           "new": "NEU",
@@ -948,7 +956,8 @@
           "title_h": "Mach denselben Fehler<br><span class=\"shine\">nie wieder.</span>",
           "sub": "Wawe Journal ist ein kostenloses Trading-Journal mit Analyse, KI-Coach, Prop-Firm-Tracking und Backtest-Replay. Alles an einem Ort.",
           "start": "Kostenlos starten",
-          "signin": "Anmelden"
+          "signin": "Anmelden",
+          "dashboard": "Zum Dashboard"
         },
         "plat": {
           "more": "Alle Integrationen ansehen →",

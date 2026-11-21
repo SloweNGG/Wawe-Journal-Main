@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import LegalDisclosures from '../components/LegalDisclosures.astro';
+import NavAuth from '../components/NavAuth.astro';
 ---
 <Layout
   lang="en"
@@ -58,6 +59,12 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "Web",
         "url": "https://wawejournal.com/",
+        "image": "https://wawejournal.com/images/landing/screen-dashboard.webp",
+        "screenshot": [
+          "https://wawejournal.com/images/landing/screen-dashboard.webp",
+          "https://wawejournal.com/images/landing/screen-analytics.webp",
+          "https://wawejournal.com/images/landing/screen-backtest.webp"
+        ],
         "author": { "@id": "https://wawejournal.com/#organization" },
         "inLanguage": ["en", "tr", "de"],
         "featureList": [
@@ -184,8 +191,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <div class="lang-option" data-lang="de" data-flag="DE"><span>Deutsch</span><span class="mono lang-code">DE</span></div>
         </div>
       </div>
-      <a href="/login" class="navsignin" data-i18n="lp.nav.signin">Sign in</a>
-      <a href="/register" class="b bp bs" data-i18n="lp.nav.start">Start for free</a>
+      <NavAuth />
     </div>
   </header>
 
@@ -201,8 +207,9 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         <h1 data-i18n-html="lp.hero.title_h">Never make the same<br><span class="shine">mistake twice.</span></h1>
         <p class="hero-sub" data-i18n="lp.hero.sub">Wawe Journal is a free trading journal with analytics, an AI coach, prop firm tracking and backtest replay. All in one place.</p>
         <div class="hero-actions">
-          <a href="/register" class="b bp b-lg" data-i18n="lp.hero.start">Start for free</a>
-          <a href="/login" class="b b-lg" data-i18n="lp.hero.signin">Sign in</a>
+          <a href="/register" class="b bp b-lg nav-guest" data-i18n="lp.hero.start">Start for free</a>
+          <a href="/login" class="b b-lg nav-guest" data-i18n="lp.hero.signin">Sign in</a>
+          <a href="/dashboard" class="b bp b-lg nav-authed" data-i18n="lp.hero.dashboard">Go to dashboard</a>
         </div>
       </div>
 
@@ -658,14 +665,17 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
       });
     })();
 
-    // LOGGED-IN REDIRECT
+    // OTURUM: giriş yapmış kullanıcı ana sayfayı gezebilir, navbar'da avatar + Dashboard görür (NavAuth).
+    // Yükleme SDK'sız, localStorage'dan yapıldı; burada SDK ile doğrulanır: oturum geçersizse ziyaretçi görünümüne döner.
+    // Yüklü uygulama (PWA, start_url "/") açılınca doğrudan Dashboard'a gider.
     (function() {
-      var done = false;
+      var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
       waitForDeps(function() {
         (async function() {
           try {
             var { data: { session } } = await window.sb.auth.getSession();
-            if (session && !done) { done = true; window.location.href = '/dashboard.html'; }
+            if (session && standalone) { window.location.replace('/dashboard'); return; }
+            document.documentElement.classList.toggle('ww-authed', !!session);
           } catch(e) {}
         })();
       });
@@ -685,7 +695,7 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
       var sec = document.querySelector('.showcase');
       if (!sec) return;
       var shots = sec.querySelectorAll('.sc-shot'), caps = sec.querySelectorAll('.sc-cap'), tabs = sec.querySelectorAll('.sc-tab');
-      var n = shots.length, cur = 0, raf = 0, pathEl = sec.querySelector('.br-path');
+      var n = shots.length, cur = 0, raf = 0, lastLid = '', pathEl = sec.querySelector('.br-path');
       var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       // ilerleme: kapak açılır (0–LID) → ekranlar değişir (FIRST–LAST) → son ekrandan sonra kapak kapanır (CLOSE–1)
       var LID = 0.12, FIRST = 0.15, LAST = 0.84, CLOSE = 0.87;
@@ -708,7 +718,9 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
         var g = geo();
         var p = Math.max(0, Math.min(1, (g.lead - g.sr.top) / g.span));
         var lid = p < CLOSE ? Math.min(1, p / LID) : 1 - Math.min(1, (p - CLOSE) / (1 - CLOSE));
-        sec.style.setProperty('--lid', ease(lid).toFixed(3));
+        // değer değişmediyse yazma: bölümün ortasında kapak hep açık (1), boşuna stil hesabı yaptırmasın
+        var v = ease(lid).toFixed(3);
+        if (v !== lastLid) { lastLid = v; sec.style.setProperty('--lid', v); }
         show(p < FIRST ? 0 : Math.min(n - 1, Math.floor((p - FIRST) / (LAST - FIRST) * n)));
       }
       function req() { if (!raf) raf = requestAnimationFrame(update); }
@@ -720,10 +732,48 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
           window.scrollTo({ top: y + p * g.span, behavior: 'smooth' });
         });
       });
-      if (still) return;
-      window.addEventListener('scroll', req, { passive: true });
+      // ekran görüntülerini bölüm yaklaşınca indirip önceden çöz: sekme değişirken ilk gösterimde takılma olmasın
+      var warmed = false;
+      function warm() {
+        if (warmed) return; warmed = true;
+        shots.forEach(function(im) { im.loading = 'eager'; });
+        // sırayla, biri bitince diğeri: altısını birden çözmek zayıf telefonda kendisi takılma yaratır
+        var i = 0;
+        (function next() {
+          var im = shots[i++];
+          if (!im || !im.decode) return;
+          im.decode().catch(function() {}).then(next);
+        })();
+      }
+      if (still) { warm(); return; }
       window.addEventListener('resize', req);
+      // kaydırma dinleyicisi yalnızca bölüm ekrana yakınken çalışır (sayfanın geri kalanında her karede ölçüm yapmasın);
+      // çıkarken son bir güncelleme durumu (kapak kapalı) sabitler
+      if ('IntersectionObserver' in window) {
+        var live = false;
+        new IntersectionObserver(function(es) {
+          var on = es[es.length - 1].isIntersecting;
+          if (on === live) return;
+          live = on;
+          if (on) { warm(); window.addEventListener('scroll', req, { passive: true }); }
+          else window.removeEventListener('scroll', req);
+          req();
+        }, { rootMargin: '50% 0px' }).observe(sec);
+      } else {
+        warm();
+        window.addEventListener('scroll', req, { passive: true });
+      }
       update();
+    })();
+
+    // EKRAN DIŞINDAKİ SONSUZ ANİMASYONLAR: görünmezken durur, görününce kaldığı kareden sürer (görüntü değişmez).
+    // Arka plandaki 5 büyük parıltı, parlayan başlıklar, nefes alan butonlar ve koç avatarları sayfa boyunca hiç durmadan kare üretiyordu.
+    (function() {
+      if (!('IntersectionObserver' in window)) return;
+      var io = new IntersectionObserver(function(es) {
+        es.forEach(function(e) { e.target.classList.toggle('anim-off', !e.isIntersecting); });
+      }, { rootMargin: '200px 0px' });
+      document.querySelectorAll('.drift, .shine, .bp, .chat-orb, .wwc-av').forEach(function(el) { io.observe(el); });
     })();
 
     // BILLING PERIOD TOGGLE

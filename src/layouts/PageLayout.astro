@@ -1,6 +1,7 @@
 ---
 import Layout from './Layout.astro';
 import LegalDisclosures from '../components/LegalDisclosures.astro';
+import NavAuth from '../components/NavAuth.astro';
 
 export interface Props {
   title: string;
@@ -106,8 +107,7 @@ const jsonLd = graph.length ? JSON.stringify({ '@context': 'https://schema.org',
           <div class="lang-option" data-lang="de" data-flag="DE"><span>Deutsch</span><span class="mono lang-code">DE</span></div>
         </div>
       </div>
-      <a href="/login" class="navsignin" data-i18n="lp.nav.signin">Sign in</a>
-      <a href="/register" class="b bp bs" data-i18n="lp.nav.start">Start for free</a>
+      <NavAuth />
     </div>
   </header>
 
