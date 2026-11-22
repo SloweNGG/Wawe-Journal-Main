@@ -1,0 +1,130 @@
+---
+// Entegrasyon sayfası: Tradovate (vadeli işlemler) CSV içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Kaynaklar (iddialar bunlarla aynı kalmalı):
+//  - İmzalar: 'tradovate' (buyPrice, sellPrice, boughtTimestamp, soldTimestamp) ve 'tradovate-orders' (B/S, Contract):
+//    public/interface/quick-add/js/broker-detector.js
+//  - Performance: aynı dolumu paylaşan aynı yöndeki satırlar tek işlem, K/Z dosyadan; Orders: hesap + kontrat bazında
+//    pozisyon sıfırlanana kadar tek işlem, ters dönüş bölünür, dolmamış/iptal/reddedilmiş emir atlanır, açık kalan
+//    pozisyon alınmaz, birden fazla hesap uyarısı; ABD tarih biçimi; kök sembol + kontrat nota; puan değeri tablosu
+//    (FUTURES_POINT_VALUES), bilinmeyen kökte puan cinsinden K/Z + uyarı; komisyon yok:
+//    public/interface/quick-add/js/parser-v2.js (buildTradovatePerformance / buildTradovateOrders)
+//  - Mükerrer atlama: quick-add.js executeCsvImport
+// Tradovate API bağlantısı / otomatik senkron YOK: burada vaat edilmez.
+import PageLayout from '../../layouts/PageLayout.astro';
+
+const faq = [
+  {
+    q: 'Which Tradovate file should I export?',
+    a: 'The Performance report is the best choice. Each row is a closed buy and sell pair with Tradovate’s own P&L, and Wawe Journal joins the rows of one position into a single trade. The Orders export works too: filled orders are rebuilt into trades from the first fill until the position is flat again.',
+  },
+  {
+    q: 'Does it work with prop firm accounts on Tradovate?',
+    a: 'Yes. A funded or evaluation account that trades on Tradovate exports the same reports as a personal account, so the import works the same way. Track the firm’s daily loss and drawdown limits in the prop firm tracker.',
+  },
+  {
+    q: 'Are commissions included?',
+    a: 'No. Tradovate’s Performance and Orders exports do not contain commissions or exchange fees, so the imported P&L is before those costs. The preview says this before you confirm.',
+  },
+  {
+    q: 'How is P&L calculated for micro and mini contracts?',
+    a: 'From the Performance report, P&L is taken as Tradovate reports it. From the Orders export, it is the price difference times contracts times the contract’s point value, for example $2 a point for MNQ, $5 for MES, $20 for NQ and $50 for ES. If a contract’s point value is not known, the result is shown in points with a warning so you can check it.',
+  },
+  {
+    q: 'Do I need to give Wawe Journal my Tradovate login?',
+    a: 'No. Wawe Journal does not connect to Tradovate and never asks for your username, password or API key. You download the report yourself and upload the file, so nothing can trade on your account.',
+  },
+  {
+    q: 'What if I upload overlapping date ranges?',
+    a: 'Trades already in the journal are skipped, so you can upload a longer export or the same week twice without creating duplicates.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': 'https://wawejournal.com/integrations/tradovate#faq',
+    mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<PageLayout
+  title="Tradovate Trading Journal: Import Futures Trades | Wawe Journal"
+  description="Import your Tradovate Performance report or Orders export into Wawe Journal. Futures trades with contract point values for ES, NQ, MES, MNQ and more. Free."
+  crumb="Tradovate journal"
+  crumbParent={{ name: 'Integrations', href: '/integrations' }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>Tradovate journal</span></nav>
+      <h1 class="anim wide" style="--d:.1s">Tradovate trading journal</h1>
+      <p class="page-lead anim" style="--d:.2s">Futures move fast, and one red day on a funded account can undo a week. Export your Tradovate history, drop it into Wawe Journal, and see every ES, NQ and micro trade with its real dollar result.</p>
+      <div class="hero-actions anim" style="--d:.3s">
+        <a href="/register" class="btn btn-accent btn-lg">Import Tradovate trades free</a>
+        <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec reveal">
+      <h2>How to import Tradovate trades <span class="dim">in three steps.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><span class="num">01</span><h3>Download the Performance report</h3><p>In Tradovate, open your account reports, choose the Performance tab, pick a date range and download it as CSV. The Orders export works as well.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Keep the file as it is</h3><p>No editing needed. Tradovate’s column names and its month/day/year dates are recognised automatically.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. Check the preview, then import into your active journal.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Built for futures, <span class="dim">not squeezed into forex.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>One position, one trade</h3><p>Scaling in or out across several fills becomes a single trade with an average entry and exit, the way you actually traded it. A fill that flips you from long to short starts a new trade.</p></div>
+        <div class="fp-item"><h3>Contract point values</h3><p>Contracts are stored with their point value, such as ES, MES, NQ, MNQ, YM, RTY, CL, MCL, GC, MGC, treasuries and currency futures, so dollar P&amp;L stays right.</p></div>
+        <div class="fp-item"><h3>Clean symbols</h3><p>MNQZ5 and MNQH6 are both journaled as MNQ, so your stats follow the instrument across rollovers. The full contract name is kept in the trade note.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>What you get after the import</h2>
+      <div class="fp-grid two">
+        <div class="fp-item"><h3>Futures analytics</h3><p>Win rate, profit factor, expectancy and drawdown on your Tradovate trades, and a P&amp;L calendar that shows your best and worst sessions. <a href="/pricing">Pro</a> adds advanced analytics and strategy comparison.</p></div>
+        <div class="fp-item"><h3>Prop firm rules in view</h3><p>Trading an evaluation or a funded account? The <a href="/prop-firm-tracker">prop firm tracker</a> keeps your daily loss and drawdown limits next to your results.</p></div>
+        <div class="fp-item"><h3>An AI coach that reads your journal</h3><p>Revenge trades after a stop-out and size creeping up during a losing streak show up in the data. The <a href="/#coach">AI coach</a> points them out before they cost an account.</p></div>
+        <div class="fp-item"><h3>Practise before the open</h3><p><a href="/backtesting">Backtest replay</a> lets you drill a setup candle by candle before you take it live.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Good to know <span class="dim">before you import.</span></h2>
+      <div class="fp-grid">
+        <div class="fp-item"><h3>No auto-sync yet</h3><p>Tradovate import is file based. Wawe Journal does not connect to your account; upload a new export when you want the journal updated.</p></div>
+        <div class="fp-item"><h3>P&amp;L before commissions</h3><p>Tradovate’s exports do not include commissions or exchange fees, so the imported result is before those costs.</p></div>
+        <div class="fp-item"><h3>Open positions stay out</h3><p>A position that is still open at the end of an Orders export has no closing fill, so it is not imported. Orders that never filled are skipped too.</p></div>
+      </div>
+      <p class="fp-note">Times in your file are read in the time zone you choose under Settings. Exporting several Tradovate accounts in one Orders file? Each account is tracked separately, but all trades go into the journal you have open, so export one account at a time to keep them apart.</p>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Tradovate journal questions</h2>
+      <div class="fp-faq">
+        {faq.map((f) => (
+          <details><summary>{f.q}</summary><div class="a">{f.a}</div></details>
+        ))}
+      </div>
+      <div class="fp-related">
+        <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
+        <a href="/integrations/tradingview" class="btn btn-line">TradingView journal →</a>
+        <a href="/integrations/csv-excel" class="btn btn-line">CSV &amp; Excel import →</a>
+        <a href="/integrations" class="btn btn-line">All integrations →</a>
+      </div>
+      <p class="fp-note">Tradovate is a trademark of its owner. Wawe Journal is not affiliated with or endorsed by it.</p>
+    </section>
+
+    <section class="cta reveal">
+      <h2>Every contract, every session, in one journal.</h2>
+      <p>Create a free Wawe Journal account and import your Tradovate history in a minute.</p>
+      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
+    </section>
+  </div>
+</PageLayout>

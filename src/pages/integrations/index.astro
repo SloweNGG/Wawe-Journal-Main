@@ -11,6 +11,7 @@ import PageLayout from '../../layouts/PageLayout.astro';
 
 const imports = [
   { href: '/integrations/metatrader', logo: '/images/platforms/mt5.png', name: 'MetaTrader 4 & 5', text: 'Forex, gold and index CFD traders: import your MT4 or MT5 trade history with stop loss, take profit and profit.' },
+  { href: '/integrations/tradovate', logo: '/images/platforms/tradovate.svg', name: 'Tradovate', text: 'Futures traders, prop accounts included: import the Performance report or Orders export with contract point values.' },
   { href: '/integrations/tradingview', logo: '/images/platforms/tradingview.svg', name: 'TradingView', text: 'Bring a Strategy Tester trade list into your journal and compare a tested idea with your live results.' },
   { href: '/integrations/binance', logo: '/images/platforms/binance.svg', name: 'Binance', text: 'Crypto traders: upload your trade history and Wawe Journal pairs the buy and sell fills into closed trades.' },
   { href: '/integrations/bybit', logo: '/images/platforms/bybit_icon.png', name: 'Bybit', text: 'Derivatives traders: import the Closed P&L export, one closed position per row, or your spot trade history.' },
@@ -23,7 +24,7 @@ const imports = [
 const faq = [
   {
     q: 'Which brokers and platforms work with Wawe Journal?',
-    a: 'cTrader, MetaTrader 4 and MetaTrader 5 connect directly and sync automatically. For TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and any other platform, you upload an exported trade history as a CSV, Excel (.xlsx or .xls) or HTML file.',
+    a: 'cTrader, MetaTrader 4 and MetaTrader 5 connect directly and sync automatically. For Tradovate, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and any other platform, you upload an exported trade history as a CSV, Excel (.xlsx or .xls) or HTML file.',
   },
   {
     q: 'Is importing trades free?',
@@ -62,7 +63,7 @@ const schema = [
 ---
 <PageLayout
   title="Trading Journal Integrations: cTrader, MT5 & More"
-  description="Connect cTrader or MetaTrader 4/5 for automatic sync, or import trades from TradingView, Binance, Bybit, IBKR, XTB, OANDA or any CSV and Excel file. Free to start."
+  description="Connect cTrader or MetaTrader 4/5 for automatic sync, or import trades from Tradovate, TradingView, Binance, Bybit, IBKR, XTB, OANDA or any CSV and Excel file. Free to start."
   crumb="Integrations"
   schema={schema}
 >
@@ -141,7 +142,7 @@ const schema = [
         <a href="/prop-firm-tracker" class="btn btn-line">Prop firm tracker →</a>
         <a href="/#coach" class="btn btn-line">AI trading coach →</a>
       </div>
-      <p class="fp-note">cTrader, MetaTrader, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and NinjaTrader are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</p>
+      <p class="fp-note">cTrader, MetaTrader, Tradovate, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and NinjaTrader are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</p>
     </section>
 
     <section class="cta reveal">
