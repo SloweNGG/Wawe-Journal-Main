@@ -464,7 +464,16 @@
       var q = headerQuality(rows2d[i]);
       if (q > bestQ) { best = i; bestQ = q; }
     }
-    return best;
+    if (bestQ > 0) return best;
+    // Hiçbir satır başlık gibi değil (tanınmayan format → sütun eşleme ekranı). 1. satır neredeyse boş bir rapor
+    // başlığıysa ("Hesap özeti") eşleme ekranı boş sütunlar göstermesin: tablonun genişliğine yakın ilk satır başlık sayılır.
+    var widest = 0;
+    for (var w = 0; w < limit; w++) widest = Math.max(widest, filledCount(rows2d[w]));
+    if (filledCount(rows2d[0]) * 2 >= widest) return 0;
+    for (var k = 1; k < limit; k++) {
+      if (filledCount(rows2d[k]) >= Math.max(2, Math.ceil(widest * 0.8))) return k;
+    }
+    return 0;
   }
 
   // Başlıktan sonraki satırlar. Başlık 1. satır değilse (rapor) bölüm, tek hücreli bir ara başlıkta
@@ -780,7 +789,10 @@
 
     // Rapor biçimli dosyalarda (MT4 Detailed Statement, MT5 geçmiş raporu, XTB Excel...) başlık 1. satırda değil:
     // üstte hesap bilgisi / rapor başlığı satırları var. Başlık satırı aranır, rapor bölümü bitince durulur.
-    var headerIdx = options.manualMapping ? 0 : findHeaderRow(rows2d);
+    // Elle/AI eşlemede başlık satırı, eşleme ekranını açan sonucun headerRow'u (rapor biçimli dosyada 0 olmayabilir)
+    var headerIdx = options.manualMapping
+      ? (options.headerRow >= 0 && options.headerRow < rows2d.length - 1 ? options.headerRow : 0)
+      : findHeaderRow(rows2d);
     var rawHeaders = rows2d[headerIdx].map(function (h) { return h == null ? '' : String(h); });
     var dataRows = sectionRows(rows2d, headerIdx).filter(function (r) {
       return r.some(function (c) { return c !== null && c !== undefined && String(c).trim() !== ''; });
@@ -859,7 +871,10 @@
         headers: rawHeaders,
         suggestedMapping: mapping,
         isFillBased: isFillBased,
-        headerFingerprint: fingerprint
+        headerFingerprint: fingerprint,
+        headerRow: headerIdx,
+        // eşleme ekranı ve AI eşleme için ilk birkaç veri satırı (metin olarak)
+        sampleRows: dataRows.slice(0, 5).map(function (r) { return r.map(function (c) { return c == null ? '' : String(c); }); })
       };
     }
 

@@ -109,3 +109,117 @@ describe('Quick Add: AI tab', () => {
     }
   });
 });
+
+import { mappingInstruction, mappingUserText, readMapping, cleanHeaders, cleanSample, MAP_FIELDS } from '../supabase/functions/_shared/trade-extract.ts';
+
+describe('trade-extract: CSV column mapping', () => {
+  it('keeps valid, unique column indexes; fill-based drops exit', () => {
+    const m = readMapping(JSON.stringify({ mapping: { symbol: 0, direction: 1, entry: 3, exit: 3, lot: 2, date: 99, pnl: '6', sl: -1, tp: 1.5, foo: 4 }, fill_based: false }), 7);
+    assert.deepEqual(JSON.parse(JSON.stringify(m.mapping)), { symbol: 0, direction: 1, entry: 3, lot: 2, pnl: 6 });
+    assert.equal(m.fillBased, false);
+    const f = readMapping('{"mapping":{"symbol":0,"direction":1,"entry":2,"exit":3,"lot":4},"fill_based":true,"note":"x"}', 5);
+    assert.equal(f.fillBased, true);
+    assert.equal(f.mapping.exit, undefined);
+    assert.equal(f.note, 'x');
+    assert.equal(readMapping('no json here', 5), null);
+    assert.equal(readMapping('{"trades":[]}', 5), null);
+  });
+
+  it('sends headers with sample values, trimmed; instruction lists every field', () => {
+    const h = cleanHeaders(['Kod', ' Yön ', 'x'.repeat(100)]);
+    assert.equal(h[1], 'Yön');
+    assert.equal(h[2].length, 40);
+    assert.equal(cleanHeaders(['only one']), null);
+    const s = cleanSample([['EURUSD', 'BUY', '1'], 'bad', ['GBPUSD', 'SELL', '2', 'extra']], 3);
+    assert.equal(s.length, 2);
+    assert.equal(s[1].length, 3);
+    const u = mappingUserText(h, s);
+    assert.match(u, /0: "Kod" -> "EURUSD", "GBPUSD"/);
+    const ins = mappingInstruction('de');
+    for (const f of MAP_FIELDS) assert.ok(ins.includes(f), f);
+    assert.match(ins, /in German/);
+  });
+});
+
+describe('ParserV2: manual / AI column mapping', () => {
+  function loadWithStorage() {
+    const store = {};
+    const ctx = { console, localStorage: { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } } };
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    for (const f of ['broker-dictionary.js', 'broker-detector.js', 'fill-pairing.js', 'parser-v2.js']) {
+      vm.runInContext(fs.readFileSync('public/interface/quick-add/js/' + f, 'utf8'), ctx, { filename: f });
+    }
+    return ctx.ParserV2;
+  }
+  const csv = (rows) => rows.map((r) => r.join(',')).join('\n');
+  const file = csv([
+    ['Kod', 'Yonelim', 'Hacim', 'Kur1', 'Kur2', 'Saat', 'Netice'],
+    ['EURUSD', 'BUY', '0.10', '1.08500', '1.09000', '2026-11-20 10:00', '50'],
+    ['XAUUSD', 'SELL', '0.50', '2365.0', '2350.0', '2026-11-21 14:30', '750'],
+  ]);
+
+  it('an unknown file asks for a mapping and hands back the header row and sample rows', () => {
+    const P = loadWithStorage();
+    const r = P.parse(file, {});
+    assert.equal(r.needsManualMapping, true);
+    assert.equal(r.headers.length, 7);
+    assert.equal(r.headerRow, 0);
+    assert.equal(r.sampleRows.length, 2);
+    assert.equal(r.sampleRows[1][0], 'XAUUSD');
+  });
+
+  it('the mapping reads every row; once saved, the same format is recognised', () => {
+    const P = loadWithStorage();
+    const first = P.parse(file, {});
+    const mapping = { symbol: 0, direction: 1, lot: 2, entry: 3, exit: 4, date: 5, pnl: 6 };
+    const r = P.parse(file, { manualMapping: mapping, isFillBased: false, headerRow: first.headerRow });
+    assert.equal(r.rows.length, 2);
+    assert.equal(r.rows[1].symbol, 'XAUUSD');
+    assert.equal(r.rows[1].direction, 'SHORT');
+    assert.equal(r.rows[1].pnl, 750);
+    P.saveManualMapping(first.headerFingerprint, { mapping, isFillBased: false });
+    const again = P.parse(file, {});
+    assert.equal(again.detected, 'manual-cached');
+    assert.equal(again.rows.length, 2);
+  });
+
+  it('report-style file: the mapping uses the header row the parser found', () => {
+    const P = loadWithStorage();
+    const report = csv([['Hesap ozeti', '', '', '', '', '', ''], ['Musteri: 123', '', '', '', '', '', '']]) + '\n' + file;
+    const first = P.parse(report, {});
+    const mapping = { symbol: 0, direction: 1, lot: 2, entry: 3, exit: 4, date: 5, pnl: 6 };
+    const r = P.parse(report, { manualMapping: mapping, isFillBased: false, headerRow: first.headerRow });
+    assert.equal(first.headerRow, 2);
+    assert.equal(first.headers[0], 'Kod');
+    assert.equal(r.rows.length, 2);
+  });
+
+  it('fill-based mapping pairs buys and sells', () => {
+    const P = loadWithStorage();
+    const fills = csv([['Tarih', 'Enstruman', 'Islem', 'Kur', 'Miktar'], ['2026-11-20 10:00', 'BTCUSDT', 'BUY', '65000', '0.01'], ['2026-11-20 11:00', 'BTCUSDT', 'SELL', '65400', '0.01']]);
+    const r = P.parse(fills, { manualMapping: { date: 0, symbol: 1, direction: 2, entry: 3, lot: 4 }, isFillBased: true, headerRow: 0 });
+    assert.equal(r.rows.length, 1);
+    assert.equal(String(r.rows[0].direction), 'LONG');
+    assert.equal(r.rows[0].exit, 65400);
+  });
+});
+
+describe('Quick Add: mapping editor', () => {
+  const qa = fs.readFileSync('public/interface/quick-add/js/quick-add.js', 'utf8');
+  it('unknown files open the editor; AI mapping goes through the same function with action "map"', () => {
+    assert.match(qa, /parsed\.needsManualMapping && parsed\.headers/);
+    assert.match(qa, /showMappingEditor\(parsed, csvText\)/);
+    assert.match(qa, /action: 'map'/);
+    assert.match(qa, /saveManualMapping\(mapState\.fingerprint/);
+  });
+  it('every map_ key is translated in en, tr and de', () => {
+    const ctx = { localStorage: { getItem() { return null; } }, wwLog: { log() {}, warn() {} }, setTimeout() {}, document: { querySelectorAll() { return []; } }, console };
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync('public/interface/quick-add/js/quick-modal-i18n.js', 'utf8') + ';this.__q = quickTranslations;', ctx);
+    const used = new Set([...qa.matchAll(/quickmodal\.(map_[a-z_]+)/g)].map((m) => 'quickmodal.' + m[1]));
+    assert.ok(used.size >= 12);
+    for (const lang of ['en', 'tr', 'de']) for (const k of used) assert.ok(ctx.__q[lang][k], lang + ' ' + k);
+  });
+});

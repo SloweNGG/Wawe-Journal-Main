@@ -5,6 +5,9 @@
 //
 //   POST { text?: string (<= 2000), image?: { mimeType: png|jpeg|webp, data: base64 }, lang?: tr|en|de, tz?, recentSymbols?: string[] }
 //   -> 200 { ok, trades: ExtractedTrade[], note, usage: { used, limit, premium } }
+//   POST { action: "map", headers: string[], sample: string[][] (<= 5 rows), lang? }   CSV column mapping for a file the
+//   parser did not recognise -> 200 { ok, mapping: { field: columnIndex }, fillBased, note, usage }. The browser's parser
+//   then reads every row itself (no trade value comes from the model).
 //   -> 4xx/5xx { ok: false, code, message, usage? }   codes: UNAUTHORIZED, BAD_REQUEST, BAD_IMAGE, TOO_LARGE, LIMIT, BUSY,
 //                                                     UPSTREAM, SERVER, NOT_CONFIGURED
 //
@@ -23,7 +26,8 @@ import { safeTimeZone } from '../_shared/trade-summary.ts';
 import { takeSseEvents, createStepBuilder } from '../_shared/gemini-stream.ts';
 import { runChain, modelHealth } from '../_shared/model-chain.ts';
 import { OPENROUTER_URL, isOpenRouter, openRouterChain, chatRequest, createChatBuilder, chatOutcome } from '../_shared/openrouter-stream.ts';
-import { extractInstruction, extractUserText, readExtraction, cleanRecentSymbols, MAX_TEXT } from '../_shared/trade-extract.ts';
+import { extractInstruction, extractUserText, readExtraction, cleanRecentSymbols, MAX_TEXT,
+  mappingInstruction, mappingUserText, readMapping, cleanHeaders, cleanSample } from '../_shared/trade-extract.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -84,11 +88,12 @@ async function withTimer<T>(firstWordMs: number, fn: (signal: AbortSignal, arm: 
 }
 
 // a reply that is not the JSON asked for is treated like a busy model (503): the next model is tried
-function judged(text: string): Got {
-  return readExtraction(text) ? { ok: true, status: 200, forwarded: false, text } : { ok: false, status: 503, forwarded: false, text: '' };
+type Judge = (text: string) => boolean;
+function judged(text: string, valid: Judge): Got {
+  return valid(text) ? { ok: true, status: 200, forwarded: false, text } : { ok: false, status: 503, forwarded: false, text: '' };
 }
 
-function callGemini(model: string, system: string, userText: string, image: { mime_type: string; data: string } | null, firstWordMs: number): Promise<Got> {
+function callGemini(model: string, system: string, userText: string, image: { mime_type: string; data: string } | null, firstWordMs: number, valid: Judge): Promise<Got> {
   return withTimer(firstWordMs, async (signal, arm) => {
     let res: Response;
     const content: any[] = [{ type: 'text', text: userText }];
@@ -119,11 +124,11 @@ function callGemini(model: string, system: string, userText: string, image: { mi
       console.error('ai-trade-parse stream error:', model, r.error ? r.error.code.slice(0, 40) : (r.text ? 'cut off' : 'empty'));
       return { ok: false, status: busy ? 503 : 400, forwarded: false, text: '' };
     }
-    return judged(r.text);
+    return judged(r.text, valid);
   });
 }
 
-function callOpenRouter(model: string, system: string, userText: string, image: { mime_type: string; data: string } | null, firstWordMs: number): Promise<Got> {
+function callOpenRouter(model: string, system: string, userText: string, image: { mime_type: string; data: string } | null, firstWordMs: number, valid: Judge): Promise<Got> {
   return withTimer(firstWordMs, async (signal, arm) => {
     const last = image
       ? [{ type: 'text', text: userText }, { type: 'image_url', image_url: { url: `data:${image.mime_type};base64,${image.data}` } }]
@@ -149,7 +154,7 @@ function callOpenRouter(model: string, system: string, userText: string, image: 
     }
     const r = b.result();
     if (chatOutcome(r) !== 200) return { ok: false, status: chatOutcome(r), forwarded: false, text: '' };
-    return judged(r.text);
+    return judged(r.text, valid);
   });
 }
 
@@ -171,17 +176,26 @@ serve(async (req: Request) => {
     body = JSON.parse(raw);
   } catch { return fail('BAD_REQUEST', 'Invalid JSON body.', 400, cors); }
 
-  const text = typeof body?.text === 'string' ? body.text.trim() : '';
-  if (text.length > MAX_TEXT) return fail('BAD_REQUEST', 'Text must be at most ' + MAX_TEXT + ' characters.', 400, cors);
-  let image: { mime_type: string; data: string } | null = null;
-  if (body?.image) {
-    const mt = String(body.image.mimeType || ''), data = String(body.image.data || '');
-    if (!IMAGE_TYPES.includes(mt) || !data || data.length > MAX_IMAGE_B64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return fail('BAD_IMAGE', 'Unsupported or too large image.', 400, cors);
-    image = { mime_type: mt, data };
-  }
-  if (!text && !image) return fail('BAD_REQUEST', 'Send a screenshot or a description.', 400, cors);
   const lang = LANGS.includes(body?.lang) ? body.lang : 'tr';
   const tz = safeTimeZone(body?.tz);
+  const isMap = body?.action === 'map';
+  const text = !isMap && typeof body?.text === 'string' ? body.text.trim() : '';
+  let image: { mime_type: string; data: string } | null = null;
+  let headers: string[] | null = null, sample: string[][] = [];
+  if (isMap) {
+    // CSV column mapping: header row + a few data rows of a file the parser did not recognise
+    headers = cleanHeaders(body?.headers);
+    if (!headers) return fail('BAD_REQUEST', 'Send the header row.', 400, cors);
+    sample = cleanSample(body?.sample, headers.length);
+  } else {
+    if (text.length > MAX_TEXT) return fail('BAD_REQUEST', 'Text must be at most ' + MAX_TEXT + ' characters.', 400, cors);
+    if (body?.image) {
+      const mt = String(body.image.mimeType || ''), data = String(body.image.data || '');
+      if (!IMAGE_TYPES.includes(mt) || !data || data.length > MAX_IMAGE_B64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return fail('BAD_IMAGE', 'Unsupported or too large image.', 400, cors);
+      image = { mime_type: mt, data };
+    }
+    if (!text && !image) return fail('BAD_REQUEST', 'Send a screenshot or a description.', 400, cors);
+  }
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: take, error: takeErr } = await admin.rpc('ai_take_message', { p_user: user.id });
@@ -192,13 +206,35 @@ serve(async (req: Request) => {
   const refunded = { ...usage, used: Math.max(0, usage.used - 1) };
 
   try {
+    const t0 = Date.now();
+    if (isMap) {
+      const cols = headers!.length;
+      const valid: Judge = (t) => !!readMapping(t, cols);
+      const system = mappingInstruction(lang), userText = mappingUserText(headers!, sample);
+      const chained = await runChain([...GEMINI_MODELS, ...OPENROUTER_MODELS], (model, firstWordMs) => isOpenRouter(model)
+        ? callOpenRouter(model, system, userText, null, firstWordMs, valid)
+        : callGemini(model, system, userText, null, firstWordMs, valid), { health: HEALTH });
+      const m = chained.got ? readMapping(chained.got.text, cols) : null;
+      console.log('ai-trade-parse map ' + JSON.stringify({ ms: Date.now() - t0, model: chained.used || null, attempts: chained.attempts,
+        columns: cols, rows: sample.length, mapped: m ? Object.keys(m.mapping).length : null }));
+      if (!m) {
+        await refund();
+        const busy = chained.lastStatus === 429 || chained.lastStatus === 503;
+        return fail(busy ? 'BUSY' : 'UPSTREAM', busy ? 'The AI service is busy. Try again in a minute.' : 'The AI service could not answer. Try again shortly.',
+          busy ? 503 : 502, cors, { usage: refunded });
+      }
+      if (!Object.keys(m.mapping).length) await refund();
+      return jsonRes({ ok: true, mapping: m.mapping, fillBased: m.fillBased, note: m.note, usage: Object.keys(m.mapping).length ? usage : refunded },
+        200, { ...cors, 'Cache-Control': 'no-store' });
+    }
+
     const system = extractInstruction(lang, todayIn(tz), cleanRecentSymbols(body?.recentSymbols));
     const userText = extractUserText(text, !!image);
     const models = [...GEMINI_MODELS, ...(image ? OPENROUTER_VISION_MODELS : OPENROUTER_MODELS)];
-    const t0 = Date.now();
+    const valid: Judge = (t) => !!readExtraction(t);
     const chained = await runChain(models, (model, firstWordMs) => isOpenRouter(model)
-      ? callOpenRouter(model, system, userText, image, firstWordMs)
-      : callGemini(model, system, userText, image, firstWordMs), { health: HEALTH });
+      ? callOpenRouter(model, system, userText, image, firstWordMs, valid)
+      : callGemini(model, system, userText, image, firstWordMs, valid), { health: HEALTH });
     const { got, used, lastStatus } = chained;
     const out = got ? readExtraction(got.text) : null;
     // timings and counts only (no content, no user id)

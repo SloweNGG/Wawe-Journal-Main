@@ -941,6 +941,7 @@ async function fileToCsvText(file) {
                 </div>
 
                 <div class="quick-import-log" id="quick-csv-log" style="display:none;"></div>
+                <div id="qa-map-container" style="display:none;"></div>
                 <div id="csv-preview-container" style="display:none;"></div>
               </div>
             </div>
@@ -1911,6 +1912,7 @@ async function fileToCsvText(file) {
     if (dropzone) dropzone.classList.remove('qa-dragover');
 
     resetAi();
+    hideMappingEditor();
   }
 
   function resetForm() {
@@ -2176,6 +2178,7 @@ async function fileToCsvText(file) {
     renderCSVLog([]);
     const oldPreview = el('csv-preview-container');
     if (oldPreview) { oldPreview.style.display = 'none'; oldPreview.innerHTML = ''; }
+    hideMappingEditor();
 
     try {
       csvFile = file;
@@ -2207,6 +2210,13 @@ async function fileToCsvText(file) {
         const parsed = window.parseCsvByBroker(csvText, selectedBroker);
         const detected = parsed.detected || selectedBroker;
 
+        // Tanınmayan format: sütun eşleme ekranı (elle ya da AI ile); onaylanan eşleme bu format için saklanır
+        if ((!parsed.rows || parsed.rows.length === 0) && parsed.needsManualMapping && parsed.headers && parsed.headers.length >= 2) {
+          if (badgeEl) badgeEl.innerHTML = badgeIcon('warning');
+          showMappingEditor(parsed, csvText);
+          return;
+        }
+
         if (!parsed.rows || parsed.rows.length === 0) {
           showToast(t('quickmodal.csv_no_data'), 'error');
           if (badgeEl) badgeEl.innerHTML = badgeIcon('error');
@@ -2219,18 +2229,7 @@ async function fileToCsvText(file) {
           return;
         }
 
-        // Parser uyarıları (ör. tarihi okunamayan satırlar) hata listesinin sonunda gösterilir
-        const previewNotes = (parsed.errors || []).concat(parsed.warnings || []);
-        showBrokerPreview(parsed.rows, detected, previewNotes);
-        if (badgeEl) badgeEl.innerHTML = badgeIcon('success');
-
-        csvPreviewData = {
-          isBrokerParsed: true,
-          parsed: parsed,
-          rawText: csvText,
-          detected: detected
-        };
-        syncImportBtn();
+        presentParsed(parsed, detected, csvText);
         return;
       }
 
@@ -2240,6 +2239,220 @@ async function fileToCsvText(file) {
       showToast(t('quickmodal.error_save', { message: e.message }), 'error');
       const badgeEl = el('quick-csv-badge');
       if (badgeEl) badgeEl.innerHTML = badgeIcon('error');
+    }
+  }
+
+  // Okunan dosyayı önizlemeye koy (normal içe aktarma ve elle/AI eşleme aynı yoldan)
+  function presentParsed(parsed, detected, csvText) {
+    // Parser uyarıları (ör. tarihi okunamayan satırlar) hata listesinin sonunda gösterilir
+    const previewNotes = (parsed.errors || []).concat(parsed.warnings || []);
+    showBrokerPreview(parsed.rows, detected, previewNotes);
+    const badgeEl = el('quick-csv-badge');
+    if (badgeEl) badgeEl.innerHTML = badgeIcon('success');
+    csvPreviewData = {
+      isBrokerParsed: true,
+      parsed: parsed,
+      rawText: csvText,
+      detected: detected
+    };
+    syncImportBtn();
+  }
+
+  // ============================================================
+  // SÜTUN EŞLEME — okuyucunun tanımadığı dosyalar (elle ya da AI ile)
+  // ============================================================
+  // AI yalnızca hangi sütunun ne olduğunu söyler (başlıklar + ilk 5 satır gönderilir); satırları her zaman
+  // ParserV2 okur. Başarılı eşleme ParserV2.saveManualMapping ile bu tarayıcıda format başına saklanır.
+
+  const MAP_FIELDS = [
+    { f: 'symbol', key: 'quickmodal.symbol', fb: 'Symbol', req: 'both' },
+    { f: 'direction', key: 'quickmodal.side', fb: 'Side', req: 'both' },
+    { f: 'entry', key: 'quickmodal.entry_price', fb: 'Entry', req: 'both' },
+    { f: 'exit', key: 'quickmodal.exit_price', fb: 'Exit', req: 'closed' },
+    { f: 'lot', key: 'quickmodal.lot', fb: 'Lot', req: 'fill' },
+    { f: 'date', key: 'quickmodal.date', fb: 'Date' },
+    { f: 'pnl', key: 'quickmodal.map_pnl', fb: 'P&L' },
+    { f: 'commission', key: 'quickmodal.commission', fb: 'Commission' },
+    { f: 'swap', key: 'quickmodal.swap', fb: 'Swap' },
+    { f: 'sl', key: 'quickmodal.stop_loss', fb: 'Stop Loss' },
+    { f: 'tp', key: 'quickmodal.take_profit', fb: 'Take Profit' },
+    { f: 'ticket', key: 'quickmodal.map_ticket', fb: 'Ticket' },
+    { f: 'comment', key: 'quickmodal.map_comment', fb: 'Comment' }
+  ];
+  let mapState = null;   // { csvText, headers, sample, headerRow, fingerprint }
+  let mapBusy = false;
+
+  function hideMappingEditor() {
+    mapState = null;
+    mapBusy = false;
+    const c = el('qa-map-container');
+    if (c) { c.style.display = 'none'; c.innerHTML = ''; }
+  }
+
+  function mapFieldRequired(def, fill) {
+    return def.req === 'both' || (def.req === 'closed' && !fill) || (def.req === 'fill' && fill);
+  }
+
+  function setMapMsg(html, kind) {
+    const m = el('qa-map-msg');
+    if (!m) return;
+    if (!html) { m.hidden = true; m.innerHTML = ''; return; }
+    m.hidden = false;
+    m.className = 'qa-ai-msg' + (kind ? ' is-' + kind : '');
+    m.innerHTML = html;
+  }
+
+  function syncMapRequired() {
+    const fill = !!el('qa-map-fill')?.checked;
+    MAP_FIELDS.forEach(function(def) {
+      const box = document.querySelector('.qa-map-field[data-field="' + def.f + '"]');
+      if (!box) return;
+      const req = mapFieldRequired(def, fill);
+      box.classList.toggle('is-req', req);
+      box.classList.toggle('is-off', fill && def.f === 'exit');
+      const sel = box.querySelector('select');
+      if (sel) sel.disabled = fill && def.f === 'exit';
+      box.classList.remove('is-missing');
+    });
+  }
+
+  function setMapSelects(mapping, fill) {
+    MAP_FIELDS.forEach(function(def) {
+      const sel = document.querySelector('.qa-map-field[data-field="' + def.f + '"] select');
+      if (!sel) return;
+      const v = mapping ? mapping[def.f] : null;
+      sel.value = (v != null && v >= 0 && v < mapState.headers.length) ? String(v) : '';
+    });
+    const fb = el('qa-map-fill');
+    if (fb) fb.checked = !!fill;
+    syncMapRequired();
+  }
+
+  function showMappingEditor(parsed, csvText) {
+    const c = el('qa-map-container');
+    if (!c) return;
+    mapState = {
+      csvText: csvText,
+      headers: parsed.headers.map(function(h) { return h == null ? '' : String(h); }),
+      sample: Array.isArray(parsed.sampleRows) ? parsed.sampleRows : [],
+      headerRow: parsed.headerRow || 0,
+      fingerprint: parsed.headerFingerprint
+    };
+    const firstVal = function(i) {
+      for (let r = 0; r < mapState.sample.length; r++) {
+        const v = mapState.sample[r] && mapState.sample[r][i];
+        if (v != null && String(v).trim() !== '') return String(v).trim();
+      }
+      return '';
+    };
+    const options = '<option value="">—</option>' + mapState.headers.map(function(h, i) {
+      const name = h.trim() || t('quickmodal.map_column', { n: i + 1 });
+      const v = firstVal(i);
+      return '<option value="' + i + '">' + escapeHtml(name + (v ? ' · ' + (v.length > 18 ? v.slice(0, 18) + '…' : v) : '')) + '</option>';
+    }).join('');
+
+    let html = '<div class="qa-map">';
+    html += '<div class="qa-map-head"><div><div class="qa-map-title">' + escapeHtml(t('quickmodal.map_title')) + '</div>';
+    html += '<p>' + escapeHtml(t('quickmodal.map_desc')) + '</p></div>';
+    html += '<button type="button" class="quick-import-btn qa-map-ai" id="qa-map-ai">' + ICONS.sparkle + '<span>' + escapeHtml(t('quickmodal.map_ai')) + '</span></button></div>';
+    html += '<div class="qa-map-grid">';
+    MAP_FIELDS.forEach(function(def) {
+      html += '<label class="qa-map-field" data-field="' + def.f + '"><span>' + escapeHtml(colLabel(def.key, def.fb)) + '</span>';
+      html += '<select>' + options + '</select></label>';
+    });
+    html += '</div>';
+    html += '<label class="qa-map-fill"><input type="checkbox" id="qa-map-fill"><span>' + escapeHtml(t('quickmodal.map_fill_based')) + '</span></label>';
+    html += '<div class="qa-ai-msg" id="qa-map-msg" hidden></div>';
+    html += '<div class="qa-map-foot"><span class="qa-map-note">' + escapeHtml(t('quickmodal.map_ai_privacy')) + '</span>';
+    html += '<button type="button" class="quick-import-btn qa-map-apply" id="qa-map-apply">' + ICONS.check + '<span>' + escapeHtml(t('quickmodal.map_apply')) + '</span></button></div>';
+    html += '</div>';
+    c.innerHTML = html;
+    c.style.display = 'block';
+
+    // okuyucunun kendi tahmini (bulabildiği alanlar) başlangıç değeri olur
+    setMapSelects(parsed.suggestedMapping || {}, !!parsed.isFillBased);
+    el('qa-map-fill')?.addEventListener('change', syncMapRequired);
+    el('qa-map-apply')?.addEventListener('click', function() { applyMapping(false); });
+    el('qa-map-ai')?.addEventListener('click', runAiMap);
+    c.querySelectorAll('select').forEach(function(s) {
+      s.addEventListener('change', function() { s.closest('.qa-map-field')?.classList.remove('is-missing'); });
+    });
+  }
+
+  function applyMapping(fromAi, aiNote) {
+    if (!mapState) return;
+    const fill = !!el('qa-map-fill')?.checked;
+    const mapping = {};
+    const missing = [];
+    MAP_FIELDS.forEach(function(def) {
+      const box = document.querySelector('.qa-map-field[data-field="' + def.f + '"]');
+      const sel = box && box.querySelector('select');
+      const v = sel && !sel.disabled && sel.value !== '' ? parseInt(sel.value, 10) : null;
+      if (v != null && !isNaN(v)) mapping[def.f] = v;
+      const req = mapFieldRequired(def, fill);
+      if (box) box.classList.toggle('is-missing', req && mapping[def.f] == null);
+      if (req && mapping[def.f] == null) missing.push(colLabel(def.key, def.fb));
+    });
+    if (missing.length) {
+      setMapMsg(escapeHtml(t('quickmodal.map_missing', { fields: missing.join(', ') })), 'error');
+      return;
+    }
+    // dolum (fill) modunda okuyucu ücreti "fee" alanından okur
+    if (fill && mapping.commission != null) mapping.fee = mapping.commission;
+
+    const parsed = window.parseCsvByBroker(mapState.csvText, 'manual', { manualMapping: mapping, isFillBased: fill, headerRow: mapState.headerRow });
+    if (!parsed.rows || !parsed.rows.length) {
+      const first = (parsed.errors || []).slice(0, 2).join(' ');
+      setMapMsg(escapeHtml(t('quickmodal.map_no_rows') + (first ? ' ' + first : '')), 'error');
+      const preview = el('csv-preview-container');
+      if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+      csvPreviewData = null;
+      syncImportBtn();
+      return;
+    }
+    if (window.ParserV2 && mapState.fingerprint) {
+      window.ParserV2.saveManualMapping(mapState.fingerprint, { mapping: mapping, isFillBased: fill });
+    }
+    const msg = t('quickmodal.map_saved', { count: parsed.rows.length }) + (fromAi && aiNote ? ' ' + aiNote : '');
+    setMapMsg(escapeHtml(msg), 'ok');
+    presentParsed(parsed, fromAi ? 'AI' : 'manual', mapState.csvText);
+  }
+
+  async function runAiMap() {
+    if (!mapState || mapBusy) return;
+    const btn = el('qa-map-ai');
+    const session = (window.sb && window.sb.auth) ? (await window.sb.auth.getSession().catch(function() { return null; })) : null;
+    const token = session && session.data && session.data.session ? session.data.session.access_token : null;
+    if (!token) { setMapMsg(escapeHtml(t('quickmodal.ai_login')), 'error'); return; }
+
+    mapBusy = true;
+    if (btn) { btn.disabled = true; btn.classList.add('is-busy'); const s = btn.querySelector('span'); if (s) s.textContent = t('quickmodal.map_ai_busy'); }
+    setMapMsg('');
+    try {
+      const res = await fetch(aiEndpoint() + '/functions/v1/ai-trade-parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': aiAnonKey() },
+        body: JSON.stringify({ action: 'map', headers: mapState.headers, sample: mapState.sample.slice(0, 5), lang: aiLang() })
+      });
+      let j = null;
+      try { j = await res.json(); } catch (e) { j = null; }
+      if (j && j.usage) { aiUsage = j.usage; showAiUsage(); }
+      if (!res.ok || !j || !j.ok) {
+        const code = j && j.code;
+        const key = code === 'LIMIT' ? 'quickmodal.ai_limit' : code === 'BUSY' ? 'quickmodal.ai_busy'
+          : code === 'UNAUTHORIZED' ? 'quickmodal.ai_login' : 'quickmodal.ai_error';
+        setMapMsg(escapeHtml(t(key)), 'error');
+        return;
+      }
+      if (!mapState) return;   // dosya bu arada değişti
+      setMapSelects(j.mapping || {}, !!j.fillBased);
+      applyMapping(true, j.note || '');
+    } catch (e) {
+      wwLog.warn('AI eşleme hatası:', e);
+      setMapMsg(escapeHtml(t('quickmodal.ai_error')), 'error');
+    } finally {
+      mapBusy = false;
+      if (btn && btn.isConnected) { btn.disabled = false; btn.classList.remove('is-busy'); const s = btn.querySelector('span'); if (s) s.textContent = t('quickmodal.map_ai'); }
     }
   }
 

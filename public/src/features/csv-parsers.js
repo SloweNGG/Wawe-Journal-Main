@@ -8,7 +8,8 @@
 // ============================================================
 
 if (typeof window !== 'undefined') {
-  window.parseCsvByBroker = function(text, broker) {
+  // options: ParserV2.parse seçenekleri (elle/AI sütun eşlemesi: { manualMapping, isFillBased, headerRow })
+  window.parseCsvByBroker = function(text, broker, options) {
     if (typeof window.ParserV2 === 'undefined') {
       console.error('❌ ParserV2 yüklenmemiş! script sırasını kontrol edin.');
       return {
@@ -22,7 +23,7 @@ if (typeof window !== 'undefined') {
 
     var result;
     try {
-      result = window.ParserV2.parse(text, {});
+      result = window.ParserV2.parse(text, options || {});
     } catch (e) {
       console.error('ParserV2 hatası:', e);
       return {
@@ -73,7 +74,11 @@ if (typeof window !== 'undefined') {
       needsManualMapping: result.needsManualMapping || false,
       missingFields: result.missingFields,
       headers: result.headers,
-      headerFingerprint: result.headerFingerprint
+      headerFingerprint: result.headerFingerprint,
+      suggestedMapping: result.suggestedMapping,
+      isFillBased: !!result.isFillBased,
+      headerRow: result.headerRow,
+      sampleRows: result.sampleRows
     };
   };
 
