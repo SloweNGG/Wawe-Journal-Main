@@ -918,6 +918,7 @@ async function fileToCsvText(file) {
                       <option value="turkish" data-quick-i18n="quickmodal.broker_turkish">Türk Broker</option>
                       <option value="mt5">MetaTrader 4/5</option>
                       <option value="ctrader">cTrader</option>
+                      <option value="tradovate">Tradovate</option>
                       <option value="binance">Binance</option>
                       <option value="bybit">Bybit</option>
                       <option value="coinbase">Coinbase</option>
@@ -1782,8 +1783,8 @@ async function fileToCsvText(file) {
 
       // Fallback: Eğer r.pnl yoksa veya null ise, entry/exit/lot üzerinden çarpanla hesapla
       if ((pnlVal == null || isNaN(pnlVal)) && r.entry_price != null && r.exit_price != null && r.lot != null) {
-        var inst = guessInstrument(r.symbol);
-        var mult = MULTIPLIER_MAP[inst] || 1;
+        var inst = r.instrument || guessInstrument(r.symbol);
+        var mult = r.multiplier || MULTIPLIER_MAP[inst] || 1;
         var diff = r.direction === 'LONG' ? (r.exit_price - r.entry_price) : (r.entry_price - r.exit_price);
         pnlVal = diff * r.lot * mult - (Math.abs(Number(r.commission) || 0)) + (Number(r.swap) || 0);
       }
@@ -2002,8 +2003,8 @@ async function fileToCsvText(file) {
             continue;
           }
 
-          const instrument = guessInstrument(r.symbol);
-          const multiplier = MULTIPLIER_MAP[instrument] || 1;
+          const instrument = r.instrument || guessInstrument(r.symbol);
+          const multiplier = r.multiplier || MULTIPLIER_MAP[instrument] || 1;
 
           // ⭐ YENİ: Broker'ın gerçek Net $ değerini sıkıca oku
           let pnl = parseStoredPnl(r.pnl);

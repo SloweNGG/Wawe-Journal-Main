@@ -484,6 +484,291 @@
   }
 
   // =========================================================================
+  // Tradovate (vadeli işlemler): Performance raporu ve Orders dışa aktarımı
+  // =========================================================================
+  // 1,00 fiyat puanının kontrat başına USD değeri (CME/CBOT/NYMEX/COMEX spesifikasyonları).
+  // Tahıl ve hayvancılık fiyatları sent cinsinden listelenir; değerler buna göredir.
+  var FUTURES_POINT_VALUES = {
+    ES: 50, MES: 5, NQ: 20, MNQ: 2, YM: 5, MYM: 0.5, RTY: 50, M2K: 5, EMD: 100, NKD: 5,
+    CL: 1000, MCL: 100, QM: 500, NG: 10000, QG: 2500, RB: 42000, HO: 42000,
+    GC: 100, MGC: 10, QO: 50, SI: 5000, SIL: 1000, QI: 2500, HG: 25000, MHG: 2500, PL: 50, PA: 100,
+    ZB: 1000, UB: 1000, ZN: 1000, TN: 1000, ZF: 1000, ZT: 2000,
+    '6E': 125000, M6E: 12500, E7: 62500, '6B': 62500, M6B: 6250, '6J': 12500000, '6A': 100000, M6A: 10000,
+    '6C': 100000, '6S': 125000, '6N': 100000, '6M': 500000,
+    ZC: 50, ZS: 50, ZW: 50, KE: 50, ZL: 600, ZM: 100, HE: 400, LE: 400, GF: 500,
+    BTC: 5, MBT: 0.1, ETH: 50, MET: 0.1
+  };
+
+  // "MNQZ5" / "MNQZ25" / "6EH6" / "M2KZ5" -> kök "MNQ" / "6E" / "M2K" (ay kodu + yıl atılır)
+  function futuresRoot(contract) {
+    var s = String(contract == null ? '' : contract).trim().toUpperCase().replace(/^[@\/]/, '');
+    var m = s.match(/^([A-Z0-9]+?)([FGHJKMNQUVXZ])(\d{1,2})$/);
+    return m ? m[1] : s;
+  }
+
+  // Tradovate dışa aktarımları ABD biçimli: "05/29/2024 09:31:12" (ay/gün/yıl). Genel parseDate gün/ay varsaydığı
+  // için 11/05 Mayıs olurdu; burada ay/gün okunur (ay > 12 ise ters çevrilir). Saat dilimi ayarı parseDate'te uygulanır.
+  function parseTradovateDate(raw) {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw === 'number' || raw instanceof Date) return Dict.parseDate(raw);
+    var s = String(raw).trim();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(AM|PM)?)?$/i);
+    if (!m) return Dict.parseDate(s);
+    var mo = +m[1], d = +m[2];
+    if (mo > 12 && d <= 12) { var t = mo; mo = d; d = t; }
+    if (m[4] === undefined) return new Date(Date.UTC(+m[3], mo - 1, d));
+    var h = +m[4];
+    if (m[7]) {
+      var pm = m[7].toUpperCase() === 'PM';
+      if (pm && h < 12) h += 12;
+      if (!pm && h === 12) h = 0;
+    }
+    return Dict.parseDate(m[3] + '-' + pad(mo) + '-' + pad(d) + ' ' + pad(h) + ':' + m[5] + ':' + pad(+(m[6] || 0)));
+  }
+
+  // "$1,234.50" / "$(13.75)" / "-13.75" -> sayı. Tradovate her zaman ABD sayı biçimi kullanır.
+  function parseTradovateMoney(raw) {
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw === 'number') return isFinite(raw) ? raw : null;
+    var s = String(raw).trim();
+    if (s === '') return null;
+    var negative = /\(.*\)/.test(s) || /^-|^\$-/.test(s);
+    var n = parseFloat(s.replace(/[^0-9.]/g, ''));
+    if (isNaN(n)) return null;
+    return negative ? -n : n;
+  }
+
+  // Fiyat: ondalık ya da tahvil kesirli biçimi ("118'16" = 118 + 16/32, "110'165" = 110 + 16.5/32)
+  function parseTradovatePrice(raw) {
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw === 'number') return isFinite(raw) ? raw : null;
+    var s = String(raw).trim();
+    var m = s.match(/^(-?\d+)'(\d{2})(\d)?$/);
+    if (m) {
+      var eighth = { '0': 0, '2': 0.25, '5': 0.5, '7': 0.75 }[m[3] || '0'] || 0;
+      return +m[1] + (+m[2] + eighth) / 32;
+    }
+    return parseTradovateMoney(s);
+  }
+
+  function round(n, dp) { return n == null || !isFinite(n) ? n : Number(n.toFixed(dp)); }
+
+  function tvHeaderIndex(rawHeaders) {
+    var n = rawHeaders.map(Dict.normalizeHeader);
+    return function () {
+      for (var a = 0; a < arguments.length; a++) {
+        var i = n.indexOf(arguments[a]);
+        if (i >= 0) return i;
+      }
+      return -1;
+    };
+  }
+
+  function tvTime(d) { return d instanceof Date && !isNaN(d.getTime()) ? d.getTime() : null; }
+
+  function tvRow(root, contract, direction, entry, exit, lot, pnl, dateOpen, date, ticket) {
+    var pv = FUTURES_POINT_VALUES[root];
+    return {
+      symbol: root, direction: direction, date: date, dateOpen: dateOpen,
+      entry: round(entry, 6), exit: round(exit, 6), lot: lot, pnl: round(pnl, 2), gross_pnl: round(pnl, 2),
+      commission: 0, swap: 0, fee: null, sl: null, tp: null,
+      comment: 'Tradovate ' + contract,
+      ticket: ticket != null && ticket !== '' ? String(ticket) : null,
+      instrument: 'other', multiplier: pv || null,
+      partial: false, warnings: []
+    };
+  }
+
+  // Performance: her satır bir alış-satış çifti (qty, buyPrice, sellPrice, pnl, boughtTimestamp, soldTimestamp).
+  // Aynı dolumu paylaşan ve aynı yöndeki satırlar (kademeli giriş/çıkış) tek işlemde birleştirilir.
+  function buildTradovatePerformance(rawHeaders, dataRows) {
+    var col = tvHeaderIndex(rawHeaders);
+    var C = {
+      symbol: col('symbol', 'contract'), qty: col('qty', 'quantity'),
+      buyPrice: col('buyprice'), sellPrice: col('sellprice'), pnl: col('pnl'),
+      bought: col('boughttimestamp'), sold: col('soldtimestamp'),
+      buyFill: col('buyfillid'), sellFill: col('sellfillid')
+    };
+    var cell = function (row, k) { return C[k] < 0 ? undefined : row[C[k]]; };
+    var errors = [];
+    var items = [];
+
+    dataRows.forEach(function (row, i) {
+      var lineNo = i + 2;
+      var contract = String(cell(row, 'symbol') == null ? '' : cell(row, 'symbol')).trim();
+      var qty = parseTradovateMoney(cell(row, 'qty'));
+      var buy = parseTradovatePrice(cell(row, 'buyPrice'));
+      var sell = parseTradovatePrice(cell(row, 'sellPrice'));
+      var bought = parseTradovateDate(cell(row, 'bought'));
+      var sold = parseTradovateDate(cell(row, 'sold'));
+      if (!contract || !qty || qty <= 0 || buy === null || sell === null) {
+        errors.push('Satır ' + lineNo + ': sembol/miktar/fiyat eksik ya da geçersiz, atlandı.');
+        return;
+      }
+      var buyFill = cell(row, 'buyFill'), sellFill = cell(row, 'sellFill');
+      var tb = tvTime(bought), ts = tvTime(sold);
+      var isLong;
+      if (tb !== null && ts !== null && tb !== ts) isLong = tb < ts;
+      else if (buyFill && sellFill && !isNaN(+buyFill) && !isNaN(+sellFill)) isLong = +buyFill <= +sellFill;
+      else isLong = true;
+
+      var root = futuresRoot(contract);
+      var pnl = parseTradovateMoney(cell(row, 'pnl'));
+      if (pnl === null && FUTURES_POINT_VALUES[root]) pnl = (sell - buy) * qty * FUTURES_POINT_VALUES[root];
+      items.push({
+        contract: contract, root: root, qty: qty, pnl: pnl, lineNo: lineNo,
+        direction: isLong ? 'LONG' : 'SHORT',
+        entry: isLong ? buy : sell, exit: isLong ? sell : buy,
+        opened: isLong ? bought : sold, closed: isLong ? sold : bought,
+        entryFill: isLong ? buyFill : sellFill, exitFill: isLong ? sellFill : buyFill
+      });
+    });
+
+    // Birleşim kümeleri: anahtar = yön + kontrat + dolum ID. Yön anahtarın parçası olduğu için pozisyonun
+    // tersine döndüğü dolum (uzunu kapatıp kısa açan satış) iki işlemi birleştirmez.
+    var parent = items.map(function (_, i) { return i; });
+    var find = function (i) { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    var owner = {};
+    items.forEach(function (it, i) {
+      [['e', it.entryFill], ['x', it.exitFill]].forEach(function (f) {
+        if (f[1] === undefined || f[1] === null || String(f[1]).trim() === '') return;
+        var key = it.direction + '|' + it.contract + '|' + f[0] + '|' + String(f[1]).trim();
+        if (owner[key] === undefined) owner[key] = i;
+        else parent[find(i)] = find(owner[key]);
+      });
+    });
+
+    var groups = {};
+    var order = [];
+    items.forEach(function (it, i) {
+      var r = find(i);
+      if (!groups[r]) { groups[r] = []; order.push(r); }
+      groups[r].push(it);
+    });
+
+    var rows = order.map(function (r) {
+      var g = groups[r];
+      var first = g[0];
+      var qty = 0, entryN = 0, exitN = 0, pnl = 0, pnlKnown = true, opened = null, closed = null;
+      g.forEach(function (it) {
+        qty += it.qty; entryN += it.entry * it.qty; exitN += it.exit * it.qty;
+        if (it.pnl === null) pnlKnown = false; else pnl += it.pnl;
+        if (it.opened && (!opened || it.opened < opened)) opened = it.opened;
+        if (it.closed && (!closed || it.closed > closed)) closed = it.closed;
+      });
+      return tvRow(first.root, first.contract, first.direction, entryN / qty, exitN / qty, qty,
+        pnlKnown ? pnl : null, opened, closed, first.entryFill);
+    });
+    rows.sort(function (a, b) { return (tvTime(a.date) || 0) - (tvTime(b.date) || 0); });
+    return { rows: rows, errors: errors };
+  }
+
+  // Orders: emir başına bir satır. Dolan emirler zaman sırasıyla hesap + kontrat bazında izlenir; pozisyon
+  // sıfırdan açılıp tekrar sıfıra dönene kadar olan dolumlar tek işlemdir. Ters dönen dolum bölünür.
+  function buildTradovateOrders(rawHeaders, dataRows) {
+    var col = tvHeaderIndex(rawHeaders);
+    var C = {
+      side: col('bs', 'side', 'action'), contract: col('contract', 'symbol'),
+      price: col('avgfillprice', 'avgprice', 'price'), qty: col('filledqty', 'filled'),
+      time: col('filltime', 'timestamp', 'date'), status: col('status'),
+      account: col('account'), orderId: col('orderid')
+    };
+    var cell = function (row, k) { return C[k] < 0 ? undefined : row[C[k]]; };
+    var errors = [];
+    var warnings = [];
+    var fills = [];
+    var accounts = {};
+
+    dataRows.forEach(function (row, i) {
+      var lineNo = i + 2;
+      var qty = parseTradovateMoney(cell(row, 'qty'));
+      if (!qty || qty <= 0) return; // dolmamış/iptal emir: işlem değil, sessizce geçilir
+      var status = Dict.normalizeValue(cell(row, 'status'));
+      if (status.indexOf('reject') >= 0) return;
+      var side = Dict.normalizeDirection(cell(row, 'side'));
+      var contract = String(cell(row, 'contract') == null ? '' : cell(row, 'contract')).trim();
+      var price = parseTradovatePrice(cell(row, 'price'));
+      var date = parseTradovateDate(cell(row, 'time'));
+      if (!side || !contract || price === null || !price) {
+        errors.push('Satır ' + lineNo + ': yön/kontrat/fiyat eksik ya da geçersiz, atlandı.');
+        return;
+      }
+      var account = String(cell(row, 'account') == null ? '' : cell(row, 'account')).trim();
+      if (account) accounts[account] = true;
+      fills.push({ side: side, contract: contract, price: price, qty: qty, date: date, account: account,
+        orderId: cell(row, 'orderId'), i: fills.length });
+    });
+
+    if (fills.every(function (f) { return tvTime(f.date) !== null; })) {
+      fills.sort(function (a, b) { return tvTime(a.date) - tvTime(b.date) || a.i - b.i; });
+    }
+
+    var books = {};
+    var rows = [];
+    var openPositions = [];
+    var unknownRoots = {};
+
+    function close(b) {
+      var t = b.trade;
+      var pv = FUTURES_POINT_VALUES[t.root];
+      var sign = t.direction === 'LONG' ? 1 : -1;
+      var pnl = pv ? sign * (t.exitN - t.entryN) * pv : null;
+      if (!pv) unknownRoots[t.root] = true;
+      rows.push(tvRow(t.root, t.contract, t.direction, t.entryN / t.qty, t.exitN / t.qty, t.qty, pnl,
+        t.opened, t.closed, t.ticket));
+      b.trade = null;
+    }
+
+    fills.forEach(function (f) {
+      var key = f.account + '|' + f.contract;
+      var b = books[key] || (books[key] = { pos: 0, trade: null });
+      var signed = f.side === 'LONG' ? f.qty : -f.qty;
+      var remaining = signed;
+      while (Math.abs(remaining) > 1e-9) {
+        if (b.pos === 0) {
+          b.trade = { root: futuresRoot(f.contract), contract: f.contract, direction: remaining > 0 ? 'LONG' : 'SHORT',
+            qty: 0, entryN: 0, exitN: 0, opened: f.date, closed: null, ticket: f.orderId };
+        }
+        var sameSide = (b.pos >= 0 && remaining > 0 && b.trade.direction === 'LONG') ||
+                       (b.pos <= 0 && remaining < 0 && b.trade.direction === 'SHORT');
+        if (sameSide) {
+          var add = Math.abs(remaining);
+          b.trade.qty += add; b.trade.entryN += add * f.price;
+          b.pos += remaining; remaining = 0;
+        } else {
+          var closeQty = Math.min(Math.abs(remaining), Math.abs(b.pos));
+          b.trade.exitN += closeQty * f.price;
+          b.trade.closed = f.date;
+          b.pos += remaining > 0 ? closeQty : -closeQty;
+          remaining += remaining > 0 ? -closeQty : closeQty;
+          if (Math.abs(b.pos) < 1e-9) { b.pos = 0; close(b); }
+        }
+      }
+    });
+
+    Object.keys(books).forEach(function (k) {
+      var b = books[k];
+      if (b.trade && b.pos !== 0) {
+        openPositions.push({ symbol: b.trade.root, direction: b.trade.direction, entry: b.trade.entryN / b.trade.qty, lot: Math.abs(b.pos), date: b.trade.opened });
+      }
+    });
+    if (openPositions.length) {
+      warnings.push(openPositions.length + ' pozisyon dosyanın sonunda hâlâ açık (kapanış emri yok); bunlar içe aktarılmadı.');
+    }
+    var unknown = Object.keys(unknownRoots);
+    if (unknown.length) {
+      warnings.push(unknown.join(', ') + ' için kontrat çarpanı bilinmiyor; K/Z puan cinsinden hesaplandı, işlemi düzenleyip kontrol edin.');
+    }
+    var accountCount = Object.keys(accounts).length;
+    if (accountCount > 1) {
+      warnings.push('Dosyada ' + accountCount + ' Tradovate hesabı var; hepsi seçili deftere eklenecek. Hesapları ayırmak için Tradovate\'ten hesap başına dışa aktarın.');
+    }
+    rows.sort(function (a, b) { return (tvTime(a.date) || 0) - (tvTime(b.date) || 0); });
+    return { rows: rows, errors: errors, pairingWarnings: warnings, openPositions: openPositions };
+  }
+
+  // =========================================================================
   // Public entry point
   // =========================================================================
   function parse(input, options) {
@@ -523,6 +808,22 @@
         detectedBroker = detection.broker;
         confidence = detection.confidence;
         isFillBased = detection.isFillBased;
+        if (detectedBroker === 'tradovate' || detectedBroker === 'tradovate-orders') {
+          var tv = detectedBroker === 'tradovate'
+            ? buildTradovatePerformance(rawHeaders, dataRows)
+            : buildTradovateOrders(rawHeaders, dataRows);
+          return {
+            rows: tv.rows,
+            errors: tv.errors,
+            warnings: (tv.pairingWarnings || []).concat(['Tradovate raporlarında komisyon yok: K/Z komisyon hariçtir.']),
+            detected: detectedBroker,
+            confidence: confidence,
+            needsManualMapping: false,
+            isFillBased: isFillBased,
+            openPositions: tv.openPositions || [],
+            headerFingerprint: fingerprint
+          };
+        }
         if (detection.explicitMap) {
           mapping = detection.explicitMap;
           warnings.push('Broker "' + detection.broker + '" olarak tanındı (güven: ' + Math.round(confidence * 100) + '%), bilinen sabit kolon haritası kullanıldı.');
@@ -590,6 +891,10 @@
     loadManualMapping: loadManualMapping,
     clearManualMapping: clearManualMapping,
     // exposed for testing / advanced use
-    _internal: { matchHeaders: matchHeaders, scoreMatch: scoreMatch, parseTradingViewSide: parseTradingViewSide }
+    _internal: {
+      matchHeaders: matchHeaders, scoreMatch: scoreMatch, parseTradingViewSide: parseTradingViewSide,
+      futuresRoot: futuresRoot, parseTradovateDate: parseTradovateDate, parseTradovatePrice: parseTradovatePrice,
+      FUTURES_POINT_VALUES: FUTURES_POINT_VALUES
+    }
   };
 })(typeof window !== 'undefined' ? window : this);

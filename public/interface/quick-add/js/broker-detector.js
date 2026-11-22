@@ -9,7 +9,8 @@
  * detect() returns:
  * {
  *   broker: 'mt4' | 'mt5' | 'ctrader' | 'xtb' | 'oanda' | 'ibkr' |
- *           'binance' | 'bybit-closed-pnl' | 'tradingview' | 'tr-legacy' | 'generic',
+ *           'binance' | 'bybit-closed-pnl' | 'tradingview' | 'tr-legacy' |
+ *           'tradovate' | 'tradovate-orders' | 'generic',
  *   confidence: 0..1,
  *   isFillBased: boolean,          // needs fill-pairing.js before row mapping
  *   explicitMap: function(rawHeaders)|null   // returns {field: headerIndex|[idx,idx]}
@@ -198,6 +199,24 @@
       broker: 'coinbase',
       required: ['asset', 'quantitytransacted'],
       weight: ['transactiontype', 'priceattransaction', 'subtotal', 'total', 'fees'],
+      isFillBased: true,
+      explicitMap: null
+    },
+    {
+      // Tradovate "Performance" raporu (Account Reports > Performance > Download): her satır Tradovate'in
+      // FIFO ile eşlediği bir alış/satış çifti. Satırlar parser-v2.js buildTradovatePerformance'ta pozisyona birleşir.
+      broker: 'tradovate',
+      required: ['buyprice', 'sellprice', 'boughttimestamp', 'soldtimestamp'],
+      weight: ['symbol', 'qty', 'pnl', 'buyfillid', 'sellfillid', 'duration', 'ticksize'],
+      isFillBased: false,
+      explicitMap: null
+    },
+    {
+      // Tradovate "Orders" dışa aktarımı: emir başına bir satır (B/S, Contract, Avg Fill Price, Filled Qty).
+      // Dolumlar parser-v2.js buildTradovateOrders'ta pozisyon açılıp kapanana kadar gruplanır.
+      broker: 'tradovate-orders',
+      required: ['bs', 'contract'],
+      weight: ['avgprice', 'avgfillprice', 'filledqty', 'filltime', 'status', 'product', 'orderid', 'account'],
       isFillBased: true,
       explicitMap: null
     },

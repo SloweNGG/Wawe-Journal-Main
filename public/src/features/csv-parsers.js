@@ -52,7 +52,10 @@ if (typeof window !== 'undefined') {
           gross_pnl: r.gross_pnl != null ? r.gross_pnl : null,
           commission: r.commission != null ? Math.abs(r.commission) : (r.fee != null ? Math.abs(r.fee) : 0),
           swap: r.swap != null ? r.swap : 0,
-          ticket: r.ticket || null
+          ticket: r.ticket || null,
+          // Vadeli kontratlar (Tradovate): parser kontratın puan değerini verir; yoksa quick-add sembolden tahmin eder
+          instrument: r.instrument || null,
+          multiplier: r.multiplier || null
         };
       }),
       errors: result.errors || [],
