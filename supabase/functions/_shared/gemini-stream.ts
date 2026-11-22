@@ -6,7 +6,8 @@
 // thought_signature deltas set the thought step's signature (needed when the turn is sent back later). Pure (Node tests).
 
 // status is '' when the stream ended without interaction.completed: the answer may be cut off (seen on the free tier)
-export interface StreamResult { steps: any[]; text: string; status: string; error: { code: string; message: string } | null }
+// usage: the raw interaction.usage of interaction.completed (token counts; _shared/token-usage.ts reads it), null when none
+export interface StreamResult { steps: any[]; text: string; status: string; error: { code: string; message: string } | null; usage: any }
 
 // splits a growing SSE text buffer into complete events; returns the rest (an incomplete event) to keep for the next chunk
 export function takeSseEvents(buffer: string): { events: any[]; rest: string } {
@@ -57,7 +58,7 @@ export function createLeakGuard(forward: (t: string) => void, hold = LEAK_HOLD_C
 
 export function createStepBuilder() {
   const steps: any[] = [];
-  let text = '', status = '', error: StreamResult['error'] = null;
+  let text = '', status = '', error: StreamResult['error'] = null, usage: any = null;
   function step(i: number) { return steps[i] || (steps[i] = { type: 'model_output' }); }
   return {
     // returns the text delta of this event ('' when none)
@@ -83,10 +84,10 @@ export function createStepBuilder() {
         if (d.type === 'thought_signature' && typeof d.signature === 'string') { s.signature = d.signature; return ''; }
         return '';
       }
-      if (t === 'interaction.completed') { status = ev.interaction?.status || 'completed'; return ''; }
+      if (t === 'interaction.completed') { status = ev.interaction?.status || 'completed'; usage = ev.interaction?.usage ?? null; return ''; }
       if (t === 'error') { error = { code: String(ev.error?.code || 'error'), message: String(ev.error?.message || '') }; return ''; }
       return '';
     },
-    result(): StreamResult { return { steps: steps.filter(Boolean), text: text.trim(), status, error }; },
+    result(): StreamResult { return { steps: steps.filter(Boolean), text: text.trim(), status, error, usage }; },
   };
 }

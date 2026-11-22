@@ -54,6 +54,7 @@ import { resolveCoach, coachIntro, suggestCoach, type Coach } from '../_shared/c
 import { runChain, modelHealth } from '../_shared/model-chain.ts';
 import { readCalendar } from '../_shared/econ-feed.ts';
 import { coachCalendar } from '../_shared/econ-calendar.ts';
+import { normalizeUsage, promptParts } from '../_shared/token-usage.ts';
 import { OPENROUTER_URL, isOpenRouter, openRouterChain, chatMessages, chatRequest, createChatBuilder, chatOutcome } from '../_shared/openrouter-stream.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -281,7 +282,7 @@ async function streamGeminiInner(model: string, payload: Record<string, unknown>
     const busy = !r.error || /unavailable|exhausted|overload|deadline|timeout|internal/i.test(r.error.code);
     return { ok: false, status: busy ? 503 : 400, steps: r.steps, text: r.text, forwarded };
   }
-  return { ok: true, status: 200, steps: r.steps.filter((s: any) => s && s.type !== 'user_input'), text: r.text, forwarded };
+  return { ok: true, status: 200, steps: r.steps.filter((s: any) => s && s.type !== 'user_input'), text: r.text, forwarded, usage: r.usage };
 }
 
 // One streamed OpenRouter call (same contract as streamGemini; steps are always empty: later turns get the plain text).
@@ -344,7 +345,7 @@ async function streamOpenRouterInner(model: string, messages: unknown[], onDelta
     console.error('ai-coach stream error:', model, r.error ? r.error.code.slice(0, 40) : (r.text ? 'cut off' : 'empty'), r.finish || '-');
     return { ok: false, status, steps: [], text: r.text, forwarded: guard.forwarded };
   }
-  return { ok: true, status: 200, steps: [], text: r.text, forwarded: guard.forwarded };
+  return { ok: true, status: 200, steps: [], text: r.text, forwarded: guard.forwarded, usage: r.usage };
 }
 
 serve(async (req: Request) => {
@@ -539,6 +540,18 @@ serve(async (req: Request) => {
       // timings only (no content, no user id): where the wait goes
       console.log('ai-coach timing ' + JSON.stringify({ ctx_ms: tCtx - t0, first_word_ms: tFirst ? tFirst - tCtx : null,
         total_ms: Date.now() - t0, model: used || null, attempts: chained.attempts, cooling: HEALTH.cooling() }));
+      // token counts (no content, no user id): what the answer cost and which part of the prompt is the biggest.
+      // chars: system = whole system prompt (knowledge + data are parts of it); history = the earlier turns as sent to this
+      // model (Gemini: the stored steps with thought signatures for its own turns), history_text = their plain text only;
+      // history_msgs = earlier messages sent back (at most HISTORY_TURNS). Logging never breaks an answer.
+      if (got) {
+        try {
+          const sent = isOpenRouter(used) ? chatMessages('', msgs, '').slice(1, -1) : buildHistory(msgs, used);
+          console.log('ai-coach tokens ' + JSON.stringify({ model: used, ...(normalizeUsage((got as any).usage) || { usage: null }),
+            history_msgs: msgs.length, image: !!image, chars: promptParts({ system, knowledge: COACH_KNOWLEDGE, data: JSON.stringify(context),
+              history: JSON.stringify(sent), history_text: msgs.map((m) => m.content || '').join(''), message }) }));
+        } catch (_) { /* logging only */ }
+      }
       if (!got) {
         await refund();
         if (lastStatus === 429 || lastStatus === 503) return { ok: false, code: 'BUSY', message: 'The AI service is busy. Try again in a minute.', status: 503 };

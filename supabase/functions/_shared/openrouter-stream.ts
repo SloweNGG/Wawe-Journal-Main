@@ -5,6 +5,8 @@
 //     everything else is a Gemini model.
 //   - Stream: SSE "data: {choices:[{delta:{content}, finish_reason}], usage?}" chunks, ": OPENROUTER PROCESSING" comment
 //     lines while waiting, a chunk with { error: {code, message} } when the upstream fails mid-stream, then "data: [DONE]".
+//   - Token counts always come in the last chunk before [DONE] (one choice with an empty delta + usage; the old
+//     usage: { include: true } parameter is deprecated and does nothing). ai-coach logs them (_shared/token-usage.ts).
 //   - Reasoning effort "low", excluded from the stream: ~11 s before the first word on the coach prompt (off: ~2 s, but
 //     Nemotron then misread small samples and wrote data field names). Only delta.content reaches the member.
 //   - A message with a chart screenshot goes only to the vision chain (OPENROUTER_VISION_MODELS in ai-coach/index.ts):
@@ -44,13 +46,15 @@ export function chatRequest(model: string, messages: unknown[]) {
   return { model: model.slice(isOpenRouter(model) ? OPENROUTER_PREFIX.length : 0), messages, stream: true, max_tokens: 4096, reasoning: { effort: 'low', exclude: true } };
 }
 
-export interface ChatResult { text: string; finish: string; error: { code: string; message: string } | null }
+// usage: the raw usage of the last chunk (token counts; _shared/token-usage.ts reads it), null when none
+export interface ChatResult { text: string; finish: string; error: { code: string; message: string } | null; usage: any }
 
 // collects the answer from parsed SSE events; push() returns the new answer text of one event ('' when none)
 export function createChatBuilder() {
-  let text = '', finish = '', error: ChatResult['error'] = null;
+  let text = '', finish = '', error: ChatResult['error'] = null, usage: any = null;
   return {
     push(ev: any): string {
+      if (ev?.usage && typeof ev.usage === 'object') usage = ev.usage;
       if (ev?.error) { error = { code: String(ev.error.code ?? ''), message: String(ev.error.message ?? '').slice(0, 200) }; return ''; }
       const c = ev?.choices?.[0];
       if (!c) return '';
@@ -59,7 +63,7 @@ export function createChatBuilder() {
       text += d;
       return d;
     },
-    result(): ChatResult { return { text, finish, error }; },
+    result(): ChatResult { return { text, finish, error, usage }; },
   };
 }
 

@@ -394,6 +394,7 @@ Edge Function'lar `git push` ile deploy olmaz: `npx supabase functions deploy <a
 | `coach-alerts.ts`, `discipline.ts`, `emotions.ts` | Senkron/manuel işlem sonrası canlı uyarılar, işlem planına uyum puanı, notlardaki duygular (model çağrısı yok) |
 | `weekly.ts`, `commitments.ts`, `actions.ts`, `insights.ts`, `visuals.ts` | Haftalık değerlendirme ve hedef, günlük sözler, onaylı aksiyon kartları, açılış ekranı bulguları, `[[viz:...]]` grafik verisi |
 | `model-chain.ts`, `gemini-stream.ts`, `openrouter-stream.ts` | Hangi modelin cevaplayacağı (meşgul model sona alınır), Gemini Interactions API akışı, OpenRouter yedeği |
+| `token-usage.ts` | Koç cevabının token sayıları (gönderilen / önbellekten / üretilen / düşünme) ve prompt parçalarının boyu: `ai-coach tokens` log satırı (Supabase → Edge Functions → ai-coach → Logs). İçerik ve kullanıcı kimliği yazılmaz |
 | `prop-context.ts`, `backtest-context.ts` | Koça aktif prop challenge durumu ve backtest hesapları |
 | `prop-calculator.js`, `prop-montecarlo.js` | `public/src/utils/` dosyalarının birebir kopyaları |
 | `econ-calendar.ts`, `econ-feed.ts` | Ekonomik takvim kaynakları ve parite eşlemesi; `econ_events` önbelleğinin tazelenmesi |

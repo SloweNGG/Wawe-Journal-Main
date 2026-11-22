@@ -14,7 +14,8 @@
 
 ## Yarın bakılacaklar
 
-- [ ] **AI koç token azaltma** (konuşuldu, kod yok). Ölçüm: her mesajda ~12-15 bin token (bilgi tabanı ~5.400, kullanıcı
+- [ ] **AI koç token azaltma.** Adım (0) canlıda (22 Kasım öğleden sonra): her cevapta `ai-coach tokens` log satırı
+      (Supabase → Edge Functions → ai-coach → Logs; `_shared/token-usage.ts`). Gerçek sayılar gelince sıradaki adımlara geçilecek. Ölçüm: her mesajda ~12-15 bin token (bilgi tabanı ~5.400, kullanıcı
       özeti ~5.000-5.700, sohbet geçmişi 20 mesaj → uzun sohbette 25 bin+). Sıra: (0) her mesajda gönderilen / önbellekten
       okunan / üretilen token sayısını logla; (1) prompt'ta sabit kısmı (kurallar + bilgi tabanı) başa al ki Gemini önbelleği
       tutsun, koç kişiliği ve para birimi sonra; (3) geçmiş 20 → 8-10 mesaj, eski mesajlarda düşünme adımları yerine metin;
