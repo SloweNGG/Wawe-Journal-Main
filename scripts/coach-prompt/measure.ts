@@ -118,13 +118,17 @@ function breakdown(req: any) {
   const dataJson = d >= 0 ? sys.slice(sys.indexOf('\n', d + 1) + 1) : '';
   const input = req.input as any[];
   const history = input.slice(0, -1);
+  const last = JSON.stringify(input[input.length - 1]);
+  // the per-request [App context] line at the start of the latest message (index.ts); 0 before it existed
+  const text = String(input[input.length - 1]?.content?.[0]?.text || '');
+  const appContext = text.startsWith('[App context]') ? text.split('\n')[0].length : 0;
   const sigChars = JSON.stringify(history).match(/"signature":"[^"]*"/g)?.join('').length || 0;
   let dataKeys: Record<string, number> = {};
   try { const o = JSON.parse(dataJson); dataKeys = Object.fromEntries(Object.entries(o).map(([key, v]) => [key, JSON.stringify(v).length]).sort((a, b) => b[1] - a[1])); } catch (_) { /* not JSON */ }
   return {
     system: sys.length, rules_and_intro: k >= 0 ? k : null, knowledge: k >= 0 ? COACH_KNOWLEDGE.length : null,
     data: dataJson.length, history: JSON.stringify(history).length, history_turns: history.length, signatures: sigChars,
-    message: JSON.stringify(input[input.length - 1]).length, total: wire(req).length, dataKeys,
+    message: last.length, app_context: appContext, total: wire(req).length, dataKeys,
   };
 }
 
@@ -145,9 +149,11 @@ function nextTurn(cid: string, message: string) {
 }
 nextTurn(CONV.c10, 'Bu hafta neden zarar ettim?');
 nextTurn(CONV.c20, 'Bu hafta neden zarar ettim?');
+nextTurn(CONV.c40, 'Bu hafta neden zarar ettim?');
 Date.now = () => RealNow() + 120_000;
 const again10 = await ask({ conversationId: CONV.c10, message: 'Peki risk yönetimimi nasıl düzeltirim?' });
 const again = await ask({ conversationId: CONV.c20, message: 'Peki risk yönetimimi nasıl düzeltirim?' });
+const again40 = await ask({ conversationId: CONV.c40, message: 'Peki risk yönetimimi nasıl düzeltirim?' });
 Date.now = RealNow;
 const otherCoach = await ask({ coach: 'mira' });
 const otherLang = await ask({ lang: 'en' });
@@ -161,6 +167,8 @@ const pre = (a: any, b: any) => { const c = commonPrefix(wire(a), wire(b)); retu
 result.cache_prefix = {
   next_message_short_chat: pre(runs.history_10, again10),
   next_message_long_chat: pre(runs.history_20, again),
+  // 40 -> 42 messages: the history window's start stays put within one step (20 -> 22 crosses a step, so its start moves)
+  next_message_40_chat: pre(runs.history_40, again40),
   other_coach: pre(runs.new_chat, otherCoach),
   other_language: pre(runs.new_chat, otherLang),
   other_member_data: pre(runs.new_chat, otherData),

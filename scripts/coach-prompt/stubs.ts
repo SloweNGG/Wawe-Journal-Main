@@ -29,7 +29,8 @@ class Query {
   private from = 0; private to = Infinity; private one: '' | 'maybe' | 'single' = '';
   private write: string | null = null; private payload: any = null;
   constructor(private table: string) {}
-  select(_cols?: string) { return this; }
+  private count = false;
+  select(_cols?: string, o?: { count?: string }) { this.count = !!o?.count; return this; }
   eq(c: string, v: any) { this.filters.push((r) => String(r[c]) === String(v)); return this; }
   neq(c: string, v: any) { this.filters.push((r) => String(r[c]) !== String(v)); return this; }
   in(c: string, vs: any[]) { const s = new Set(vs.map(String)); this.filters.push((r) => s.has(String(r[c]))); return this; }
@@ -58,9 +59,10 @@ class Query {
     for (const s of [...this.sort].reverse()) {
       rows = [...rows].sort((a, b) => (a[s.col] === b[s.col] ? 0 : (a[s.col] > b[s.col] ? 1 : -1) * (s.asc ? 1 : -1)));
     }
+    const total = rows.length;                      // select(..., { count: 'exact' }): matching rows before the limit
     rows = rows.slice(this.from, this.to === Infinity ? undefined : this.to + 1);
     if (this.one) return { data: rows[0] ?? null, error: this.one === 'single' && !rows.length ? { code: 'PGRST116' } : null };
-    return { data: rows, error: null };
+    return { data: rows, error: null, ...(this.count ? { count: total } : {}) };
   }
   then(ok: (v: any) => any, bad?: (e: any) => any) { try { return Promise.resolve(this.run()).then(ok, bad); } catch (e) { return bad ? bad(e) : Promise.reject(e); } }
 }

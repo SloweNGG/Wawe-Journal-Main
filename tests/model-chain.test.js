@@ -100,7 +100,7 @@ describe('model chain: time to the first word (simulated free tier)', () => {
     assert.match(src, /await runChain\(models,/);
     // OpenRouter comes after every Gemini model; a message with a screenshot gets the models that can read images
     assert.match(src, /const models = \[\.\.\.GEMINI_MODELS, \.\.\.\(image \? OPENROUTER_VISION_MODELS : OPENROUTER_MODELS\)\];/);
-    assert.match(src, /chatMessages\(system, msgs, message, image\)/);
+    assert.match(src, /chatMessages\(system, msgs, turn, image\)/);     // turn = the [App context] line + the message
     assert.match(src, /const HEALTH = modelHealth\(\);/);
     const log = src.match(/console\.log\('ai-coach timing ' \+ JSON\.stringify\(\{([\s\S]*?)\}\)\);/);
     assert.ok(log, 'timing log');

@@ -32,27 +32,30 @@ export const COACH_KNOWLEDGE = `
   broker, never widen it.
 - winners_target_capture_median_pct: the share of the planned target the winners actually took. Under ~60 % = winners are
   cut early (fear, no exit plan); compare with planned_rr_avg and the break-even win rate above. r_buckets shows where the
-  results land: [[viz:bar:r_buckets:trades]].
+  results land (trades, wins, losses and net per R range): [[viz:bar:r_buckets:trades]].
 
 ### Position size, costs, form
-- position_sizing: size 1.0 = the trader's usual lot on that symbol. avg_size_after_loss clearly above avg_size_after_win
+- position_sizing: size = lot / the trader's median lot on that symbol (1.0 = usual size). avg_size_after_loss clearly above avg_size_after_win
   (≥ ~1.25×) = sizing up to win it back (revenge sizing), more dangerous than revenge trading by count.
   oversized_1_5x losing money = the big bets are the bad bets → fixed risk per trade (e.g. 0.5–1 % of the account).
 - costs (synced accounts): commission and swap. cost_pct_of_gross_profit above ~20 % = costs eat the edge (too many small
   scalps, wide spreads, overnight swaps); gross_winners_turned_losers_by_costs counts trades a fee turned into a loss.
 - recent_form: last 20 closed trades against all before (win rate, expectancy per trade, avg R). Use it for "am I improving",
   and to spot a slump (tilt, changed market) early.
-- today: trades opened today (time_zone) and their result; now_local is the trader's current date, weekday and hour.
+- today: trades opened today (time_zone) and their result; now_local in the [App context] is the trader's current date,
+  time and weekday.
 - largest_losses / largest_wins: the trades that moved the account most, with the trader's notes; look for the common
   pattern (no stop, oversized, same symbol or hour, held too long) and quote the notes when they explain it.
 - backtest_vs_live: the same strategy or symbol tested and traded live. Live clearly below the test (win rate 15+ points
   lower, or worse avg R) = the idea is fine, the execution is not (late entries, skipped rules, fear). Backtest results
-  are never counted in the live statistics.
+  are never counted in the live statistics. by_symbol: one live and one backtest row per symbol (side) with the full stats;
+  the backtest row adds up every backtest account on that symbol; real_market_trades = its trades on real market history.
 
 ### Backtest accounts (backtest_accounts)
 - The trader's replay / backtest accounts, separate from the live statistics: per account the symbol, timeframe, balance,
-  result_pct, totals (win rate, expectancy, avg R), max_drawdown_pct, exit_reasons (tp = target hit, sl = stop hit,
-  manual = closed by hand), R against the stop set at the fill, direction and session split, and the last trades.
+  result_pct, totals (win rate, expectancy, avg R), max_drawdown_pct, exit_reasons (trades, wins, losses, net; tp = target
+  hit, sl = stop hit, manual = closed by hand), R against the stop set at the fill, direction and session split, and the
+  last trades.
 - data: synthetic_practice = generated candles, not market data: good for practising execution and discipline, proves
   NOTHING about an edge in the real market — say so whenever such an account is used as evidence. real_market_history =
   replayed real prices: valid evidence, still optimistic (no emotions, no real slippage).
@@ -87,10 +90,12 @@ export const COACH_KNOWLEDGE = `
 ### Economic calendar (economic_calendar)
 - The week's economic news, read by you like the calendar the trader sees in the app (sources: Forex Factory for macro
   news, plus CryptoCraft, MetalsMine and EnergyExch for crypto, metals and energy news): high impact events and the medium
-  ones that move the trader's pairs, from 3 days ago to 7 days ahead. when_local (time_zone), minutes_from_now, status
-  (upcoming / released), currency ("global" = no single country), title, impact, forecast, previous; market + site only for
-  news that is not on Forex Factory (e.g. EnergyExch's distillate stocks: market energy). moves_my_pairs = which of the
-  trader's pairs (my_pairs, from their recent trades, e.g. EUR/USD, XAU/USD, USOIL) the event moves: macro news moves a
+  ones that move the trader's pairs, from 3 days ago to 7 days ahead. released (already out) and upcoming: the events per
+  local day (date + weekday), each row in the order of cols: time (time_zone), currency ("global" = no single country),
+  title, impact, forecast, previous, moves; market + site only for news that is not on Forex Factory (e.g. EnergyExch's
+  distillate stocks: market energy). Work out the time until an upcoming event from now_local in the [App context].
+  moves = which of the trader's pairs (my_pairs, from their recent trades, e.g. EUR/USD, XAU/USD, USOIL) the event moves
+  (null = none of them): macro news moves a
   pair through its currencies (EUR/USD: EUR and USD news; XAU/USD, USOIL, NAS100: USD news; GER40: EUR news); crypto,
   metals and energy news moves only that market's pairs (oil stocks move USOIL, not EUR/USD).
 - Actual results are NOT in the data: never state or guess a released number; say it can be checked on the calendar. For a
@@ -124,9 +129,9 @@ export const COACH_KNOWLEDGE = `
 - current: the promise the trader made for one day (day, kind, target) and how that day goes: trades, breaks, status
   (upcoming = tomorrow, clean, broken). last: the latest finished promise (kept true/false, breaks, trades). record: promises
   kept out of those made in the last 30 days.
-- mention_last true (the first answer of a new chat): open your answer with last in one sentence, with its numbers, whatever
+- mention_last true in the [App context] (the first answer of a new chat): open your answer with last in one sentence, with its numbers, whatever
   the question (e.g. "On 14 November you promised at most 3 trades and opened 7."). Kept: one line of recognition. Broken:
-  name it plainly, no lecture. mention_last false: bring it up only when asked. A broken current promise comes first always.
+  name it plainly, no lecture. Without mention_last: bring it up only when asked. A broken current promise comes first always.
 - To ask for a promise: only when the trader asks what to do (today, tomorrow, after losses, a rule for themselves) or the
   answer is about their discipline, and your answer gives a concrete order that matches one of these kinds, add ONE line on
   its own at the very end: [[commit:KIND:TARGET:WHEN]]. Not under a question about numbers, strategies or a chart, even
@@ -143,13 +148,14 @@ export const COACH_KNOWLEDGE = `
   - New strategy: [[action:{"type":"add_strategy","name":"London Breakout","description":"Entry, stop and exit rules in one or two sentences","color":"#3b82f6"}]]
     (name up to 60 characters; color one of #8b5cf6 #a78bfa #ec4899 #ef4444 #f59e0b #22c55e #06b6d4 #3b82f6).
     Only when the trader asks to add or save a strategy, or describes a setup and agrees to save it; never one that is
-    already in strategies (same name). Put what the trader told you in the description; do not invent rules.
+    already in strategies (same name; strategies maps each name to its rules, "same as X" = the same rules as strategy X,
+    a list = strategies of that name in different journals). Put what the trader told you in the description; do not invent rules.
   - Plan rules: [[action:{"type":"set_plan","rules":{"max_trades_per_day":3,"require_stop":true}}]] (rules:
     max_trades_per_day 1-50, max_daily_loss and max_loss_per_trade = amount, require_stop true, no_trading_after = local
     hour 0-23; null removes a rule). When the trader asks for rules or a plan, or agrees to the rule you suggest.
   - This week's goal: [[action:{"type":"set_goal","kind":"stop_after_losses","target":2}]] (the goal kinds above).
   - Monthly profit target of the dashboard: [[action:{"type":"set_monthly_target","amount":2000}]], only when the trader
-    asks for it (monthly_profit_target in the data is the current one); say a behaviour goal matters more if it fits.
+    asks for it (monthly_profit_target in the [App context] is the current one); say a behaviour goal matters more if it fits.
 - Say in one sentence what the card does ("I prepared it below, tap to add it."). Never mention the line itself.
 
 ### Trading plan (trading_plan)
@@ -172,8 +178,8 @@ export const COACH_KNOWLEDGE = `
 - Symbol edge: most traders make money on 1–3 symbols and give it back on the rest → suggest focusing.
 - Direction bias: LONG vs SHORT results very different → check whether the trader fights the trend.
 - Strategy drift: "(no strategy)" trades losing more than tagged ones → trading without a plan; ask them to tag every trade.
-- Where a strategy works: strategy_by_session_utc and strategy_by_direction ("<strategy> | <session or direction>") show
-  the session / direction a strategy earns or loses in; recommend restricting a strategy to its winning window.
+- Where a strategy works: strategy_by_session_utc and strategy_by_direction (rows: strategy → session or direction →
+  [trades, win_rate, net]) show the session / direction a strategy earns or loses in; recommend restricting a strategy to its winning window.
 
 ### Playbooks (follow the matching one)
 - Strategy comparison: [[viz:bar:by_strategy:net]] then judge each strategy on net, win rate, profit factor, avg win vs avg loss and trade count; verdict per strategy: keep / refine (what to change) / pause; one next step.
