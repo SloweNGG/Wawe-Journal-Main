@@ -1269,10 +1269,82 @@ async function fileToCsvText(file) {
       return (r && r.data && r.data.session && r.data.session.user && r.data.session.user.id) || null;
     } catch (e) { return null; }
   }
+  // ---- Komisyon şablonları (ww_comm_profiles / ww_comm_active_profile_id / ww_comm_auto_enabled) hesapta: prefs.comm
+  const COMM_ID_RE = /^[A-Za-z0-9_-]{1,60}$/;
+  function localHasComm() {
+    try {
+      return localStorage.getItem('ww_comm_profiles') !== null ||
+             localStorage.getItem('ww_comm_active_profile_id') !== null ||
+             localStorage.getItem('ww_comm_auto_enabled') !== null;
+    } catch (e) { return false; }
+  }
+  function buildCommPayload() {
+    if (!localHasComm()) return null; // hiç dokunulmadıysa varsayılanlar: hesaba yazmaya gerek yok
+    let profiles = null;
+    try {
+      const raw = localStorage.getItem('ww_comm_profiles');
+      if (raw) profiles = cleanCommProfiles(JSON.parse(raw));
+    } catch (e) { profiles = null; }
+    const active = localStorage.getItem('ww_comm_active_profile_id');
+    const auto = localStorage.getItem('ww_comm_auto_enabled');
+    return {
+      profiles: profiles && profiles.length ? profiles : null,
+      active: active && COMM_ID_RE.test(active) ? active : null,
+      auto: auto === null ? null : auto !== 'false'
+    };
+  }
+  function cleanCommProfiles(list) {
+    if (!Array.isArray(list)) return null;
+    const seen = {};
+    const out = [];
+    list.forEach(function(p) {
+      if (!p || typeof p.id !== 'string' || !COMM_ID_RE.test(p.id) || seen[p.id]) return;
+      const rate = Number(p.commPerLot);
+      if (!isFinite(rate) || rate < 0 || rate > 100000) return;
+      seen[p.id] = true;
+      out.push({ id: p.id, name: String(p.name || '').trim().slice(0, 40) || 'Özel Şablon', commPerLot: rate });
+    });
+    return out.slice(0, 20);
+  }
+  function cleanRemoteComm(c) {
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
+    const profiles = cleanCommProfiles(c.profiles);
+    return {
+      profiles: profiles && profiles.length ? profiles : null,
+      active: typeof c.active === 'string' && COMM_ID_RE.test(c.active) ? c.active : null,
+      auto: typeof c.auto === 'boolean' ? c.auto : null
+    };
+  }
+  // Hesaptan gelen şablonları uygula; açık pencerede elle yazılmış komisyon değeri ezilmez
+  function applyRemoteComm(c, keepLocalChoice) {
+    if (!c) return;
+    if (c.profiles) saveCommProfiles(c.profiles, true);
+    if (!keepLocalChoice) {
+      if (c.active) {
+        const prof = getCommProfiles().find(function(p) { return p.id === c.active; });
+        if (prof) {
+          try {
+            localStorage.setItem('ww_comm_active_profile_id', prof.id);
+            localStorage.setItem('ww_commission_per_lot', String(prof.commPerLot));
+          } catch (e) {}
+        }
+      }
+      if (c.auto !== null) { try { localStorage.setItem('ww_comm_auto_enabled', c.auto ? 'true' : 'false'); } catch (e) {} }
+    }
+    try {
+      renderCommChips();
+      const at = el('qa-comm-auto-toggle');
+      if (at) at.checked = isAutoCommEnabled();
+      syncCommissionWithLot(false);
+    } catch (e) {}
+  }
+
   function buildPrefsPayload() {
     const map = readSymbolInstruments();
     let keys = Object.keys(map).slice(-PREFS_SYNC_INST_MAX);
     const payload = { v: 1, ts: readPrefsTs() || Date.now(), symbols: readCustomSymbols(), instruments: {} };
+    const comm = buildCommPayload();
+    if (comm) payload.comm = comm;
     function fill() { payload.instruments = {}; keys.forEach(function(k) { payload.instruments[k] = map[k]; }); }
     fill();
     while (keys.length && JSON.stringify(payload).length > 6000) { keys = keys.slice(Math.ceil(keys.length / 4)); fill(); }
@@ -1301,7 +1373,7 @@ async function fileToCsvText(file) {
         }
       });
     }
-    return { ts: Number(o.ts) || 0, symbols: symbols, instruments: instruments };
+    return { ts: Number(o.ts) || 0, symbols: symbols, instruments: instruments, comm: cleanRemoteComm(o.comm) };
   }
   // Pencere açılışında (en fazla dakikada bir): hesaptaki daha yeniyse al, yereldeki daha yeniyse hesaba yaz
   function pullQuickAddPrefs() {
@@ -1316,15 +1388,23 @@ async function fileToCsvText(file) {
         if (error || !data) return false; // sütun henüz yoksa sessizce geç
         const remote = cleanRemotePrefs(data.quick_add_prefs);
         const localTs = readPrefsTs();
-        // Senkrondan önce (zaman damgasız) bu tarayıcıda eklenmiş semboller: ezilmesin, hesaptakilerle birleşsin
+        // Senkrondan önce (zaman damgasız) bu tarayıcıda kaydedilmiş semboller / komisyon şablonları:
+        // ezilmesin, hesaptakilerle birleşsin (bu tarayıcıdaki aktif şablon ve otomatik ayarı korunur)
         const localSyms = readCustomSymbols();
-        if (!localTs && (localSyms.length || Object.keys(readSymbolInstruments()).length)) {
+        if (!localTs && (localSyms.length || Object.keys(readSymbolInstruments()).length || localHasComm())) {
           if (remote) {
             const union = remote.symbols.concat(localSyms.filter(function(s) { return remote.symbols.indexOf(s) === -1; }));
             writeCustomSymbols(union.slice(0, CUSTOM_SYM_MAX), true);
             const merged = readSymbolInstruments();
             Object.keys(remote.instruments).forEach(function(k) { if (!merged[k]) merged[k] = remote.instruments[k]; });
             writeSymbolInstruments(merged);
+            if (remote.comm && remote.comm.profiles) {
+              const localComm = buildCommPayload();
+              const localProfiles = (localComm && localComm.profiles) || [];
+              const ids = remote.comm.profiles.map(function(p) { return p.id; });
+              const unionProfiles = remote.comm.profiles.concat(localProfiles.filter(function(p) { return ids.indexOf(p.id) === -1; }));
+              applyRemoteComm({ profiles: cleanCommProfiles(unionProfiles), active: remote.comm.active, auto: remote.comm.auto }, localHasComm());
+            }
           }
           try { localStorage.setItem(PREFS_TS_KEY, String(Date.now())); } catch (e) {}
           await pushQuickAddPrefs();
@@ -1338,8 +1418,11 @@ async function fileToCsvText(file) {
           Object.keys(remote.instruments).forEach(function(k) { delete merged[k]; merged[k] = remote.instruments[k]; });
           writeSymbolInstruments(merged);
           try { localStorage.setItem(PREFS_TS_KEY, String(remote.ts)); } catch (e) {}
+          if (remote.comm) applyRemoteComm(remote.comm, false);
           const box = el('qa-sym-list');
           if (box && !box.hidden) renderSymbolList();
+          // Hesaptaki kopyayı eski bir sürüm yazdıysa (komisyon yok) ve burada şablon varsa: onları da hesaba ekle
+          if (!remote.comm && localHasComm()) markPrefsChanged();
           return 'pulled';
         }
         if (localTs && (!remote || localTs > remote.ts)) { await pushQuickAddPrefs(); return 'pushed'; }
@@ -1612,10 +1695,11 @@ async function fileToCsvText(file) {
     return DEFAULT_COMM_PROFILES;
   }
 
-  function saveCommProfiles(list) {
+  function saveCommProfiles(list, fromRemote) {
     try {
       localStorage.setItem('ww_comm_profiles', JSON.stringify(list));
     } catch(e) {}
+    if (!fromRemote) markPrefsChanged(); // hesaba da yaz (user_profiles.quick_add_prefs.comm)
   }
 
   function isAutoCommEnabled() {
@@ -1670,9 +1754,13 @@ async function fileToCsvText(file) {
     var profiles = getCommProfiles();
     var prof = profiles.find(function(p) { return p.id === id; });
     if (!prof) return;
+    commCreatingNew = false;
 
+    // Pencere açılışında mevcut şablon yeniden seçilir: yalnızca gerçekten değişince hesaba yaz
+    var activeChanged = localStorage.getItem('ww_comm_active_profile_id') !== prof.id;
     localStorage.setItem('ww_comm_active_profile_id', prof.id);
     localStorage.setItem('ww_commission_per_lot', String(prof.commPerLot));
+    if (activeChanged) markPrefsChanged();
 
     var nameInput = el('qa-comm-input-name');
     var rateInput = el('qa-comm-input-rate');
@@ -1688,7 +1776,11 @@ async function fileToCsvText(file) {
     syncCommissionWithLot(true);
   }
 
+  // "+ Yeni Şablon"dan sonra Kaydet yeni şablon ekler (eskiden aktif şablonun üzerine yazıyordu)
+  var commCreatingNew = false;
+
   function prepareNewCommProfile() {
+    commCreatingNew = true;
     var nameInput = el('qa-comm-input-name');
     var rateInput = el('qa-comm-input-rate');
     var delBtn = el('qa-comm-btn-del');
@@ -1753,6 +1845,7 @@ async function fileToCsvText(file) {
       autoToggle.checked = isAutoCommEnabled();
       autoToggle.addEventListener('change', function() {
         localStorage.setItem('ww_comm_auto_enabled', this.checked ? 'true' : 'false');
+        markPrefsChanged();
         syncCommissionWithLot(true);
       });
     }
@@ -1823,8 +1916,9 @@ async function fileToCsvText(file) {
         var rate = parseFloat(rInput?.value?.replace(',', '.')) || 0;
 
         var profiles = getCommProfiles();
-        var activeId = localStorage.getItem('ww_comm_active_profile_id') || ('custom_' + Date.now());
-        var existingIdx = profiles.findIndex(function(p) { return p.id === activeId; });
+        var activeId = commCreatingNew ? null : localStorage.getItem('ww_comm_active_profile_id');
+        var existingIdx = activeId ? profiles.findIndex(function(p) { return p.id === activeId; }) : -1;
+        commCreatingNew = false;
 
         if (existingIdx > -1) {
           profiles[existingIdx].name = name;

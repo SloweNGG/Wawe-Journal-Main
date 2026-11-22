@@ -542,6 +542,7 @@ Varsayılan tema koyudur. Açık tema `body.light-theme` sınıfıyla gelir.
 - `ww_qa_symbol_instruments`: sembol başına en son kaydedilen enstrüman ve çarpan (`{ USOIL: { i: 'other', m: 1000 } }`, en fazla 200).
 - `ww_qa_prefs_ts`: bu ikisinin son yerel değişiklik zamanı. İkisi hesaba da yazılır (`user_profiles.quick_add_prefs`, son 80 enstrüman). Pencere açılınca en fazla dakikada bir okunur, yeni olan kazanır. Sembol listesi olduğu gibi alınır, enstrümanlar birleştirilir. Kolon yoksa yalnızca yerelde çalışır.
 - `ww_qa_recent_symbols`: son kullanılan semboller (canlı işlemlerden, yalnızca önbellek).
+- Komisyon şablonları da aynı kolonda (`quick_add_prefs.comm`): `ww_comm_profiles` (en fazla 20 şablon, ad 40 karakter), `ww_comm_active_profile_id`, `ww_comm_auto_enabled`. Hesaptan gelince `ww_commission_per_lot` aktif şablondan yeniden yazılır. Senkrondan önce kaydedilmiş şablonlar hesaptakilerle birleşir, o tarayıcının aktif şablonu korunur. Hiç dokunulmamış varsayılan şablonlar hesaba yazılmaz.
 
 `BaseHead` tema motorunu satır içi çalıştırır; tema, plan ve dil sayfa çizilmeden önce `<html>` öğesine uygulanır, böylece ekran yanıp sönmez.
 
