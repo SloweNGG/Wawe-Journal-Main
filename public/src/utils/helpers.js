@@ -73,7 +73,7 @@ export function calcRR(entry, sl, tp, direction) {
 export function formatCurrency(value) {
   const num = parseFloat(value) || 0;
   const currency = getCurrencySymbol();
-  const formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   if (num < 0) {
     return '-' + currency + formatted;
@@ -96,7 +96,7 @@ export function formatCurrencyPDF(value) {
 export function formatCurrencyApex(value) {
   const num = parseFloat(value) || 0;
   const currency = getCurrencySymbol();
-  const formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   if (num < 0) {
     return '-' + currency + formatted;

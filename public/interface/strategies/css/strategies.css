@@ -463,6 +463,11 @@
   border-color: rgba(255, 255, 255, 0.12);
   color: var(--text-secondary, #a1a1aa);
 }
+/* açık tema: işlemsiz stratejinin boş grafik rozeti beyaz kartta koyu hap olarak çıkıyordu */
+body.light-theme .sc-spark.sc-spark-empty { background: rgba(15, 23, 42, 0.02); border-color: rgba(15, 23, 42, 0.1); }
+body.light-theme .sc-spark-empty-badge { background: rgba(255, 255, 255, 0.85); border-color: rgba(15, 23, 42, 0.1); }
+body.light-theme .strategy-card:hover .sc-spark-empty-badge { border-color: rgba(15, 23, 42, 0.18); color: var(--text-muted); }
+body.light-theme .time-filter-btn:not(.active):hover { background: rgba(15, 23, 42, 0.05); }
 
 .sc-footer {
   display: flex;

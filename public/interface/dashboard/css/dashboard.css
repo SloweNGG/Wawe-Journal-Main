@@ -2410,6 +2410,17 @@ body.light-theme .expand-summary-empty {
   box-shadow: 0 0 6px rgba(var(--ac-rgb), 0.5);
 }
 
+/* açık tema: beyaz kart üstünde beyaz saydam düğme ve pasif nokta görünmüyordu (yalnızca etkin nokta seçiliyordu) */
+body.light-theme .donut-nav-btn { background: rgba(15, 23, 42, 0.04); }
+body.light-theme .donut-nav-btn:hover { background: rgba(15, 23, 42, 0.08); }
+body.light-theme .donut-slider-dot:not(.active) { background: rgba(15, 23, 42, 0.2); }
+body.light-theme .donut-slider-dot:not(.active):hover { background: rgba(15, 23, 42, 0.4); }
+body.light-theme :is(.skeleton-perf-box, .skeleton-prop-box) {
+  background: rgba(15, 23, 42, 0.025);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+body.light-theme .prop-card-spinner { border-color: rgba(15, 23, 42, 0.12); border-top-color: var(--ac); }
+
 .donut-slider-viewport {
   width: 100%;
   overflow: hidden;

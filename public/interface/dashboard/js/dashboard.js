@@ -161,26 +161,32 @@ function wwAccent() {
     }
     var num = parseFloat(value) || 0;
     var symbol = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
-    var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return (num >= 0 ? '+' : '-') + symbol + formatted;
   }
 
   // Standard financial notation: K (thousand), M (million), B (billion)
+  // Ondalık ayracı uygulama diline göre (formatCurrency ile aynı): EN "$1.5K" / "$17.94", TR "$1,5K" / "$17,94".
+  // Sıfır işaretsiz ("$0"; eksende "+$0" görünüyordu).
   function formatCompactCurrency(value) {
     var symbol = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
     var num = parseFloat(value) || 0;
     var abs = Math.abs(num);
+    var loc = window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR';
+    var one = function (n) { return n.toLocaleString(loc, { minimumFractionDigits: 0, maximumFractionDigits: 1 }); };
     var compact;
     if (abs >= 1e9) {
-      compact = (abs / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+      compact = one(abs / 1e9) + 'B';
     } else if (abs >= 1e6) {
-      compact = (abs / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+      compact = one(abs / 1e6) + 'M';
     } else if (abs >= 1e3) {
-      compact = (abs / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+      compact = one(abs / 1e3) + 'K';
     } else {
-      compact = abs.toFixed(abs % 1 === 0 ? 0 : 2);
+      var dec = abs % 1 === 0 ? 0 : 2;
+      compact = abs.toLocaleString(loc, { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: false });
     }
-    return (num >= 0 ? '+' : '-') + symbol + compact;
+    if (num === 0) return symbol + compact;
+    return (num > 0 ? '+' : '-') + symbol + compact;
   }
 
   function formatCurrencyPDF(value) {
@@ -802,7 +808,9 @@ function wwAccent() {
       } else if (rawProgress > 100) {
         goalPercentEl.textContent = '>100%';
       } else {
-        goalPercentEl.textContent = Math.floor(progressPercent) + '%';
+        // Math.floor(-0.35) = -1% oluyordu (Performans kartı -0.3% gösterirken): kartla aynı biçim, tek ondalık
+        var gp = Math.round(progressPercent * 10) / 10;
+        goalPercentEl.textContent = (gp === 0 ? 0 : gp).toLocaleString(window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
       }
     }
     var goalProgressEl = safeEl('goal-progress');

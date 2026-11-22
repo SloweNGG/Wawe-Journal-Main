@@ -347,6 +347,11 @@
     return 'tr';
   }
 
+  // Sayı / para biçimi için yerel ayar: uygulama dili (EN "1,234.56", TR/DE "1.234,56")
+  function numLocale(lang) {
+    return localeFor(lang || currentLang());
+  }
+
   function formatTime(v, lang) {
     var c = classify(v);
     if (c.kind !== 'time') return '';
@@ -428,6 +433,7 @@
     hourOf: hourOf,
     dowOf: dowOf,
     formatTime: formatTime,
+    numLocale: numLocale,
     formatDate: formatDate,
     formatDateTime: formatDateTime,
     formatOffset: formatOffset,

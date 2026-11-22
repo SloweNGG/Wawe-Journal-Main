@@ -4429,6 +4429,11 @@ body.light-theme .pro-badge-pill {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   animation: wizardStepIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+/* açık tema: koyu kutu içinde koyu (var(--text)) başlık okunmuyordu */
+body.light-theme .extend-wizard-wrapper {
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.1);
+}
 
 .extend-wizard-header {
   display: flex;
@@ -5367,3 +5372,10 @@ body.light-theme .wj-ambient-backdrop {
 :root:not(.light-theme) body:not(.light-theme) .settings-wrap :is(.nav-btn-back, .nav-btn-skip, .btn-close-extend-wizard):hover {
   background: var(--modal-hover);
 }
+
+/* Açık tema: beyaz zeminde görünmeyen beyaz saydam rozet/iz zeminleri (Plan ve Görünüm panelleri) */
+body.light-theme .plan-top-badge,
+body.light-theme .period-badge.standard,
+body.light-theme .feat-icon.dash { background: rgba(15, 23, 42, 0.06); }
+body.light-theme .countdown-bar-track { background: rgba(15, 23, 42, 0.08); }
+body.light-theme .ambient-test-row { border-top-color: rgba(15, 23, 42, 0.1); }

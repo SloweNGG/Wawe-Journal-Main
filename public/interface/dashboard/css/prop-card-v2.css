@@ -71,6 +71,8 @@
 .pc2-meter-val b { color: var(--text); font-weight: 700; }
 .pc2-bar { height: 6px; border-radius: 99px; background: var(--pc-track); overflow: hidden; }
 .pc2-bar span { display: block; height: 100%; border-radius: 99px; min-width: 2px; transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+/* hedef sıfır / negatifken çubuğun başında mor 2px kalıyordu (ilerleme varmış gibi) */
+.pc2-bar span.empty { min-width: 0; }
 .pc2-meter.ok .pc2-bar span { background: var(--pc-ok); }
 .pc2-meter.warn .pc2-bar span { background: var(--pc-warn); }
 .pc2-meter.bad .pc2-bar span { background: var(--pc-bad); }
@@ -100,8 +102,9 @@
   font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer;
 }
 .pc2-goal-meta { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
-.pc2-goal-meta b { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--muted); }
+.pc2-goal-meta b { font-size: 12.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .pc2-goal-meta b.on { color: var(--pc-brand); }
+.pc2-goal-meta b.neg { color: var(--pc-bad); }
 .pc2-goal.passed .pc2-goal-meta b { color: var(--pc-ok); }
 .pc2-goal-figures { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
 

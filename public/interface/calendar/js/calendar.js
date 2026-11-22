@@ -102,7 +102,7 @@ function formatCurrency(value) {
     var num = parseFloat(value) || 0;
     var currency = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '$';
     var absNum = Math.abs(num);
-    var formatted = absNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var formatted = absNum.toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return (num >= 0 ? '+' : '-') + currency + formatted;
   } catch (e) {
     var n = parseFloat(value) || 0;

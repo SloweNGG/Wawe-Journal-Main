@@ -64,10 +64,13 @@
   function money(value) {
     var num = Number(value) || 0, abs = Math.abs(num);
     var sym = typeof global.getCurrencySymbol === 'function' ? global.getCurrencySymbol() : '$';
+    // ondalık ayracı uygulama diline göre (EN 1.5K, TR 1,5K)
+    var loc = global.WwTime && global.WwTime.numLocale ? global.WwTime.numLocale() : 'tr-TR';
+    var one = function (n) { return n.toLocaleString(loc, { minimumFractionDigits: 0, maximumFractionDigits: 1, useGrouping: false }); };
     var txt;
-    if (abs >= 999.5e3) txt = (abs / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-    else if (abs >= 999.5) txt = (abs / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-    else if (abs < 100 && abs % 1 !== 0) txt = abs.toFixed(1).replace(/\.0$/, '');
+    if (abs >= 999.5e3) txt = one(abs / 1e6) + 'M';
+    else if (abs >= 999.5) txt = one(abs / 1e3) + 'K';
+    else if (abs < 100 && abs % 1 !== 0) txt = one(abs);
     else txt = String(Math.round(abs));
     return (num < 0 && txt !== '0' ? '-' : '') + sym + txt;
   }

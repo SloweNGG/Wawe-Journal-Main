@@ -809,6 +809,9 @@ body.light-theme .bell-panel-header {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.15);
 }
+/* açık tema: beyaz panelde beyaz saydam kapatma düğmesi görünmüyordu */
+body.light-theme .bell-panel-close { background: rgba(15, 23, 42, 0.04); border-color: rgba(15, 23, 42, 0.08); }
+body.light-theme .bell-panel-close:hover { background: rgba(15, 23, 42, 0.08); border-color: rgba(15, 23, 42, 0.14); }
 
 /* Filter Tabs */
 .bell-filter-tabs {
@@ -886,6 +889,8 @@ body.light-theme .bell-tab-btn.active {
   background: rgba(var(--ac-rgb), 0.3);
   opacity: 1;
 }
+body.light-theme .bell-tab-btn:not(.active) .tab-count { background: rgba(15, 23, 42, 0.07); }
+body.light-theme .bell-tab-btn.active .tab-count { background: rgba(var(--ac-rgb), 0.18); }
 
 /* Panel Body */
 .bell-panel-body {
@@ -1397,6 +1402,7 @@ body.light-theme .nav-menu {
   padding-top: 0.75rem;
   border-top: 1px solid rgba(255,255,255,0.04);
 }
+body.light-theme .menu-section { border-top-color: rgba(15, 23, 42, 0.07); }
 
 .menu-section:first-of-type {
   border-top: none;

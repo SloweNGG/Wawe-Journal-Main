@@ -618,7 +618,7 @@ import Layout from '../layouts/Layout.astro';
     if (!isFinite(num)) return '—';
     var c = String(code || '').toUpperCase();
     var crypto = (c === 'BTC' || c === 'ETH');
-    var txt = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: crypto ? 8 : 2 });
+    var txt = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: crypto ? 8 : 2 });
     var sign = num < 0 ? '-' : '';
     if (!c) {
       var sym = '$';

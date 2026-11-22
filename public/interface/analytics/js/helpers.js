@@ -57,7 +57,7 @@ export function calcTradePnL(t) {
 export function formatCurrency(value) {
   var num = parseFloat(value) || 0;
   var currency = getCurrencySymbol();
-  var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (num < 0) return '-' + currency + formatted;
   return '+' + currency + formatted;
 }
@@ -65,7 +65,7 @@ export function formatCurrency(value) {
 export function formatCurrencyPlain(value) {
   var num = parseFloat(value) || 0;
   var currency = getCurrencySymbol();
-  var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (num < 0 ? '-' : '') + currency + formatted;
 }
 

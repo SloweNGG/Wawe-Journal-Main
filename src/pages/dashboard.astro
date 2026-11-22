@@ -853,12 +853,12 @@ import Layout from '../layouts/Layout.astro';
           return window.formatCurrency(val);
         }
         var num = parseFloat(val) || 0;
-        var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return (num >= 0 ? '+' : '-') + sym + formatted;
       };
       var fmtTarget = function (val) {
         var num = Math.abs(parseFloat(val) || 0);
-        return sym + num.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        return sym + num.toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 0, maximumFractionDigits: 2 });
       };
 
       // Get trades from dashboard state
@@ -915,7 +915,8 @@ import Layout from '../layouts/Layout.astro';
         if (window.WwMetrics.dateKey(tr).indexOf(goalMonthPrefix) === 0) goalMonthPnL += calcPnl(tr);
       });
       var rawGoalPct = monthlyTarget > 0 ? ((goalMonthPnL / monthlyTarget) * 100) : 0;
-      var goalPctText = rawGoalPct > 100 ? '>100%' : (rawGoalPct < -100 ? '<-100%' : rawGoalPct.toFixed(1) + '%');
+      var goalPctRounded = Math.round(rawGoalPct * 10) / 10;
+      var goalPctText = rawGoalPct > 100 ? '>100%' : (rawGoalPct < -100 ? '<-100%' : (goalPctRounded === 0 ? 0 : goalPctRounded).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%');
       var goalFillWidth = Math.min(100, Math.max(0, rawGoalPct));
       var goalGradient = rawGoalPct >= 100
         ? 'linear-gradient(90deg, #10b981, #22c55e)'
@@ -929,7 +930,7 @@ import Layout from '../layouts/Layout.astro';
         bestText = fmtPnl(bestTrade.pnl);
         bestSub = bestTrade.symbol ? (bestTrade.symbol + ' • ' + (t('dashboard.card.profit_tag') || 'Kazanç')) : (t('dashboard.card.best_trade') || 'En İyi İşlem');
       } else if (closed.length > 0) {
-        bestText = sym + '0,00';
+        bestText = fmtPnl(0).replace(/^\+/, '');
         bestSub = t('dashboard.card.no_win') || 'Kârlı İşlem Yok';
       }
 
@@ -942,7 +943,7 @@ import Layout from '../layouts/Layout.astro';
         worstColor = '#f87171';
         worstSub = worstTrade.symbol ? (worstTrade.symbol + ' • ' + (t('dashboard.card.loss_tag') || 'Kayıp')) : (t('dashboard.card.worst_trade') || 'En Kötü İşlem');
       } else if (closed.length > 0) {
-        worstText = sym + '0,00';
+        worstText = fmtPnl(0).replace(/^\+/, '');
         worstColor = 'var(--text)';
         worstSub = t('dashboard.card.no_loss') || 'Kayıp İşlem Yok';
       }

@@ -293,9 +293,9 @@
         '<div class="pc2-head"><div class="pc2-title"><span class="pc2-firm">' + esc(c.title) + '</span></div>' +
           '<div class="pc2-actions">' + goalBtn + '</div></div>' +
         '<div class="pc2-goal ' + goalCls + '">' +
-          '<div class="pc2-goal-meta"><span>' + esc(c.goalLabel) + '</span><b class="' + (pct > 0 ? 'on' : '') + '">' + esc(c.goalPctText) + '</b></div>' +
+          '<div class="pc2-goal-meta"><span>' + esc(c.goalLabel) + '</span><b class="' + (pct > 0 ? 'on' : (pct < 0 ? 'neg' : '')) + '">' + esc(c.goalPctText) + '</b></div>' +
           '<div class="pc2-goal-figures"><span class="pc2-balance-num">' + esc(c.pnlText) + '</span><span class="pc2-delta">/ ' + esc(c.targetText) + '</span></div>' +
-          '<div class="pc2-bar"><span style="width:' + fill.toFixed(1) + '%"></span></div>' +
+          '<div class="pc2-bar"><span' + (fill > 0 ? '' : ' class="empty"') + ' style="width:' + fill.toFixed(1) + '%"></span></div>' +
         '</div>' +
         '<div class="pc2-stats">' +
           stat('best', c.best.label, c.best.text, c.best.cls, c.best.sub) +
