@@ -318,6 +318,16 @@
       if (textT !== keyT && elT.title !== textT) elT.title = textT;
     }
 
+    // data-i18n-aria-label → aria-label (ikonlu düğmelerin ekran okuyucu adı)
+    var ariaEls = document.querySelectorAll('[data-i18n-aria-label]');
+    for (var q = 0; q < ariaEls.length; q++) {
+      var elA = ariaEls[q];
+      var keyA = elA.getAttribute('data-i18n-aria-label');
+      if (!keyA) continue;
+      var textA = self.t(keyA);
+      if (textA !== keyA && elA.getAttribute('aria-label') !== textA) elA.setAttribute('aria-label', textA);
+    }
+
     if (typeof wwLog !== 'undefined' && wwLog.log) {
       wwLog.log('[i18n] apply: ' + lang +
         ' (text:' + textEls.length +

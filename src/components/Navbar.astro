@@ -22,7 +22,7 @@ const isActive = (page: string) => {
   </a>
 
   <div class="nav-journal-switcher" id="nav-journal-switcher">
-    <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleJournal && window.wwToggleJournal(event, this)">
+    <button type="button" class="journal-switch-btn" aria-haspopup="true" aria-controls="journal-dropdown" aria-expanded="false" onclick="window.wwToggleJournal && window.wwToggleJournal(event, this)">
       <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:var(--ac-b1);--mk-ring:rgba(var(--ac-b1-rgb), 0.251)"><span class="ww-mark-dot"></span></span></span>
       <span class="journal-name">Ana Hesap</span>
       <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -65,18 +65,18 @@ const isActive = (page: string) => {
   </div>
 
   <div class="nav-links">
-    <a href="/dashboard" data-page="dashboard" class={`loaded ${isActive('dashboard') ? 'active' : ''}`}><span data-i18n="nav.dashboard">Dashboard</span></a>
-    <a href="/trades" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`}><span data-i18n="nav.trades">İşlemler</span></a>
-    <a href="/strategies" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
-    <a href="/calendar" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
-    <a href="/backtest" data-page="backtest" id="nav-backtest-link" style="display:none;" class={`loaded ${isActive('backtest') ? 'active' : ''}`}><span data-i18n="nav.backtest">Backtest</span></a>
-    <a href="/analytics" data-page="analytics" data-pro-link class={`loaded ${isActive('analytics') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span></a>
+    <a href="/dashboard" data-page="dashboard" class={`loaded ${isActive('dashboard') ? 'active' : ''}`} aria-current={isActive('dashboard') ? 'page' : undefined}><span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="/trades" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`} aria-current={isActive('trades') ? 'page' : undefined}><span data-i18n="nav.trades">İşlemler</span></a>
+    <a href="/strategies" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`} aria-current={isActive('strategies') ? 'page' : undefined}><span data-i18n="nav.strategies">Stratejiler</span></a>
+    <a href="/calendar" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`} aria-current={isActive('calendar') ? 'page' : undefined}><span data-i18n="nav.calendar">Takvim</span></a>
+    <a href="/backtest" data-page="backtest" id="nav-backtest-link" class={`loaded ${isActive('backtest') ? 'active' : ''}`} aria-current={isActive('backtest') ? 'page' : undefined}><span data-i18n="nav.backtest">Backtest</span></a>
+    <a href="/analytics" data-page="analytics" data-pro-link class={`loaded ${isActive('analytics') ? 'active' : ''}`} aria-current={isActive('analytics') ? 'page' : undefined}><span data-i18n="nav.analysis">Analiz</span></a>
   </div>
 
   <div class="nav-right">
     <div class="nav-econ" id="nav-econ"></div>
     <div class="nav-bell-wrapper" id="nav-bell-wrapper">
-      <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="window.wwToggleBell && window.wwToggleBell(event, this)">
+      <button type="button" class="nav-bell-btn" id="overtrade-bell-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="bell-panel" aria-label="Bildirimler" title="Bildirimler" data-i18n-aria-label="nav.notifications" data-i18n-title="nav.notifications" onclick="window.wwToggleBell && window.wwToggleBell(event, this)">
         <i data-lucide="bell" class="nav-bell-icon"></i>
         <span class="bell-badge" id="bell-badge" style="display:none;">0</span>
       </button>
@@ -138,9 +138,9 @@ const isActive = (page: string) => {
       <span class="plan-dot"></span>
       <span class="plan-text" id="plan-text">Ücretsiz</span>
     </a>
-    <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleAvatar && window.wwToggleAvatar(event, this)">
+    <button type="button" class="user-avatar" id="user-avatar" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-menu" aria-label="Hesap menüsü" data-i18n-aria-label="nav.account_menu" onclick="window.wwToggleAvatar && window.wwToggleAvatar(event, this)">
       <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
-    </div>
+    </button>
 
     <div class="dropdown-menu" id="dropdown-menu">
       <div class="nav-dd-head">
@@ -193,13 +193,109 @@ const isActive = (page: string) => {
       </button>
     </div>
 
-    <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç" aria-expanded="false" aria-controls="nav-menu" data-i18n-aria-label="nav.open_menu">
       <span class="bar"></span><span class="bar"></span><span class="bar"></span>
     </button>
   </div>
 </nav>
 
-<!-- ⚡ 0MS NAVBAR PRE-HYDRATION: Parse anında senkron çalışır, Frame 0 boyanmadan önce navbar'ı son haline getirir -->
+
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="nav-menu" id="nav-menu">
+  <div class="nav-menu-inner">
+
+    <div class="user-card" id="menu-user-card">
+      <div class="user-card-avatar" id="menu-user-avatar">
+        <span id="menu-avatar-text">?</span>
+      </div>
+      <div class="user-card-info">
+        <div class="user-card-name" id="menu-user-name">Kullanıcı</div>
+        <div class="user-card-plan" id="menu-user-plan">
+          <span class="plan-dot"></span>
+          <span class="plan-text">Ücretsiz</span>
+        </div>
+      </div>
+    </div>
+
+    <a href="/journals" class="menu-journal-link" id="menu-journal-link">
+      <span class="menu-journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:var(--ac-b1);--mk-ring:rgba(var(--ac-b1-rgb), 0.251)"><span class="ww-mark-dot"></span></span></span>
+      <span class="menu-journal-info">
+        <span class="menu-journal-label" data-i18n="nav.current_account">Aktif Hesap</span>
+        <span class="menu-journal-name" id="menu-journal-name">Ana Hesap</span>
+      </span>
+      <i data-lucide="chevron-right" class="menu-journal-arrow"></i>
+    </a>
+
+    <div class="menu-section">
+      <div class="menu-section-title" data-i18n="nav.menu_general">GENEL</div>
+      <a href="/">
+        <i data-lucide="home" style="width:16px;height:16px;"></i> <span data-i18n="nav.home">Ana Sayfa</span>
+      </a>
+      <a href="/dashboard" class={isActive('dashboard') ? 'active' : ''} aria-current={isActive('dashboard') ? 'page' : undefined}>
+        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.dashboard">Dashboard</span>
+      </a>
+      <a href="/trades" class={isActive('trades') ? 'active' : ''} aria-current={isActive('trades') ? 'page' : undefined}>
+        <i data-lucide="list" style="width:16px;height:16px;"></i> <span data-i18n="nav.trades">İşlemler</span>
+      </a>
+      <a href="/strategies" class={isActive('strategies') ? 'active' : ''} aria-current={isActive('strategies') ? 'page' : undefined}>
+        <i data-lucide="target" style="width:16px;height:16px;"></i> <span data-i18n="nav.strategies">Stratejiler</span>
+      </a>
+      <a href="/calendar" class={isActive('calendar') ? 'active' : ''} aria-current={isActive('calendar') ? 'page' : undefined}>
+        <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">Takvim</span>
+      </a>
+      <a href="/backtest" id="nav-backtest-link-mobile" class={isActive('backtest') ? 'active' : ''} aria-current={isActive('backtest') ? 'page' : undefined}>
+        <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">Backtest</span>
+      </a>
+    </div>
+
+    <div class="menu-section">
+      <div class="menu-section-title" data-i18n="nav.menu_pro">PRO</div>
+      <a href="/analytics" data-pro-link class={isActive('analytics') ? 'active' : ''} aria-current={isActive('analytics') ? 'page' : undefined}>
+        <i data-lucide="line-chart" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">Analiz</span>
+      </a>
+      <a href="/settings#panel-appearance">
+        <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
+      </a>
+      <a href="/settings#panel-overtrade">
+        <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
+      </a>
+      <a href="/settings#panel-plan" class="go-pro">
+        <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_pro">Pro'ya Geç →</span>
+      </a>
+    </div>
+
+    <div class="menu-section">
+      <div class="menu-section-title" data-i18n="nav.menu_account">HESAP</div>
+      <a href="/settings#panel-profile">
+        <i data-lucide="user" style="width:16px;height:16px;"></i> <span data-i18n="nav.profile">Profil</span>
+      </a>
+      <a href="/settings" class={isActive('settings') ? 'active' : ''} aria-current={isActive('settings') ? 'page' : undefined}>
+        <i data-lucide="settings" style="width:16px;height:16px;"></i> <span data-i18n="nav.settings">Ayarlar</span>
+      </a>
+      <a href="/my-earnings" class={isActive('my-earnings') ? 'active' : ''} aria-current={isActive('my-earnings') ? 'page' : undefined}>
+        <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">Kazançlarım</span>
+      </a>
+      <a href="/report-bug" class={isActive('report-bug') ? 'active' : ''} aria-current={isActive('report-bug') ? 'page' : undefined}>
+        <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">Hata Bildir</span>
+      </a>
+      <a href="/support">
+        <i data-lucide="life-buoy" style="width:16px;height:16px;"></i> <span data-i18n="nav.help">Yardım Merkezi</span>
+      </a>
+      <span id="admin-link-mobile" style="display:none;">
+        <a href="/admin">
+          <i data-lucide="shield" style="width:16px;height:16px;"></i> <span data-i18n="nav.admin">Admin</span>
+        </a>
+      </span>
+      <button id="logout-btn-mobile">
+        <i data-lucide="log-out" style="width:16px;height:16px;"></i> <span data-i18n="nav.logout">Çıkış Yap</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ⚡ 0MS NAVBAR PRE-HYDRATION: Parse anında senkron çalışır, Frame 0 boyanmadan önce navbar'ı son haline getirir.
+     Mobil menüden SONRA durur: menüdeki hesap adı ve kullanıcı kartı da ilk boyamada dolu gelir. -->
 <script is:inline>
 (function() {
   try {
@@ -236,14 +332,10 @@ const isActive = (page: string) => {
       }
     }
 
-    // 3. Aktif defter adı senkronizasyonu
+    // 3. Aktif defter adı: üst çubuktaki seçiciyi kendi satır içi betiği yazar, burada yalnızca mobil menü
     var jName = localStorage.getItem('ww_active_journal_name');
-    if (jName) {
-      var swName = document.querySelector('.nav-journal-switcher .journal-name');
-      if (swName) swName.textContent = jName;
-      var menuJName = document.getElementById('menu-journal-name');
-      if (menuJName) menuJName.textContent = jName;
-    }
+    var menuJName = document.getElementById('menu-journal-name');
+    if (jName && menuJName) menuJName.textContent = jName;
 
     // 4. Avatar senkronizasyonu
     var avUrl = localStorage.getItem('ww_avatar_url') || sessionStorage.getItem('ww_avatar_url');
@@ -253,109 +345,26 @@ const isActive = (page: string) => {
     var ddEmail = document.getElementById('nav-dd-email');
     var uEmail = sessionStorage.getItem('ww_user_email');
     if (ddEmail) { ddEmail.textContent = uEmail && uEmail !== dName ? uEmail : ''; ddEmail.style.display = ddEmail.textContent ? '' : 'none'; }
-    var avEl = document.getElementById('user-avatar');
-    var avTxt = document.getElementById('nav-avatar-text');
-    if (avEl) {
-      if (avUrl && avUrl !== 'none' && !avUrl.startsWith('data:') && !avUrl.startsWith('blob:')) {
-        avEl.innerHTML = '<img src="' + avUrl + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="" />';
-      } else if (dName && avTxt) {
-        avTxt.textContent = dName.trim().slice(0, 2).toUpperCase();
+    // Avatar: üst çubuk + mobil menü kartı. Resim yalnızca https adresinden, DOM ile eklenir (innerHTML'e ham adres yazılmaz)
+    var okUrl = avUrl && /^https:\/\//.test(avUrl) ? avUrl : '';
+    var initials = dName ? (dName.indexOf('@') > 0 ? dName.split('@')[0] : dName).trim().slice(0, 2).toUpperCase() : '';
+    var paintAvatar = function(host, txt) {
+      if (!host) return;
+      if (okUrl) {
+        var img = document.createElement('img');
+        img.src = okUrl;
+        img.alt = '';
+        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+        host.textContent = '';
+        host.appendChild(img);
+      } else if (initials && txt) {
+        txt.textContent = initials;
       }
-    }
+    };
+    paintAvatar(document.getElementById('user-avatar'), document.getElementById('nav-avatar-text'));
+    paintAvatar(document.getElementById('menu-user-avatar'), document.getElementById('menu-avatar-text'));
+    var menuName = document.getElementById('menu-user-name');
+    if (menuName && dName) menuName.textContent = dName.indexOf('@') > 0 ? dName.split('@')[0] : dName;
   } catch (e) {}
 })();
 </script>
-
-<div class="nav-backdrop" id="nav-backdrop"></div>
-<div class="nav-menu" id="nav-menu">
-  <div class="nav-menu-inner">
-
-    <div class="user-card" id="menu-user-card">
-      <div class="user-card-avatar" id="menu-user-avatar">
-        <span id="menu-avatar-text">?</span>
-      </div>
-      <div class="user-card-info">
-        <div class="user-card-name" id="menu-user-name">Kullanıcı</div>
-        <div class="user-card-plan" id="menu-user-plan">
-          <span class="plan-dot"></span>
-          <span class="plan-text">Ücretsiz</span>
-        </div>
-      </div>
-    </div>
-
-    <a href="/journals" class="menu-journal-link" id="menu-journal-link">
-      <span class="menu-journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:var(--ac-b1);--mk-ring:rgba(var(--ac-b1-rgb), 0.251)"><span class="ww-mark-dot"></span></span></span>
-      <span class="menu-journal-info">
-        <span class="menu-journal-label" data-i18n="nav.current_account">Aktif Hesap</span>
-        <span class="menu-journal-name" id="menu-journal-name">Ana Hesap</span>
-      </span>
-      <i data-lucide="chevron-right" class="menu-journal-arrow"></i>
-    </a>
-
-    <div class="menu-section">
-      <div class="menu-section-title" data-i18n="nav.menu_general">GENEL</div>
-      <a href="/">
-        <i data-lucide="home" style="width:16px;height:16px;"></i> <span data-i18n="nav.home">Ana Sayfa</span>
-      </a>
-      <a href="/dashboard" class={isActive('dashboard') ? 'active' : ''}>
-        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.dashboard">Dashboard</span>
-      </a>
-      <a href="/trades" class={isActive('trades') ? 'active' : ''}>
-        <i data-lucide="list" style="width:16px;height:16px;"></i> <span data-i18n="nav.trades">İşlemler</span>
-      </a>
-      <a href="/strategies" class={isActive('strategies') ? 'active' : ''}>
-        <i data-lucide="target" style="width:16px;height:16px;"></i> <span data-i18n="nav.strategies">Stratejiler</span>
-      </a>
-      <a href="/calendar" class={isActive('calendar') ? 'active' : ''}>
-        <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">Takvim</span>
-      </a>
-      <a href="/backtest" id="nav-backtest-link-mobile" style="display:none;" class={isActive('backtest') ? 'active' : ''}>
-        <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">Backtest</span>
-      </a>
-    </div>
-
-    <div class="menu-section">
-      <div class="menu-section-title" data-i18n="nav.menu_pro">PRO</div>
-      <a href="/analytics" data-pro-link class={isActive('analytics') ? 'active' : ''}>
-        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">Analiz</span>
-      </a>
-      <a href="/settings#panel-appearance">
-        <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
-      </a>
-      <a href="/settings#panel-overtrade">
-        <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
-      </a>
-      <a href="/settings#panel-plan" class="go-pro">
-        <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_pro">Pro'ya Geç →</span>
-      </a>
-    </div>
-
-    <div class="menu-section">
-      <div class="menu-section-title" data-i18n="nav.menu_account">HESAP</div>
-      <a href="/settings#panel-profile">
-        <i data-lucide="user" style="width:16px;height:16px;"></i> <span data-i18n="nav.profile">Profil</span>
-      </a>
-      <a href="/settings" class={isActive('settings') ? 'active' : ''}>
-        <i data-lucide="settings" style="width:16px;height:16px;"></i> <span data-i18n="nav.settings">Ayarlar</span>
-      </a>
-      <a href="/my-earnings" class={isActive('my-earnings') ? 'active' : ''}>
-        <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">Kazançlarım</span>
-      </a>
-      <a href="/report-bug" class={isActive('report-bug') ? 'active' : ''}>
-        <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">Hata Bildir</span>
-      </a>
-      <a href="/support">
-        <i data-lucide="life-buoy" style="width:16px;height:16px;"></i> <span data-i18n="nav.help">Yardım Merkezi</span>
-      </a>
-      <span id="admin-link-mobile" style="display:none;">
-        <a href="/admin">
-          <i data-lucide="shield" style="width:16px;height:16px;"></i> <span data-i18n="nav.admin">Admin</span>
-        </a>
-      </span>
-      <button id="logout-btn-mobile">
-        <i data-lucide="log-out" style="width:16px;height:16px;"></i> <span data-i18n="nav.logout">Çıkış Yap</span>
-      </button>
-    </div>
-
-  </div>
-</div>

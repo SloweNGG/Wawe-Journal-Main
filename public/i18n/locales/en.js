@@ -25,6 +25,8 @@ export default {
   "nav.plan_tooltip_lifetime": "Lifetime Access",
   "nav.plan_tooltip_expired": "Expired",
   "nav.notifications": "Notifications",
+  "nav.account_menu": "Account menu",
+  "nav.open_menu": "Open menu",
   "nav.mark_read": "Mark as Read",
   "nav.no_notifications": "No notifications",
   "nav.clear_all": "Clear All",

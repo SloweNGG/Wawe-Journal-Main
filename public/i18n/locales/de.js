@@ -25,6 +25,8 @@ export default {
   "nav.plan_tooltip_lifetime": "Unbegrenzter Zugriff",
   "nav.plan_tooltip_expired": "Abgelaufen",
   "nav.notifications": "Benachrichtigungen",
+  "nav.account_menu": "Kontomenü",
+  "nav.open_menu": "Menü öffnen",
   "nav.mark_read": "Als gelesen markieren",
   "nav.no_notifications": "Keine Benachrichtigungen",
   "nav.clear_all": "Alle Löschen",

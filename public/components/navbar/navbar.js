@@ -1147,7 +1147,7 @@ function getNavbarHTML(translations) {
       </a>
       
         <div class="nav-journal-switcher" id="nav-journal-switcher">
-          <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="wwToggleJournal(event, this)">
+          <button type="button" class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" aria-controls="journal-dropdown" onclick="wwToggleJournal(event, this)">
             <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
             <span class="journal-name">Ana Hesap</span>
             <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1159,7 +1159,7 @@ function getNavbarHTML(translations) {
         <a href="/trades" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
         <a href="/strategies" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
         <a href="/calendar" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
-        <a href="/backtest" data-page="backtest" id="nav-backtest-link" style="display:none;"><span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span></a>
+        <a href="/backtest" data-page="backtest" id="nav-backtest-link"><span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span></a>
         <a href="/analytics" data-page="analytics" data-pro-link><span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span></a>
       </div>
       <div class="nav-right">
@@ -1227,9 +1227,9 @@ function getNavbarHTML(translations) {
           <span class="plan-dot"></span>
           <span class="plan-text" id="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
         </a>
-        <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleAvatar(event, this)">
+        <button type="button" class="user-avatar" id="user-avatar" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-menu" aria-label="${tt('nav.account_menu', 'Hesap menüsü')}" data-i18n-aria-label="nav.account_menu" onclick="window.wwToggleAvatar(event, this)">
           <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
-        </div>
+        </button>
         
         <div class="dropdown-menu" id="dropdown-menu">
           <div class="nav-dd-head">
@@ -1282,7 +1282,7 @@ function getNavbarHTML(translations) {
           </button>
         </div>
         
-        <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="${tt('nav.open_menu', 'Menüyü aç')}" aria-expanded="false" aria-controls="nav-menu" data-i18n-aria-label="nav.open_menu">
           <span class="bar"></span><span class="bar"></span><span class="bar"></span>
         </button>
       </div>
@@ -1331,7 +1331,7 @@ function getNavbarHTML(translations) {
           <a href="/calendar" onclick="closeMobileMenuAndNavigate(event, '/calendar')">
             <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span>
           </a>
-          <a href="/backtest" id="nav-backtest-link-mobile" style="display:none;" onclick="closeMobileMenuAndNavigate(event, '/backtest')">
+          <a href="/backtest" id="nav-backtest-link-mobile" onclick="closeMobileMenuAndNavigate(event, '/backtest')">
             <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span>
           </a>
         </div>
@@ -1339,7 +1339,7 @@ function getNavbarHTML(translations) {
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_pro">${menuPro}</div>
           <a href="/analytics" data-pro-link onclick="closeMobileMenuAndNavigate(event, '/analytics')">
-            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span>
+            <i data-lucide="line-chart" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span>
           </a>
           <a href="/settings#panel-appearance" onclick="closeMobileMenuAndNavigate(event, '/settings#panel-appearance')">
             <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
@@ -1797,6 +1797,30 @@ function setActiveNavLink() {
     } else if (!shouldBeActive && link.classList.contains('active')) {
       link.classList.remove('active');
     }
+    // Ekran okuyucu "geçerli sayfa" der; "#panel-..." kısayolları hiç eşleşmediği için işaretlenmez
+    if (shouldBeActive) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+}
+
+// Açılır menülerin aria-expanded değeri: menüler birçok yerden (dışarı tıklama, ESC, SPA geçişi, hash değişimi)
+// doğrudan sınıfla kapatılıyor; her yere ayrı kod eklemek yerine sınıf değişimi izlenir ve düğmeye yansıtılır.
+function wwSyncNavAria() {
+  var pairs = [
+    ['nav-journal-switcher', 'open', '#nav-journal-switcher .journal-switch-btn'],
+    ['dropdown-menu', 'show', '#user-avatar'],
+    ['bell-panel', 'open', '#overtrade-bell-btn'],
+    ['nav-menu', 'open', '#nav-toggle']
+  ];
+  pairs.forEach(function(p) {
+    var panel = document.getElementById(p[0]);
+    var btn = document.querySelector(p[2]);
+    if (!panel || !btn) return;
+    var sync = function() { btn.setAttribute('aria-expanded', panel.classList.contains(p[1]) ? 'true' : 'false'); };
+    sync();
+    if (panel._wwAriaObs || typeof MutationObserver === 'undefined') return;
+    panel._wwAriaObs = new MutationObserver(sync);
+    panel._wwAriaObs.observe(panel, { attributes: true, attributeFilter: ['class'] });
   });
 }
 
@@ -1898,6 +1922,7 @@ function initNavEvents() {
 
   loadLucideIcons();
   setupAvatarDropdown();
+  wwSyncNavAria();
 
   // Bell kapatma butonu
   var bellClose = document.getElementById('bell-panel-close');

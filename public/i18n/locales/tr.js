@@ -25,6 +25,8 @@ export default {
   "nav.plan_tooltip_lifetime": "Sınırsız Erişim",
   "nav.plan_tooltip_expired": "Süresi Doldu",
   "nav.notifications": "Bildirimler",
+  "nav.account_menu": "Hesap menüsü",
+  "nav.open_menu": "Menüyü aç",
   "nav.mark_read": "Tümünü Oku",
   "nav.no_notifications": "Yeni bildirim yok",
   "nav.clear_all": "Tümünü Temizle",
