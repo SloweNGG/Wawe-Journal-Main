@@ -724,14 +724,15 @@ async function fileToCsvText(file) {
         <div class="quick-add-modal">
 
           <div class="quick-add-header">
-            <h2 data-quick-i18n="quickmodal.title">İşlem Ekle</h2>
-            <button class="close-btn" id="quick-add-close" aria-label="Close">${ICONS.close}</button>
-          </div>
-
-          <div class="quick-add-tabs" id="quick-tabs">
-            <button class="quick-tab active" data-tab="price">${ICONS.edit}<span data-quick-i18n="quickmodal.tab_price">Fiyattan Hesapla</span></button>
-            <button class="quick-tab" data-tab="csv">${ICONS.file}<span data-quick-i18n="quickmodal.tab_csv">CSV İçe Aktar</span></button>
-            <button class="quick-tab" data-tab="bulk">${ICONS.list}<span data-quick-i18n="quickmodal.tab_bulk">Toplu Metin</span></button>
+            <div class="qa-header-top">
+              <h2 data-quick-i18n="quickmodal.title">İşlem Ekle</h2>
+              <div class="quick-add-tabs" id="quick-tabs" role="tablist">
+                <button type="button" class="quick-tab active" data-tab="price" role="tab">${ICONS.edit}<span data-quick-i18n="quickmodal.tab_price">Fiyattan Hesapla</span></button>
+                <button type="button" class="quick-tab" data-tab="csv" role="tab">${ICONS.file}<span data-quick-i18n="quickmodal.tab_csv">CSV İçe Aktar</span></button>
+                <button type="button" class="quick-tab" data-tab="bulk" role="tab">${ICONS.list}<span data-quick-i18n="quickmodal.tab_bulk">Toplu Metin</span></button>
+              </div>
+              <button type="button" class="close-btn" id="quick-add-close" aria-label="Close">${ICONS.close}</button>
+            </div>
           </div>
 
           <div class="quick-add-body">
@@ -746,14 +747,14 @@ async function fileToCsvText(file) {
                 <div class="qa-col-left">
                   <div class="quick-add-row qa-row-sym-side">
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.symbol">Sembol *</label>
-                      <input type="text" id="price-symbol" placeholder="EURUSD" style="text-transform:uppercase;" autofocus>
+                      <label for="price-symbol" data-quick-i18n="quickmodal.symbol">Sembol *</label>
+                      <input type="text" id="price-symbol" class="qa-input-symbol" placeholder="EURUSD" style="text-transform:uppercase;" autofocus>
                     </div>
                     <div class="quick-add-field">
                       <label data-quick-i18n="quickmodal.side">Yön *</label>
                       <div class="quick-add-side-toggle">
-                        <button class="quick-add-side-btn active-buy" data-side="BUY" id="price-side-buy">${ICONS.buy}<span data-quick-i18n="quickmodal.buy">Alış</span></button>
-                        <button class="quick-add-side-btn" data-side="SELL" id="price-side-sell">${ICONS.sell}<span data-quick-i18n="quickmodal.sell">Satış</span></button>
+                        <button type="button" class="quick-add-side-btn active-buy" data-side="BUY" id="price-side-buy">${ICONS.buy}<span data-quick-i18n="quickmodal.buy">Alış</span></button>
+                        <button type="button" class="quick-add-side-btn" data-side="SELL" id="price-side-sell">${ICONS.sell}<span data-quick-i18n="quickmodal.sell">Satış</span></button>
                       </div>
                     </div>
                   </div>
@@ -761,45 +762,43 @@ async function fileToCsvText(file) {
                   <div class="quick-add-field">
                     <label data-quick-i18n="quickmodal.instrument">Enstrüman *</label>
                     <div class="quick-add-instrument-grid">
-                      <button class="quick-add-instrument-btn active" data-instrument="forex" data-multiplier="100000" data-quick-i18n="quickmodal.instrument_forex">Forex</button>
-                      <button class="quick-add-instrument-btn" data-instrument="gold" data-multiplier="100" data-quick-i18n="quickmodal.instrument_gold">Altın</button>
-                      <button class="quick-add-instrument-btn" data-instrument="index" data-multiplier="10" data-quick-i18n="quickmodal.instrument_index">Endeks</button>
-                      <button class="quick-add-instrument-btn" data-instrument="crypto" data-multiplier="1" data-quick-i18n="quickmodal.instrument_crypto">Kripto</button>
-                      <button class="quick-add-instrument-btn" data-instrument="other" data-multiplier="1" data-quick-i18n="quickmodal.instrument_other">Diğer</button>
+                      <button type="button" class="quick-add-instrument-btn active" data-instrument="forex" data-multiplier="100000" data-quick-i18n="quickmodal.instrument_forex">Forex</button>
+                      <button type="button" class="quick-add-instrument-btn" data-instrument="gold" data-multiplier="100" data-quick-i18n="quickmodal.instrument_gold">Altın</button>
+                      <button type="button" class="quick-add-instrument-btn" data-instrument="index" data-multiplier="10" data-quick-i18n="quickmodal.instrument_index">Endeks</button>
+                      <button type="button" class="quick-add-instrument-btn" data-instrument="crypto" data-multiplier="1" data-quick-i18n="quickmodal.instrument_crypto">Kripto</button>
+                      <button type="button" class="quick-add-instrument-btn" data-instrument="other" data-multiplier="1" data-quick-i18n="quickmodal.instrument_other">Diğer</button>
                     </div>
                   </div>
 
                   <div class="quick-add-field" id="price-custom-multiplier-wrap" style="display:none;">
-                    <label data-quick-i18n="quickmodal.custom_multiplier">Manuel Çarpan *</label>
+                    <label for="price-custom-multiplier" data-quick-i18n="quickmodal.custom_multiplier">Manuel Çarpan *</label>
                     <input type="text" inputmode="decimal" id="price-custom-multiplier" placeholder="1000">
+                  </div>
+
+                  <div class="quick-add-field">
+                    <label for="price-lot" data-quick-i18n="quickmodal.lot">Lot *</label>
+                    <div class="quick-add-lot-wrap">
+                      <input type="text" inputmode="decimal" id="price-lot" class="qa-input-num" placeholder="0.10" value="1.00">
+                      <div class="lot-presets">
+                        <button type="button" class="lot-preset" data-lot="0.01">0.01</button>
+                        <button type="button" class="lot-preset" data-lot="0.10">0.10</button>
+                        <button type="button" class="lot-preset active" data-lot="1.00">1.00</button>
+                      </div>
+                    </div>
                   </div>
 
                   <div class="quick-add-row">
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.lot">Lot *</label>
-                      <div class="quick-add-lot-wrap">
-                        <input type="text" inputmode="decimal" id="price-lot" placeholder="0.10" value="1.00">
-                        <div class="lot-presets">
-                          <button class="lot-preset" data-lot="0.01">0.01</button>
-                          <button class="lot-preset" data-lot="0.10">0.10</button>
-                          <button class="lot-preset active" data-lot="1.00">1.00</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.strategy">Strateji</label>
+                      <label for="price-strategy" data-quick-i18n="quickmodal.strategy">Strateji</label>
                       <div class="quick-add-strategy-wrap">
                         <select id="price-strategy">
                           <option value="" data-quick-i18n="quickmodal.no_strategy">— Strateji Yok —</option>
                         </select>
-                        <button class="create-strategy-btn" id="price-create-strategy" title="+">${ICONS.plus}</button>
+                        <button type="button" class="create-strategy-btn" id="price-create-strategy" title="+" aria-label="Yeni strateji">${ICONS.plus}</button>
                       </div>
                     </div>
-                  </div>
-
-                  <div class="quick-add-row">
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.date">Tarih</label>
+                      <label for="price-date" data-quick-i18n="quickmodal.date">Tarih</label>
                       <div class="qa-date-input-wrap">
                         <input type="text" id="price-date" readonly
                                data-iso="${today}"
@@ -809,53 +808,51 @@ async function fileToCsvText(file) {
                         <span class="qa-date-input-icon">${ICONS.calendar}</span>
                       </div>
                     </div>
-                    <div class="quick-add-field quick-add-notes">
-                      <label data-quick-i18n="quickmodal.notes">Notlar</label>
-                      <textarea id="price-notes" rows="1" data-quick-i18n-placeholder="quickmodal.notes_placeholder" placeholder="Notlar…"></textarea>
-                    </div>
                   </div>
                 </div>
 
-                <!-- Sağ Kolon: Fiyatlar ve Canlı Hesaplama Terminali -->
+                <!-- Sağ Kolon: Fiyatlar, Maliyet ve Canlı Önizleme -->
                 <div class="qa-col-right">
                   <div class="quick-add-row">
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.entry_price">Giriş Fiyatı *</label>
-                      <input type="text" inputmode="decimal" id="price-entry" placeholder="1.08500">
+                      <label for="price-entry" data-quick-i18n="quickmodal.entry_price">Giriş Fiyatı *</label>
+                      <input type="text" inputmode="decimal" id="price-entry" class="qa-input-num" placeholder="1.08500">
                     </div>
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.exit_price">Çıkış Fiyatı</label>
-                      <input type="text" inputmode="decimal" id="price-exit" placeholder="1.09000">
+                      <label for="price-exit" data-quick-i18n="quickmodal.exit_price">Çıkış Fiyatı</label>
+                      <input type="text" inputmode="decimal" id="price-exit" class="qa-input-num" placeholder="1.09000">
                     </div>
                   </div>
 
                   <div class="quick-add-row">
-                    <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.stop_loss">Stop Loss</label>
-                      <input type="text" inputmode="decimal" id="price-sl" placeholder="1.08000">
+                    <div class="quick-add-field qa-field-sl">
+                      <label for="price-sl"><span class="qa-dot qa-dot-sl"></span><span data-quick-i18n="quickmodal.stop_loss">Stop Loss</span></label>
+                      <input type="text" inputmode="decimal" id="price-sl" class="qa-input-num" placeholder="1.08000">
                     </div>
-                    <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.take_profit">Take Profit</label>
-                      <input type="text" inputmode="decimal" id="price-tp" placeholder="1.09500">
+                    <div class="quick-add-field qa-field-tp">
+                      <label for="price-tp"><span class="qa-dot qa-dot-tp"></span><span data-quick-i18n="quickmodal.take_profit">Take Profit</span></label>
+                      <input type="text" inputmode="decimal" id="price-tp" class="qa-input-num" placeholder="1.09500">
                     </div>
                   </div>
 
-                  <div class="quick-add-row" style="position:relative;">
+                  <div class="quick-add-row qa-row-comm-swap">
                     <div class="quick-add-field">
-                      <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                          <label data-quick-i18n="quickmodal.commission">Komisyon</label>
-                          <button type="button" class="qa-comm-btn-gear" id="qa-comm-gear-btn" title="Komisyon Oran ve Şablon Ayarı">
+                      <div class="qa-label-row">
+                        <div class="qa-label-group">
+                          <label for="price-commission" data-quick-i18n="quickmodal.commission">Komisyon</label>
+                          <button type="button" class="qa-comm-btn-gear" id="qa-comm-gear-btn" title="Komisyon Oran ve Şablon Ayarı" aria-label="Komisyon Ayarları">
                             ${ICONS.settings}
                           </button>
                         </div>
                         <span id="price-comm-badge" class="qa-comm-auto-badge" style="display:none;" data-quick-i18n="quickmodal.comm_auto_hint">Otomatik</span>
                       </div>
-                      <input type="text" inputmode="decimal" id="price-commission" placeholder="0.00">
+                      <input type="text" inputmode="decimal" id="price-commission" class="qa-input-num" placeholder="0.00">
                     </div>
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.swap">Swap</label>
-                      <input type="text" inputmode="decimal" id="price-swap" placeholder="0.00">
+                      <div class="qa-label-row">
+                        <label for="price-swap" data-quick-i18n="quickmodal.swap">Swap</label>
+                      </div>
+                      <input type="text" inputmode="decimal" id="price-swap" class="qa-input-num" placeholder="0.00">
                     </div>
                   </div>
 
@@ -892,6 +889,14 @@ async function fileToCsvText(file) {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <!-- Tam Genişlik Kompakt Notlar & Psikoloji Şeridi -->
+              <div class="qa-notes-section">
+                <div class="quick-add-field quick-add-notes">
+                  <label for="price-notes" data-quick-i18n="quickmodal.notes">Notlar</label>
+                  <textarea id="price-notes" rows="1" data-quick-i18n-placeholder="quickmodal.notes_placeholder" placeholder="Notlar…"></textarea>
                 </div>
               </div>
             </div>
@@ -1248,6 +1253,7 @@ async function fileToCsvText(file) {
 
   function initCommissionPopover() {
     var gearBtn = el('qa-comm-gear-btn');
+    var commBadge = el('price-comm-badge');
     var popover = el('qa-comm-popover');
     var closeBtn = el('qa-comm-popover-close');
     var cancelBtn = el('qa-comm-btn-cancel');
@@ -1263,17 +1269,22 @@ async function fileToCsvText(file) {
       });
     }
 
+    function toggleCommPopover(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var isHidden = (popover.style.display === 'none' || !popover.style.display);
+      popover.style.display = isHidden ? 'flex' : 'none';
+      if (isHidden) {
+        var activeProf = getActiveCommProfile();
+        selectCommProfile(activeProf.id);
+      }
+    }
+
     if (gearBtn && popover) {
-      gearBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var isHidden = (popover.style.display === 'none' || !popover.style.display);
-        popover.style.display = isHidden ? 'flex' : 'none';
-        if (isHidden) {
-          var activeProf = getActiveCommProfile();
-          selectCommProfile(activeProf.id);
-        }
-      });
+      gearBtn.addEventListener('click', toggleCommPopover);
+    }
+    if (commBadge && popover) {
+      commBadge.addEventListener('click', toggleCommPopover);
     }
 
     if (closeBtn && popover) {
