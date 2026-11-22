@@ -776,28 +776,16 @@ async function fileToCsvText(file) {
 
                   <div class="quick-add-row">
                     <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.lot">Lot *</label>
+                      <label for="price-lot" data-quick-i18n="quickmodal.lot">Lot *</label>
                       <div class="quick-add-lot-wrap">
                         <input type="text" inputmode="decimal" id="price-lot" placeholder="0.10" value="1.00">
                         <div class="lot-presets">
-                          <button class="lot-preset" data-lot="0.01">0.01</button>
-                          <button class="lot-preset" data-lot="0.10">0.10</button>
-                          <button class="lot-preset active" data-lot="1.00">1.00</button>
+                          <button type="button" class="lot-preset" data-lot="0.01">0.01</button>
+                          <button type="button" class="lot-preset" data-lot="0.10">0.1</button>
+                          <button type="button" class="lot-preset active" data-lot="1.00">1</button>
                         </div>
                       </div>
                     </div>
-                    <div class="quick-add-field">
-                      <label data-quick-i18n="quickmodal.strategy">Strateji</label>
-                      <div class="quick-add-strategy-wrap">
-                        <select id="price-strategy">
-                          <option value="" data-quick-i18n="quickmodal.no_strategy">— Strateji Yok —</option>
-                        </select>
-                        <button class="create-strategy-btn" id="price-create-strategy" title="+">${ICONS.plus}</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="quick-add-row">
                     <div class="quick-add-field">
                       <label data-quick-i18n="quickmodal.date">Tarih</label>
                       <div class="qa-date-input-wrap">
@@ -809,9 +797,15 @@ async function fileToCsvText(file) {
                         <span class="qa-date-input-icon">${ICONS.calendar}</span>
                       </div>
                     </div>
-                    <div class="quick-add-field quick-add-notes">
-                      <label data-quick-i18n="quickmodal.notes">Notlar</label>
-                      <textarea id="price-notes" rows="1" data-quick-i18n-placeholder="quickmodal.notes_placeholder" placeholder="Notlar…"></textarea>
+                  </div>
+
+                  <div class="quick-add-field">
+                    <label for="price-strategy" data-quick-i18n="quickmodal.strategy">Strateji</label>
+                    <div class="quick-add-strategy-wrap">
+                      <select id="price-strategy">
+                        <option value="" data-quick-i18n="quickmodal.no_strategy">— Strateji Yok —</option>
+                      </select>
+                      <button type="button" class="create-strategy-btn" id="price-create-strategy" title="+">${ICONS.plus}</button>
                     </div>
                   </div>
                 </div>
@@ -840,18 +834,18 @@ async function fileToCsvText(file) {
                     </div>
                   </div>
 
-                  <div class="quick-add-row" style="position:relative;">
+                  <div class="quick-add-row qa-row-comm">
                     <div class="quick-add-field">
-                      <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                          <label data-quick-i18n="quickmodal.commission">Komisyon</label>
-                          <button type="button" class="qa-comm-btn-gear" id="qa-comm-gear-btn" title="Komisyon Oran ve Şablon Ayarı">
-                            ${ICONS.settings}
-                          </button>
-                        </div>
+                      <div class="qa-label-row">
+                        <label for="price-commission" data-quick-i18n="quickmodal.commission">Komisyon</label>
+                        <button type="button" class="qa-comm-btn-gear" id="qa-comm-gear-btn" title="Komisyon Oran ve Şablon Ayarı">
+                          ${ICONS.settings}
+                        </button>
+                      </div>
+                      <div class="qa-comm-input-wrap-main">
+                        <input type="text" inputmode="decimal" id="price-commission" placeholder="0.00">
                         <span id="price-comm-badge" class="qa-comm-auto-badge" style="display:none;" data-quick-i18n="quickmodal.comm_auto_hint">Otomatik</span>
                       </div>
-                      <input type="text" inputmode="decimal" id="price-commission" placeholder="0.00">
                     </div>
                     <div class="quick-add-field">
                       <label data-quick-i18n="quickmodal.swap">Swap</label>
@@ -893,6 +887,12 @@ async function fileToCsvText(file) {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <!-- Tam genişlik: not + duygu çipleri (note-tools.js çubuğu textarea'nın altına ekler) -->
+              <div class="quick-add-field quick-add-notes qa-notes-section">
+                <label for="price-notes" data-quick-i18n="quickmodal.notes">Notlar</label>
+                <textarea id="price-notes" rows="2" data-quick-i18n-placeholder="quickmodal.notes_placeholder" placeholder="Notlar…"></textarea>
               </div>
             </div>
 
@@ -1410,13 +1410,13 @@ async function fileToCsvText(file) {
         commission = parseFloat(commInput?.value) || 0;
       }
       if (commBadge) {
-        commBadge.textContent = isUserEdited ? 'Özel' : (activeProf.name + (activeProf.commPerLot > 0 ? (' ' + activeProf.commPerLot + '/lot') : ' (0)'));
+        commBadge.textContent = isUserEdited ? 'Özel' : (activeProf.name + (activeProf.commPerLot > 0 ? (' ' + activeProf.commPerLot + '/lot') : ' (0)')); commBadge.title = commBadge.textContent;
         commBadge.style.display = 'inline-block';
       }
     } else {
       commission = parseFloat(commInput?.value) || 0;
       if (commBadge) {
-        commBadge.textContent = 'Manuel';
+        commBadge.textContent = 'Manuel'; commBadge.title = commBadge.textContent;
         commBadge.style.display = 'inline-block';
       }
     }
