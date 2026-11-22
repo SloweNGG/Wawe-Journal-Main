@@ -1,80 +1,11 @@
 ---
-// Blog yazısı sayfası. İçerik: src/content/blog/<dosya>.md (bkz. src/data/blog.ts)
-import PageLayout from '../../layouts/PageLayout.astro';
-import { allPosts, fmtDate, type BlogPost } from '../../data/blog';
-import LogoStrip from '../../components/blog/LogoStrip.astro';
+// Blog yazısı (EN). Sayfa: src/components/blog/BlogPostPage.astro · yazılar: src/data/blog.ts
+import BlogPostPage from '../../components/blog/BlogPostPage.astro';
+import { allPosts, type BlogPost } from '../../data/blog';
 
 export function getStaticPaths() {
-  return allPosts().map((p) => ({ params: { slug: p.fm.slug }, props: { post: p } }));
+  return allPosts('en').map((p) => ({ params: { slug: p.fm.slug }, props: { post: p } }));
 }
-
 const { post } = Astro.props as { post: BlogPost };
-const { fm, Content, minutes } = post;
-const url = `https://wawejournal.com/blog/${fm.slug}`;
-const others = allPosts().filter((p) => p.fm.slug !== fm.slug).slice(0, 3);
-const schema = [
-  {
-    '@type': 'BlogPosting',
-    '@id': `${url}#article`,
-    headline: fm.title,
-    description: fm.description,
-    datePublished: fm.date,
-    dateModified: fm.updated || fm.date,
-    url,
-    mainEntityOfPage: { '@id': `${url}#webpage` },
-    image: 'https://wawejournal.com/og-image.jpg',
-    inLanguage: 'en',
-    author: { '@id': 'https://wawejournal.com/#organization' },
-    publisher: { '@id': 'https://wawejournal.com/#organization' },
-  },
-];
 ---
-<PageLayout
-  title={fm.seoTitle}
-  description={fm.description}
-  crumb={fm.seoTitle}
-  crumbParent={{ name: 'Blog', href: '/blog' }}
-  schema={schema}
->
-  <section class="page-hero">
-    <div class="wrap">
-      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/blog">Blog</a></nav>
-      <h1 class="anim wide" style="--d:.1s">{fm.title}</h1>
-      <p class="page-meta anim" style="--d:.2s">
-        <time datetime={fm.updated || fm.date}>{fm.updated ? `Updated ${fmtDate(fm.updated)}` : fmtDate(fm.date)}</time> · {minutes} min read · Wawe Journal
-      </p>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <article class="article">
-      <Content />
-    </article>
-
-    <LogoStrip props={!!fm.props} />
-
-    <section class="fp-sec">
-      <div class="fp-related" style="justify-content:center">
-        <a href={fm.cta.href} class="btn btn-line">{fm.cta.label} →</a>
-        <a href="/register" class="btn btn-accent">Start your journal free</a>
-      </div>
-    </section>
-
-    {others.length > 0 && (
-      <section class="fp-sec reveal">
-        <h2>More guides</h2>
-        <div class="fp-grid">
-          {others.map((p) => (
-            <a class="fp-item gl-card" href={`/blog/${p.fm.slug}`}><h3>{p.fm.title}</h3><p>{p.fm.summary}</p></a>
-          ))}
-        </div>
-      </section>
-    )}
-
-    <section class="cta reveal">
-      <h2>Put it into practice.</h2>
-      <p>Wawe Journal is a free trading journal with analytics, an AI coach, backtest replay and prop firm tracking.</p>
-      <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
-    </section>
-  </div>
-</PageLayout>
+<BlogPostPage post={post} />

@@ -1,0 +1,57 @@
+---
+// Blog liste sayfası (her dil, en yeni üstte). Route'lar: src/pages/blog/index.astro (EN), src/pages/[lang]/blog/index.astro (TR/DE)
+import PageLayout from '../../layouts/PageLayout.astro';
+import LogoStrip from './LogoStrip.astro';
+import { allPosts, fmtDate, postPath, blogHome, siteHome, indexAlternates, BLOG_UI, SITE, type BlogLang } from '../../data/blog';
+
+interface Props { lang: BlogLang }
+const { lang } = Astro.props;
+const ui = BLOG_UI[lang];
+const posts = allPosts(lang);
+const url = SITE + blogHome(lang);
+const schema = [
+  {
+    '@type': 'Blog',
+    '@id': `${url}#blog`,
+    name: ui.blogName,
+    url,
+    inLanguage: lang,
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+    blogPost: posts.map((p) => ({ '@id': `${SITE}${postPath(p)}#article` })),
+  },
+];
+---
+<PageLayout
+  title={ui.indexTitle}
+  description={ui.indexDescription}
+  lang={lang}
+  localePage={lang !== 'en'}
+  alternates={indexAlternates()}
+  crumb="Blog"
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href={siteHome(lang)}>Wawe Journal</a><span aria-hidden="true">/</span><span>Blog</span></nav>
+      <h1 class="anim wide" style="--d:.1s">{ui.indexH1}</h1>
+      <p class="page-lead anim" style="--d:.2s">{ui.indexLead}</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="fp-sec">
+      <div class="blog-list">
+        {posts.map((p) => (
+          <a class="fp-item gl-card blog-card" href={postPath(p)}>
+            <span class="blog-meta">{fmtDate(p.fm.updated || p.fm.date, lang)} · {ui.minRead(p.minutes)}</span>
+            <h2>{p.fm.title}</h2>
+            <p>{p.fm.summary}</p>
+          </a>
+        ))}
+      </div>
+      <div class="fp-related"><a href="/glossary" class="btn btn-line">{ui.glossary}</a><a href="/tools" class="btn btn-line">{ui.tools}</a></div>
+    </section>
+
+    <LogoStrip lang={lang} />
+  </div>
+</PageLayout>

@@ -1,0 +1,13 @@
+---
+// Blog yazısı (TR/DE): /tr/blog/<slug>, /de/blog/<slug>. Çeviriler: src/content/blog/<dil>/*.md (bkz. src/data/blog.ts)
+import BlogPostPage from '../../../components/blog/BlogPostPage.astro';
+import { BLOG_LANGS, allPosts, type BlogPost } from '../../../data/blog';
+
+export function getStaticPaths() {
+  return BLOG_LANGS.filter((l) => l !== 'en').flatMap((lang) =>
+    allPosts(lang).map((p) => ({ params: { lang, slug: p.fm.slug }, props: { post: p } })),
+  );
+}
+const { post } = Astro.props as { post: BlogPost };
+---
+<BlogPostPage post={post} />

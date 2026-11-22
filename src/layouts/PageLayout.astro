@@ -14,9 +14,15 @@ export interface Props {
   crumbParent?: { name: string; href: string };
   /** Sayfaya özel ek JSON-LD düğümleri (@graph'a eklenir; @context yazmaya gerek yok) */
   schema?: Record<string, unknown>[];
+  /** Dil sürümleri (hreflang) — bkz. Layout */
+  alternates?: { hreflang: string; href: string }[];
+  /** true: dili URL'den gelen sayfa (/tr/blog gibi); lang o dil olmalı */
+  localePage?: boolean;
 }
 
-const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal', noIndex = false, crumb, crumbParent, schema = [] } = Astro.props;
+const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal', noIndex = false, crumb, crumbParent, schema = [], alternates = [], localePage = false } = Astro.props;
+const homeUrl = 'https://wawejournal.com' + (localePage && lang !== 'en' ? `/${lang}/` : '/');
+const ogLocale = ({ tr: 'tr_TR', de: 'de_DE' } as Record<string, string>)[lang];
 // Cloudflare "/about.html" adresini "/about"a yönlendirdiği için canonical temiz adres olmalı
 const cleanPath = Astro.url.pathname.replace(/(^|\/)index\.html$/, '/').replace(/\.html$/, '');
 // noindex sayfada (ör. 404) canonical olmaz: "dizine ekleme" ile "tercih edilen adres bu" çelişir
@@ -40,7 +46,7 @@ if (canonical && crumb) {
     '@type': 'BreadcrumbList',
     '@id': canonical + '#breadcrumb',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Wawe Journal', item: 'https://wawejournal.com/' },
+      { '@type': 'ListItem', position: 1, name: 'Wawe Journal', item: homeUrl },
       ...(crumbParent ? [{ '@type': 'ListItem', position: 2, name: crumbParent.name, item: new URL(crumbParent.href, 'https://wawejournal.com').href }] : []),
       { '@type': 'ListItem', position: crumbParent ? 3 : 2, name: crumb, item: canonical },
     ],
@@ -49,8 +55,9 @@ if (canonical && crumb) {
 graph.push(...schema);
 const jsonLd = graph.length ? JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c') : null;
 ---
-<Layout lang={lang} showNavbar={false} title={title} description={description} canonical={canonical} noIndex={noIndex}>
+<Layout lang={lang} showNavbar={false} title={title} description={description} canonical={canonical} noIndex={noIndex} alternates={alternates} localePage={localePage ? lang : undefined}>
 <Fragment slot="head">
+  {ogLocale && <meta property="og:locale" content={ogLocale} />}
   <meta name="theme-color" content="#000000" />
   {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd}></script>}
   <link rel="stylesheet" href="/landing-preview.css" />

@@ -1,0 +1,11 @@
+---
+// Blog liste sayfası (TR/DE): /tr/blog, /de/blog. Yalnızca en az bir çevirisi olan dil üretilir.
+import BlogIndexPage from '../../../components/blog/BlogIndexPage.astro';
+import { BLOG_LANGS, hasBlog, type BlogLang } from '../../../data/blog';
+
+export function getStaticPaths() {
+  return BLOG_LANGS.filter((l) => l !== 'en' && hasBlog(l)).map((lang) => ({ params: { lang } }));
+}
+const lang = Astro.params.lang as BlogLang;
+---
+<BlogIndexPage lang={lang} />

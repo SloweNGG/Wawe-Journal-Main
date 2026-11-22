@@ -1,0 +1,81 @@
+---
+// Blog yazısı sayfası (her dil). Route'lar: src/pages/blog/[slug].astro (EN), src/pages/[lang]/blog/[slug].astro (TR/DE)
+import PageLayout from '../../layouts/PageLayout.astro';
+import LogoStrip from './LogoStrip.astro';
+import { allPosts, fmtDate, postPath, blogHome, siteHome, postAlternates, BLOG_UI, SITE, type BlogPost } from '../../data/blog';
+
+interface Props { post: BlogPost }
+const { post } = Astro.props;
+const { fm, Content, minutes, lang } = post;
+const ui = BLOG_UI[lang];
+const url = SITE + postPath(post);
+const others = allPosts(lang).filter((p) => p.key !== post.key).slice(0, 3);
+const schema = [
+  {
+    '@type': 'BlogPosting',
+    '@id': `${url}#article`,
+    headline: fm.title,
+    description: fm.description,
+    datePublished: fm.date,
+    dateModified: fm.updated || fm.date,
+    url,
+    mainEntityOfPage: { '@id': `${url}#webpage` },
+    image: 'https://wawejournal.com/og-image.jpg',
+    inLanguage: lang,
+    author: { '@id': 'https://wawejournal.com/#organization' },
+    publisher: { '@id': 'https://wawejournal.com/#organization' },
+  },
+];
+---
+<PageLayout
+  title={fm.seoTitle}
+  description={fm.description}
+  lang={lang}
+  localePage={lang !== 'en'}
+  alternates={postAlternates(post)}
+  crumb={fm.seoTitle}
+  crumbParent={{ name: 'Blog', href: blogHome(lang) }}
+  schema={schema}
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href={siteHome(lang)}>Wawe Journal</a><span aria-hidden="true">/</span><a href={blogHome(lang)}>Blog</a></nav>
+      <h1 class="anim wide" style="--d:.1s">{fm.title}</h1>
+      <p class="page-meta anim" style="--d:.2s">
+        <time datetime={fm.updated || fm.date}>{fm.updated ? ui.updated(fmtDate(fm.updated, lang)) : fmtDate(fm.date, lang)}</time> · {ui.minRead(minutes)} · Wawe Journal
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <article class="article">
+      <Content />
+    </article>
+
+    <LogoStrip props={!!fm.props} lang={lang} />
+
+    <section class="fp-sec">
+      <div class="fp-related" style="justify-content:center">
+        <a href={fm.cta.href} class="btn btn-line">{fm.cta.label} →</a>
+        <a href="/register" class="btn btn-accent">{ui.startFree}</a>
+      </div>
+    </section>
+
+    {others.length > 0 && (
+      <section class="fp-sec reveal">
+        <h2>{ui.moreGuides}</h2>
+        <div class="fp-grid">
+          {others.map((p) => (
+            <a class="fp-item gl-card" href={postPath(p)}><h3>{p.fm.title}</h3><p>{p.fm.summary}</p></a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="cta reveal">
+      <h2>{ui.ctaH}</h2>
+      <p>{ui.ctaP}</p>
+      <a href="/register" class="btn btn-accent btn-lg">{ui.ctaBtn}</a>
+    </section>
+  </div>
+</PageLayout>

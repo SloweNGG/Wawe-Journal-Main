@@ -12,6 +12,10 @@
 //   - Yerelleştirilen sayfalar arası iç linkler o dile çevrilir (/about → /tr/about); diğer linkler aynen kalır.
 // Yeni sayfa eklemek: PAGES'e ekle ve META'ya başlık/açıklama yaz. Sayfanın görünen metni data-i18n ile işaretli
 // olmalı; işaretsiz İngilizce metin TR sayfada İngilizce kalır (derleme bunu sayıp uyarır).
+//
+// İKİNCİ TÜR: Astro'nun doğrudan dil klasörüne ürettiği sayfalar (ör. blog: src/pages/[lang]/blog → dist/tr/blog/...).
+// İçerikleri, lang/data-locale-page/hreflang/canonical'ları zaten doğru; burada yalnızca ortak çerçevenin (menü,
+// footer) data-i18n metinleri ve yerelleştirilmiş sayfalara giden linkler o dile çevrilir.
 // ============================================================
 
 import fs from 'node:fs';
@@ -158,9 +162,40 @@ function hreflangLinks(p) {
   );
 }
 
-/** Yerelleştirilen sayfalar arasındaki iç linkleri dile çevirir: href="/about" → href="/tr/about" */
-function localizeLinks(html, lang) {
-  const targets = new Set(PAGES.map((pg) => pg.path));
+/** dist/<lang>/ altındaki gerçek sayfaların İngilizce karşılık yolları: tr/blog.html → /blog, tr/index.html → / */
+function localizedPaths(distDir, lang) {
+  const out = new Set(PAGES.map((pg) => pg.path));
+  const root = path.join(distDir, lang);
+  const walk = (dir, rel = '') => {
+    if (!fs.existsSync(dir)) return;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(path.join(dir, e.name), r);
+      else if (e.name.endsWith('.html')) out.add(('/' + r.replace(/\.html$/, '')).replace(/(^|\/)index$/, '$1') || '/');
+    }
+  };
+  walk(root);
+  return out;
+}
+
+/** Astro'nun dil klasörüne kendisi ürettiği sayfalar (PAGES'in kopyaları hariç): ['tr/blog.html', 'tr/blog/x.html'] */
+function nativePages(distDir, lang) {
+  const copies = new Set(PAGES.map((pg) => (pg.path === '/' ? `${lang}/index.html` : `${lang}${pg.path}.html`)));
+  const list = [];
+  const walk = (dir, rel) => {
+    if (!fs.existsSync(dir)) return;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const r = `${rel}/${e.name}`;
+      if (e.isDirectory()) walk(path.join(dir, e.name), r);
+      else if (e.name.endsWith('.html') && !copies.has(r)) list.push(r);
+    }
+  };
+  walk(path.join(distDir, lang), lang);
+  return list;
+}
+
+/** Bu dilde karşılığı olan sayfalara giden iç linkleri dile çevirir: href="/about" → href="/tr/about" */
+function localizeLinks(html, lang, targets = new Set(PAGES.map((pg) => pg.path))) {
   return html.replace(/href="(\/[^"#?]*)((?:[#?][^"]*)?)"/g, (all, p, rest) => {
     const clean = p.replace(/\.html$/, '').replace(/^\/index$/, '/');
     if (!targets.has(clean)) return all;
@@ -175,6 +210,9 @@ export function localizeDist(distDir, i18nSource, log = console.log) {
   const report = [];
   for (const lang of LANGS) {
     const t = loadTranslator(i18nSource, lang);
+    // Astro'nun ürettiği dil sayfaları önce listelenir (PAGES kopyaları yazılmadan; ikinci derlemede de doğru kalsın)
+    const native = nativePages(distDir, lang);
+    const targets = localizedPaths(distDir, lang);
     for (const pg of PAGES) {
       const src = path.join(distDir, pg.file);
       if (!fs.existsSync(src)) throw new Error(`[localize] ${pg.file} yok`);
@@ -182,13 +220,21 @@ export function localizeDist(distDir, i18nSource, log = console.log) {
       const { html: body, replaced, missing } = translateMarkup(en, t, enT);
       const meta = (META[pg.path] || {})[lang] || {};
       let h = setMeta(body, { lang, ...meta, url: urlFor(lang, pg.path) });
-      h = localizeLinks(h, lang);
+      h = localizeLinks(h, lang, targets);
       h = insertHead(h, hreflangLinks(pg.path));
       const outRel = pg.path === '/' ? `${lang}/index.html` : `${lang}${pg.path}.html`;
       fs.mkdirSync(path.dirname(path.join(distDir, outRel)), { recursive: true });
       fs.writeFileSync(path.join(distDir, outRel), h);
       report.push(`${outRel} (${replaced} metin${missing.length ? `, çevirisi eksik: ${[...new Set(missing)].length}` : ''})`);
     }
+    let nativeMissing = new Set();
+    for (const rel of native) {
+      const f = path.join(distDir, rel);
+      const { html, missing } = translateMarkup(fs.readFileSync(f, 'utf8'), t, enT);
+      missing.forEach((k) => nativeMissing.add(k));
+      fs.writeFileSync(f, localizeLinks(html, lang, targets));
+    }
+    if (native.length) report.push(`${lang}/ altında Astro sayfası: ${native.length}${nativeMissing.size ? ` (çevirisi eksik: ${[...nativeMissing].join(', ')})` : ''}`);
   }
   // İngilizce sürümlere de hreflang (bir kez; tekrar derlemede çift eklenmesin)
   for (const pg of PAGES) {
@@ -201,13 +247,12 @@ export function localizeDist(distDir, i18nSource, log = console.log) {
 }
 
 /**
- * Güvenlik ağı: /tr/ ve /de/ altında yalnızca PAGES var. Göreli bir link ya da eski bir adres /tr/dashboard.html
+ * Güvenlik ağı: /tr/ ve /de/ altında yalnızca PAGES ve Astro'nun ürettiği dil sayfaları (blog) var. Göreli bir link ya da eski bir adres /tr/dashboard.html
  * gibi bir yere giderse 404 yerine sayfanın ana sürümüne 301. dist'teki (dil klasörleri dışındaki) her sayfa için
  * hem temiz hem .html adresi yazılır; yerelleştirilmiş sayfalar listeye girmez (onlar gerçek dosya).
  * Cloudflare Pages: _redirects statik dosyadan önce uygulanır → var olan /tr/about'a kural YAZILMAMALI.
  */
 function writeLangRedirects(distDir) {
-  const localized = new Set(PAGES.map((pg) => pg.path));
   const pages = [];
   const walk = (dir, rel = '') => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -223,9 +268,17 @@ function writeLangRedirects(distDir) {
   walk(distDir);
   const lines = ['', '# --- scripts/localize.mjs: /tr/ ve /de/ altında olmayan sayfalar ana sürüme (otomatik) ---'];
   for (const lang of LANGS) {
+    const localized = localizedPaths(distDir, lang);
     for (const p of pages.sort()) {
       const clean = p === '/index' ? '/' : p;
       if (localized.has(clean) || p === '/404') continue;
+      // Sayfanın bu dilde başka adlı bir sürümü varsa (çevrilmiş blog slug'ı) oraya: /tr/blog/how-to-x → /tr/blog/x-nasil
+      const en = fs.readFileSync(path.join(distDir, `${p.slice(1)}.html`), 'utf8');
+      const alt = en.match(new RegExp(`<link rel="alternate" hreflang="${lang}" href="https?://[^/"]+(/[^"]*)"`));
+      if (alt && alt[1] !== `/${lang}${clean}`) {
+        lines.push(`/${lang}${p}.html ${alt[1]} 301`, `/${lang}${p} ${alt[1]} 301`);
+        continue;
+      }
       lines.push(`/${lang}${p}.html ${p}.html 301`, `/${lang}${p} ${p} 301`);
     }
   }

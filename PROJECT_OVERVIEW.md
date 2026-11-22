@@ -107,7 +107,7 @@ Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`)
 │  │  └─ QuickAddFAB.tsx, quick-add/*.tsx   React sürümü (kullanılmıyor)
 │  ├─ scripts/theme-engine.js   Tema motoru (window.WWTheme), BaseHead'e satır içi gömülür
 │  ├─ data/                blog.ts, glossary.ts, responsive-images.ts
-│  ├─ content/blog/        Blog yazıları (.md)
+│  ├─ content/blog/        Blog yazıları (.md); çeviriler tr/, de/ altında aynı dosya adıyla
 │  └─ pages/               Sayfalar (bkz. bölüm 4)
 │
 ├─ public/                 Tarayıcıya olduğu gibi giden dosyalar (asıl uygulama kodu burada)
@@ -197,6 +197,7 @@ Sayfalar `/ad.html` olarak üretilir; Cloudflare `/ad` adresini de sunar. Uygula
 | `/integrations`, `/integrations/<ad>` | `integrations/` | İçe aktarma rehberleri: metatrader, tradingview, binance, bybit, interactive-brokers, xtb, oanda, csv-excel |
 | `/tools`, `/tools/<ad>` | `tools/` | Ücretsiz hesaplayıcılar: position-size, risk-of-ruin, prop-firm-drawdown, prop-firm-pass-probability |
 | `/blog`, `/blog/<slug>` | `blog/` | Yazılar `src/content/blog/*.md`, liste ve tarih `src/data/blog.ts` |
+| `/tr/blog`, `/de/blog` (+ `/<slug>`) | `[lang]/blog/` | Çeviriler `src/content/blog/{tr,de}/<EN dosya adı>.md`, kendi slug'larıyla; hreflang otomatik. Menü/footer çevirisi derleme sonunda `scripts/localize.mjs` |
 | `/glossary`, `/glossary/<slug>` | `glossary/` | Terimler `src/data/glossary.ts` (yeni terim = veriye bir kayıt) |
 | `/vs/<rakip>` | `vs/[slug].astro` | Karşılaştırmalar (tradezella, tradervue, edgewonk); rakip bilgisi yalnızca fiyat sayfalarından |
 | (eşleşmeyen her yol) | `404.astro` | Özel 404 sayfası, 404 durum koduyla döner |

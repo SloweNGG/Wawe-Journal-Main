@@ -2,8 +2,16 @@
 // Blog yazısının altındaki logo şeridi: işlemlerin içe aktarıldığı platformlar (her logo kendi entegrasyon
 // sayfasına gider) ve isteğe bağlı olarak kural şablonu OLAN prop firmaları. Şablonu olmayan firmaları
 // (The5ers, Topstep, E8, Apex, Alpha) buraya ekleme: uygulamada yalnızca logoları var, preset yok.
-interface Props { props?: boolean }
-const { props = false } = Astro.props;
+import { BLOG_UI, type BlogLang } from '../../data/blog';
+interface Props { props?: boolean; lang?: BlogLang }
+const { props = false, lang = 'en' } = Astro.props;
+const ui = BLOG_UI[lang];
+const customFirm = { en: 'Any firm, custom rules', tr: 'Her firma, özel kurallar', de: 'Jede Firma, eigene Regeln' }[lang];
+const tmNote = {
+  en: 'Logos are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them.',
+  tr: 'Logolar sahiplerinin ticari markalarıdır. Wawe Journal bu şirketlerle bağlantılı değildir ve onlar tarafından desteklenmez.',
+  de: 'Die Logos sind Marken ihrer Inhaber. Wawe Journal ist mit ihnen weder verbunden noch von ihnen unterstützt.',
+}[lang];
 
 const platforms = [
   { name: 'MetaTrader 4/5', src: '/images/platforms/mt5.png', href: '/integrations/metatrader' },
@@ -23,9 +31,9 @@ const firms = [
   { name: 'FundingPips', src: '/images/props/real-fundingpips.png' },
 ];
 ---
-<section class="fp-sec bl-logos reveal" aria-label="Supported platforms">
-  <h2>Bring your trades from the platform you already use.</h2>
-  <p class="lead">Auto-sync from cTrader, or import a statement from your broker or exchange. Every trade lands in one journal with the same metrics.</p>
+<section class="fp-sec bl-logos reveal" aria-label={ui.logosAria}>
+  <h2>{ui.logosH}</h2>
+  <p class="lead">{ui.logosP}</p>
   <ul class="bl-chips">
     {platforms.map((p) => (
       <li><a class="bl-chip" href={p.href}><img src={p.src} alt="" width="28" height="28" loading="lazy" decoding="async" /><span>{p.name}</span></a></li>
@@ -33,14 +41,14 @@ const firms = [
   </ul>
   {props && (
     <>
-      <h3 class="bl-sub">Prop firm rule presets</h3>
+      <h3 class="bl-sub">{ui.presets}</h3>
       <ul class="bl-chips">
         {firms.map((f) => (
           <li><a class="bl-chip" href="/prop-firm-tracker"><img src={f.src} alt="" width="28" height="28" loading="lazy" decoding="async" /><span>{f.name}</span></a></li>
         ))}
-        <li><a class="bl-chip" href="/prop-firm-tracker"><img src="/images/props/custom-symbol.svg" alt="" width="28" height="28" loading="lazy" decoding="async" /><span>Any firm, custom rules</span></a></li>
+        <li><a class="bl-chip" href="/prop-firm-tracker"><img src="/images/props/custom-symbol.svg" alt="" width="28" height="28" loading="lazy" decoding="async" /><span>{customFirm}</span></a></li>
       </ul>
     </>
   )}
-  <p class="fp-note">Logos are trademarks of their owners. Wawe Journal is not affiliated with or endorsed by them.</p>
+  <p class="fp-note">{tmNote}</p>
 </section>

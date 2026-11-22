@@ -18,6 +18,10 @@ export interface Props {
   spa?: boolean;
   /** Sayfa quick-add (FAB) kullanıyor mu — SPA'da buton buna göre gösterilir */
   showQuickAdd?: boolean;
+  /** Dil sürümleri (hreflang). <head>'in EN BAŞINA yazılır: BaseHead'deki dil ön yükleme script'i bunları okur. */
+  alternates?: { hreflang: string; href: string }[];
+  /** Dili URL'den gelen sayfa (/tr/..., /de/...): <html data-locale-page>. index-i18n ve BaseHead bu dili kullanır. */
+  localePage?: string;
 }
 
 const {
@@ -33,11 +37,14 @@ const {
   noIndex = isAppPage,
   spa = false,
   showQuickAdd = false,
+  alternates = [],
+  localePage,
 } = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang={lang}>
+<html lang={lang} data-locale-page={localePage}>
 <head>
+  {alternates.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
   <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} isAppPage={isAppPage} />
   <slot name="head" />
   {isAppPage && (
