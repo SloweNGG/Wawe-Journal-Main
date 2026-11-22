@@ -1906,6 +1906,13 @@ body.light-theme .wj-tasks-widget {
   touch-action: auto;
 }
 
+/* açık tema: beyaz panelde siyah kutu yerine hafif mor zemin */
+body.light-theme .wj-tasks-icon-box {
+  background: rgba(var(--ac-rgb), 0.08);
+  border-color: rgba(var(--ac-rgb), 0.2);
+  color: var(--ac-d1);
+}
+
 .wj-tasks-title-wrap {
   display: flex;
   align-items: center;

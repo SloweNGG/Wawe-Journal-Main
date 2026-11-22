@@ -386,6 +386,9 @@ body.light-theme .bt-fs-editbar-btn { color: #1a1033; border-color: var(--border
   border-radius: 999px; border: 1px solid var(--accent, var(--ac)); background: #000; color: #f4f4f5; cursor: pointer; }
 .bt-fs-grip-hide svg, .bt-fs-x svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
 .bt-fs-grip-hide:hover { background: var(--red); border-color: var(--red); }
+/* açık tema: siyah dolgu yerine ortak açık düğme stili (buttons.css: beyaz zemin, mor kenar) */
+body.light-theme .bt-fs-grip-hide { background: #fff; color: #1a1033; }
+body.light-theme .bt-fs-grip-hide:hover { background: var(--red); border-color: var(--red); color: #fff; }
 .bt-fs-listwrap { position: relative; flex: none; }
 .bt-fs-list { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); min-width: 210px; padding: 6px; border-radius: 12px;
   background: #000; border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 2px; }
@@ -430,6 +433,7 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
 /* PRO etiketi: siyah zemin, mor kenar (gradyansız); kenar 1px olduğu için dolgu 1px az, boyut aynı kalır */
 .bt-pro { display: inline-flex; align-items: center; padding: 0 5px; margin-left: 6px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em;
   color: #fff; background: #000; border: 1px solid var(--accent); vertical-align: middle; line-height: 1.5; }
+body.light-theme .bt-pro { background: #fff; color: var(--ac-d4); border-color: var(--ac-d1); }
 .bt-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-modal-overlay, 1000); width: min(380px, 100vw); display: flex; flex-direction: column;
   background: var(--modal-bg); border-left: 1px solid var(--modal-line); box-shadow: var(--modal-shadow); animation: bt-drawer-in 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
 .bt-drawer[hidden] { display: none !important; }
