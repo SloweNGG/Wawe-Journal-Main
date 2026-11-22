@@ -2,14 +2,15 @@
 // What the AI coach model reads, as opposed to what the app keeps (ai-coach/index.ts):
 //   - compactForModel(context): a smaller, prompt-only copy of the trader data JSON. Every number the coach can quote stays;
 //     only the packaging changes: nulls / empty lists / empty objects and constant notes go, the strategy cross-tabs are
-//     nested by strategy, strategies become name -> rules, the backtest breakdowns and R buckets become small fixed-column
-//     tables, and the economic calendar is grouped per local day into released / upcoming. The context object itself is
+//     nested by strategy, strategies become name -> rules, the backtest breakdowns and R buckets become small column
+//     tables (every stats column kept), and the economic calendar is grouped per local day into released / upcoming. The context object itself is
 //     never touched: charts (visuals.ts), promise cards (commitments.ts) and action cards (actions.ts) keep reading it.
 //   - The values that change on every request (the minute, whether to mention the last promise, the monthly target the
 //     browser sends) leave the system prompt and go into a short "[App context]" line at the start of the trader's latest
 //     message (appContext / withAppContext), so the system prompt and the history stay the same from one message to the
 //     next (Gemini's implicit cache can reuse an identical prefix).
-//   - historyKeep(): how many of the last messages are sent back; the window's start moves in steps, not every turn.
+//   - historyKeep(): how many of the last messages are sent back (never fewer than the 20 sent before); the window's start
+//     moves in steps, not every turn.
 // Pure (Node tests: tests/coach-compact.test.js).
 import { localTime } from './econ-calendar.ts';
 
@@ -21,11 +22,10 @@ const nonEmpty = (v: unknown): v is Obj[] => Array.isArray(v) && v.length > 0;
 // Stats columns always come in this order, so a column means the same in every table, and are never left out (even when
 // null in every row): a missing avg_loss column would read as "no data" instead of "no losses".
 const STATS = ['key', 'trades', 'wins', 'losses', 'win_rate', 'net', 'avg_win', 'avg_loss', 'profit_factor', 'expectancy', 'avg_r'];
-// R buckets and exit reasons: trades, wins, losses and net only. wins / losses must stay: a win or a loss is decided by the
-// net result after commission and swap, while R comes from prices, so a break-even exit that paid commission (R 0, bucket
-// "0…1R") is a loss inside a positive bucket, and a stop trailed into profit is a win under "sl". The averages and the
-// profit factor of a bucket are left out (the coach reads these buckets for counts and money).
-const OUTCOME_COLS = ['key', 'trades', 'wins', 'losses', 'net'];
+// R buckets and exit reasons keep every stats column. wins / losses matter most: a win or a loss is decided by the net
+// result after commission and swap, while R comes from prices, so a break-even exit that paid commission (R 0, bucket
+// "0…1R") is a loss inside a positive bucket, and a stop trailed into profit is a win under "sl"; avg_win, avg_loss and
+// profit_factor of a mixed bucket cannot be worked out from the counts, and charts can ask for them.
 
 // [{a,b},{a,b}] -> {cols:[a,b], rows:[[..],[..]]}. fixed: exactly these columns. Otherwise the stats columns first (in STATS
 // order), then the others in the order they appear; a non-stats column that is null in every row is left out.
@@ -109,14 +109,13 @@ function vsLive(v: Obj) {
   }));
 }
 
-// backtest accounts: per account the breakdowns become small tables; R buckets and exit reasons keep wins and losses
+// backtest accounts: per account the breakdowns become small tables (R buckets and exit reasons with the full stats)
 const BT_TABLES = new Set(['by_direction', 'by_session_utc', 'last_trades']);
 function backtest(bt: Obj, tables: boolean) {
   return pack(Object.entries(bt).map(([k, v]) => {
     if (k !== 'accounts' || !Array.isArray(v)) return [k, generic(v, tables)];
     return [k, v.map((a: Obj) => pack(Object.entries(a).map(([ak, x]) => {
-      if ((ak === 'exit_reasons' || ak === 'r_buckets') && nonEmpty(x)) return [ak, table(x, OUTCOME_COLS)];
-      if (BT_TABLES.has(ak) && nonEmpty(x)) return [ak, table(x)];
+      if ((ak === 'exit_reasons' || ak === 'r_buckets' || BT_TABLES.has(ak)) && nonEmpty(x)) return [ak, table(x)];
       return [ak, generic(x, tables)];
     })))];
   }));
@@ -157,7 +156,7 @@ export function compactForModel(context: Obj, opts: { tables?: boolean } = {}): 
   return pack(Object.entries(context).map(([k, v]): [string, unknown] => {
     if ((APP_CONTEXT_KEYS as readonly string[]).includes(k) || v == null) return [k, null];
     if (k === 'strategy_by_session_utc' || k === 'strategy_by_direction') return [k, nonEmpty(v) ? crossTab(v) : null];
-    if (k === 'r_buckets') return [k, nonEmpty(v) ? table(v, OUTCOME_COLS) : null];
+    if (k === 'r_buckets') return [k, nonEmpty(v) ? table(v) : null];
     if (k === 'strategies') return [k, nonEmpty(v) ? strategies(v) : null];
     if (!isObj(v) && !Array.isArray(v)) return [k, v];
     if (k === 'after_consecutive_losses' || k === 'by_trade_number_of_day') return [k, tables && isObj(v) ? mapTable(v) : generic(v, false)];
@@ -181,24 +180,36 @@ export function localNow(nowMs: number, tz: string): string {
   return `${localTime(new Date(nowMs).toISOString(), tz)} ${wd}`;
 }
 
-// The "[App context]" line for the latest message: the current time, mention_last (only when true) and the monthly
-// profit target (only when the panel sent one). Built from the same context the data comes from.
+// The "[App context]" line for the latest message: the current time, mention_last (only when true), the monthly profit
+// target (only when the panel sent one) and next_events: the minutes until the next upcoming calendar events (up to 3 in
+// the next 24 h, as coachCalendar ranked them), so "how long until CPI" stays a number the app computed, not date
+// arithmetic the model can get wrong. Built from the same context the data comes from.
+export const NEXT_EVENTS = 3;
 export function appContext(context: Obj, nowMs: number, tz: string): string {
   const c: Obj = { now_local: localNow(nowMs, tz) };
   if (isObj(context.commitment) && context.commitment.mention_last === true) c.mention_last = true;
   if (typeof context.monthly_profit_target === 'number') c.monthly_profit_target = context.monthly_profit_target;
+  const cal = context.economic_calendar;
+  if (isObj(cal) && Array.isArray(cal.events)) {
+    const next = (cal.events as Obj[]).filter((e) => isObj(e) && typeof e.minutes_from_now === 'number' && e.minutes_from_now >= 0 && e.minutes_from_now <= 1440)
+      .sort((a, b) => (a.minutes_from_now as number) - (b.minutes_from_now as number)).slice(0, NEXT_EVENTS)
+      .map((e) => ({ title: e.title ?? null, currency: e.currency ?? null, in_min: e.minutes_from_now }));
+    if (next.length) c.next_events = next;
+  }
   return '[App context] ' + JSON.stringify(c);
 }
 // the text the model gets as the trader's latest message; ai_messages keeps the trader's own text only, so an old
-// App context is never sent again
-export const withAppContext = (message: string, app: string) => `${app}\n\n${message}`;
+// App context is never sent again. A message that itself starts with "[App context]" is defused: only the app writes one.
+export const withAppContext = (message: string, app: string) => `${app}\n\n${message.replace(/^(\s*)\[app context\]/i, '$1(App context)')}`;
 
-// History window: up to max of the last messages, with the start snapped in steps (max 20, step 6 -> 16 to 20 messages).
-// A window that slid by one turn on every message would change the start of the history every time, so no history could
-// be reused from the cache; snapped, it stays put for 3 turns. n is the conversation's message count (always even: both
-// rows of a turn are written together), so the window starts on a trader message.
-export const HISTORY_MAX = 20, HISTORY_STEP = 6;
-export function historyKeep(n: number, max = HISTORY_MAX, step = HISTORY_STEP): number {
+// History window: at least the last HISTORY_MIN messages (what was always sent before: the coach never remembers less),
+// with the start snapped in steps of HISTORY_STEP, so 20 to 25 messages. A window that slid by one turn on every message
+// would change the start of the history every time, so no history could be reused from the cache; snapped, it stays put
+// for 3 turns. n is the conversation's message count (normally even: both rows of a turn are written together, so the
+// window starts on a trader message; buildHistory / chatMessages drop a leading model turn otherwise).
+// HISTORY_FETCH = the most the window can hold (the query's limit).
+export const HISTORY_MIN = 20, HISTORY_STEP = 6, HISTORY_FETCH = HISTORY_MIN + HISTORY_STEP - 1;
+export function historyKeep(n: number, min = HISTORY_MIN, step = HISTORY_STEP): number {
   if (!(n > 0)) return 0;
-  return n <= max ? n : n - Math.ceil((n - max) / step) * step;
+  return n <= min ? n : n - Math.floor((n - min) / step) * step;
 }

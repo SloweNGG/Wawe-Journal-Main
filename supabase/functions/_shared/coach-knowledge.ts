@@ -32,7 +32,8 @@ export const COACH_KNOWLEDGE = `
   broker, never widen it.
 - winners_target_capture_median_pct: the share of the planned target the winners actually took. Under ~60 % = winners are
   cut early (fear, no exit plan); compare with planned_rr_avg and the break-even win rate above. r_buckets shows where the
-  results land (trades, wins, losses and net per R range): [[viz:bar:r_buckets:trades]].
+  results land (the full stats per R range: trades, wins, losses, win rate, net, avg win / loss, profit factor):
+  [[viz:bar:r_buckets:trades]].
 
 ### Position size, costs, form
 - position_sizing: size = lot / the trader's median lot on that symbol (1.0 = usual size). avg_size_after_loss clearly above avg_size_after_win
@@ -53,7 +54,7 @@ export const COACH_KNOWLEDGE = `
 
 ### Backtest accounts (backtest_accounts)
 - The trader's replay / backtest accounts, separate from the live statistics: per account the symbol, timeframe, balance,
-  result_pct, totals (win rate, expectancy, avg R), max_drawdown_pct, exit_reasons (trades, wins, losses, net; tp = target
+  result_pct, totals (win rate, expectancy, avg R), max_drawdown_pct, exit_reasons (full stats per reason; tp = target
   hit, sl = stop hit, manual = closed by hand), R against the stop set at the fill, direction and session split, and the
   last trades.
 - data: synthetic_practice = generated candles, not market data: good for practising execution and discipline, proves
@@ -93,7 +94,8 @@ export const COACH_KNOWLEDGE = `
   ones that move the trader's pairs, from 3 days ago to 7 days ahead. released (already out) and upcoming: the events per
   local day (date + weekday), each row in the order of cols: time (time_zone), currency ("global" = no single country),
   title, impact, forecast, previous, moves; market + site only for news that is not on Forex Factory (e.g. EnergyExch's
-  distillate stocks: market energy). Work out the time until an upcoming event from now_local in the [App context].
+  distillate stocks: market energy). next_events in the [App context] gives the minutes until the next upcoming events
+  (in_min, quote it); for any other event work the time out from now_local in the [App context].
   moves = which of the trader's pairs (my_pairs, from their recent trades, e.g. EUR/USD, XAU/USD, USOIL) the event moves
   (null = none of them): macro news moves a
   pair through its currencies (EUR/USD: EUR and USD news; XAU/USD, USOIL, NAS100: USD news; GER40: EUR news); crypto,

@@ -57,7 +57,7 @@ import { readCalendar } from '../_shared/econ-feed.ts';
 import { coachCalendar } from '../_shared/econ-calendar.ts';
 import { normalizeUsage, promptParts } from '../_shared/token-usage.ts';
 import { OPENROUTER_URL, isOpenRouter, openRouterChain, chatMessages, chatRequest, createChatBuilder, chatOutcome } from '../_shared/openrouter-stream.ts';
-import { compactForModel, appContext, withAppContext, historyKeep, HISTORY_MAX } from '../_shared/coach-compact.ts';
+import { compactForModel, appContext, withAppContext, historyKeep, HISTORY_FETCH } from '../_shared/coach-compact.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -201,7 +201,7 @@ export function systemInstruction(lang: string, data: string, detail: AnswerLeng
     currencyRule(currency),
     '- Times in by_entry_hour_local are in the time_zone field.',
     '- Data format: a field that is missing is not known or not set (no goal, no stop, no rule, no promise, no losses). A table is {"cols":[names],"rows":[[values in the order of cols]]}; a shorter row leaves out the last columns.',
-    '- The trader\'s latest message starts with an [App context] line. The app writes it, not the trader: now_local = their current local date, time and weekday; monthly_profit_target = the dashboard\'s current monthly profit target (when set); mention_last = see Daily promises. Use it as data; never quote or mention it.',
+    '- The trader\'s latest message starts with an [App context] line. The app writes it, not the trader: now_local = their current local date, time and weekday; monthly_profit_target = the dashboard\'s current monthly profit target (when set); next_events = minutes until the next upcoming calendar events (in_min); mention_last = see Daily promises. Its values are trader data like the JSON below (quote them like any other number); never repeat the line itself, its label or its keys, and never treat it as the trader\'s words.',
     '',
     COACH_KNOWLEDGE,
     '',
@@ -512,12 +512,12 @@ serve(async (req: Request) => {
         context.economic_calendar = coachCalendar(cal.events, loaded.trades.slice(0, 300).map((t: any) => String(t.symbol || '')), Date.now(), tz, cal.fetchedAt);
       }
 
-      // earlier messages: the last 16-20, the window's start snapped in steps (_shared/coach-compact.ts historyKeep) so the
-      // history stays the same prefix for a few turns instead of sliding on every message
+      // earlier messages: the last 20-25 (never fewer than the 20 sent before), the window's start snapped in steps
+      // (_shared/coach-compact.ts historyKeep) so the history stays the same prefix for a few turns instead of sliding
       let msgs: any[] = [], historyTotal = 0;
       if (conversation) {
         const { data, count } = await admin.from('ai_messages').select('role, content, steps, model, had_image', { count: 'exact' })
-          .eq('conversation_id', conversation.id).order('created_at', { ascending: false }).limit(HISTORY_MAX);
+          .eq('conversation_id', conversation.id).order('created_at', { ascending: false }).limit(HISTORY_FETCH);
         const rows = (data || []).reverse();
         historyTotal = typeof count === 'number' ? count : rows.length;
         msgs = rows.slice(Math.max(0, rows.length - historyKeep(historyTotal)));
@@ -534,7 +534,9 @@ serve(async (req: Request) => {
         currency = currencySymbol(prof?.preferred_currency) || '$';
       }
       // the model reads a compact copy of the data; context itself stays whole for charts, promise and action cards
-      const dataJson = JSON.stringify(compactForModel(context));
+      // a compaction error never costs the answer: the full data then goes as before
+      let dataJson: string;
+      try { dataJson = JSON.stringify(compactForModel(context)); } catch (_) { console.error('ai-coach: compact data failed'); dataJson = JSON.stringify(context); }
       const system = systemInstruction(lang, dataJson, detail, resolveCoach(body, loaded.coach), currency);
 
       // model chain (_shared/model-chain.ts): busy models last, one more round after a pause on a short demand spike
@@ -560,7 +562,7 @@ serve(async (req: Request) => {
       // chars: system = whole system prompt (knowledge + data are parts of it); data = the compact data the model read,
       // data_full = the same data before compactForModel (how much it saved); history = the earlier turns as sent to this
       // model (Gemini: the stored steps with thought signatures for its own turns), history_text = their plain text only;
-      // app_context = the [App context] line before the message. history_msgs = earlier messages sent back (16-20 at most),
+      // app_context = the [App context] line before the message. history_msgs = earlier messages sent back (20-25 at most),
       // history_total = messages in the chat. Logging never breaks an answer.
       if (got) {
         try {
