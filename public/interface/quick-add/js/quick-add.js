@@ -408,6 +408,23 @@ async function fileToCsvText(file) {
   const CHUNK_SIZE = 500;
   const MULTIPLIER_MAP = { forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 };
 
+  // Fiyat farkı × lot × çarpan, paritenin KOTASYON para birimindedir (USDJPY → JPY). Hesap para birimi paritenin baz
+  // para birimiyse (USD hesapta USDJPY/USDCAD/USDCHF, EUR hesapta EURUSD/EURGBP) sonuç çıkış fiyatına bölünerek hesap para
+  // birimine çevrilir: kesin dönüşüm, kur gerekmez. Çapraz paritede (USD hesapta EURJPY) kur bilinmediği için çevrilmez.
+  const CURRENCY_CODES = { '$': 'USD', '€': 'EUR', '£': 'GBP', '₺': 'TRY', '¥': 'JPY' };
+  function accountCurrencyCode() {
+    let c = '$';
+    try { c = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$'; } catch (e) {}
+    c = String(c).trim();
+    return CURRENCY_CODES[c] || (/^[A-Za-z]{3}$/.test(c) ? c.toUpperCase() : 'USD');
+  }
+  function toAccountCurrency(raw, symbol, exit) {
+    const s = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
+    if (!(exit > 0) || s.length < 6 || guessInstrument(s) !== 'forex') return raw;
+    const acc = accountCurrencyCode();
+    return (s.slice(0, 3) === acc && s.slice(3, 6) !== acc) ? raw / exit : raw;
+  }
+
   function guessInstrument(symbol) {
     if (typeof BrokerDictionary !== 'undefined' && typeof BrokerDictionary.guessInstrument === 'function') {
       return BrokerDictionary.guessInstrument(symbol);
@@ -1910,15 +1927,8 @@ async function fileToCsvText(file) {
           const direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
           const rawPnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
           
-          let gross = rawPnl;
-          const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
-          const isEurAccount = (curr === '€' || curr === 'EUR');
-          
-          // EUR hesabı: USD cinsinden kazanç yalnızca EURUSD için çıkış fiyatına bölünerek EUR'a çevrilir.
-          // Diğer çiftlerde (GBPUSD, XAUUSD...) doğru kur bilinmediği için dönüşüm YAPILMAZ.
-          if (isEurAccount && /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, '')) && parseFloat(exit) > 0) {
-            gross = rawPnl / parseFloat(exit);
-          }
+          // kotasyon para birimi → hesap para birimi (USD hesapta USDJPY, EUR hesapta EURUSD...): toAccountCurrency
+          let gross = toAccountCurrency(rawPnl, symbol, parseFloat(exit));
 
           gross = parseFloat(gross.toFixed(2));
           const net = parseFloat((gross - commission + swap).toFixed(2));
@@ -2260,7 +2270,7 @@ async function fileToCsvText(file) {
         var inst = r.instrument || guessInstrument(r.symbol);
         var mult = r.multiplier || MULTIPLIER_MAP[inst] || 1;
         var diff = r.direction === 'LONG' ? (r.exit_price - r.entry_price) : (r.entry_price - r.exit_price);
-        pnlVal = diff * r.lot * mult - (Math.abs(Number(r.commission) || 0)) + (Number(r.swap) || 0);
+        pnlVal = toAccountCurrency(diff * r.lot * mult, r.symbol, Number(r.exit_price)) - (Math.abs(Number(r.commission) || 0)) + (Number(r.swap) || 0);
       }
 
       if (pnlVal != null && !isNaN(pnlVal)) {
@@ -2699,7 +2709,7 @@ async function fileToCsvText(file) {
             const diff = r.direction === 'LONG'
               ? (r.exit_price - r.entry_price)
               : (r.entry_price - r.exit_price);
-            pnl = diff * r.lot * multiplier;
+            pnl = toAccountCurrency(diff * r.lot * multiplier, r.symbol, Number(r.exit_price));
           }
 
           // Dosyadaki kaçıncı özdeş satır sayacı
@@ -2919,9 +2929,7 @@ async function fileToCsvText(file) {
       const instrument = guessInstrument(symbol);
       const mult = MULTIPLIER_MAP[instrument] || 1;
       const rawPnl = (finalDir === 'LONG' ? 1 : -1) * (exit - entry) * lot * mult;
-      const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
-      const isEurUsdPair = /^EURUSD/.test(symbol.replace(/[^A-Z]/g, ''));
-      const grossPnl = parseFloat((((curr === '€' || curr === 'EUR') && isEurUsdPair && exit > 0) ? rawPnl / exit : rawPnl).toFixed(2));
+      const grossPnl = parseFloat(toAccountCurrency(rawPnl, symbol, exit).toFixed(2));
 
       trades.push({
         user_id: user.id,
@@ -3094,13 +3102,7 @@ async function fileToCsvText(file) {
       const dirSign = direction === 'LONG' ? 1 : -1;
       let rawPnl = dirSign * (exit - entry) * lot * (mult || 100000);
       
-      const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
-      const isEurAccount = (curr === '€' || curr === 'EUR');
-      if (isEurAccount && /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, '')) && exit > 0) {
-        calculatedGross = parseFloat((rawPnl / exit).toFixed(2));
-      } else {
-        calculatedGross = parseFloat(rawPnl.toFixed(2));
-      }
+      calculatedGross = parseFloat(toAccountCurrency(rawPnl, symbol, exit).toFixed(2));
 
       calculatedNet = parseFloat((calculatedGross - commission + swap).toFixed(2));
     }

@@ -223,3 +223,29 @@ describe('Quick Add: mapping editor', () => {
     for (const lang of ['en', 'tr', 'de']) for (const k of used) assert.ok(ctx.__q[lang][k], lang + ' ' + k);
   });
 });
+
+describe('Quick Add: P&L in the account currency', () => {
+  const qa = fs.readFileSync('public/interface/quick-add/js/quick-add.js', 'utf8').replace(/\r\n/g, '\n');
+  const start = qa.indexOf('  const CURRENCY_CODES');
+  const end = qa.indexOf('\n  }\n', qa.indexOf('function toAccountCurrency')) + 4;
+  function make(currency) {
+    const ctx = { window: { getCurrencySymbol: () => currency }, localStorage: { getItem: () => null } };
+    vm.createContext(ctx);
+    vm.runInContext('function guessInstrument(s){return /^(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY)(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY)$/.test(s)?"forex":"other";}\n'
+      + qa.slice(start, end) + '\nthis.f = toAccountCurrency;', ctx);
+    return ctx.f;
+  }
+  it('USD account: USDJPY yen result becomes dollars, USD-quoted pairs stay', () => {
+    const f = make('$');
+    // USDJPY 0.2 lot short 154.20 -> 154.55: -7000 JPY = -45.29 USD
+    assert.equal(Number(f(-7000, 'USDJPY', 154.55).toFixed(2)), -45.29);
+    assert.equal(f(105, 'GBPUSD', 1.2745), 105);
+    assert.equal(f(-7000, 'EURJPY', 160), -7000);      // cross: no rate, unchanged
+    assert.equal(f(170, 'XAUUSD', 2371), 170);
+  });
+  it('EUR account keeps the old EURUSD conversion', () => {
+    const f = make('€');
+    assert.equal(Number(f(100, 'EURUSD', 1.25).toFixed(2)), 80);
+    assert.equal(f(100, 'GBPUSD', 1.25), 100);
+  });
+});
