@@ -1169,6 +1169,53 @@ async function fileToCsvText(file) {
     writeRecentSymbols([s].concat(recentSymbols.filter(function(x) { return x !== s; })));
   }
 
+  // ---- Kullanıcının kendi sembolleri ("Sembollerim") — bu tarayıcıda saklanır (komisyon şablonları gibi)
+  const CUSTOM_SYM_KEY = 'ww_qa_custom_symbols';
+  const CUSTOM_SYM_MAX = 30;
+  // Sembol başına son kullanılan enstrüman/çarpan (USOIL → Diğer ×1000 gibi özel semboller için)
+  const SYM_INST_KEY = 'ww_qa_symbol_instruments';
+  const SYM_RE = /^[A-Z0-9][A-Z0-9._\/#!-]{1,23}$/;
+
+  function normSymbol(v) {
+    return String(v || '').toUpperCase().replace(/\s+/g, '');
+  }
+  function readCustomSymbols() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(CUSTOM_SYM_KEY) || '[]');
+      return Array.isArray(arr) ? arr.filter(function(s) { return typeof s === 'string' && SYM_RE.test(s); }).slice(0, CUSTOM_SYM_MAX) : [];
+    } catch (e) { return []; }
+  }
+  function writeCustomSymbols(list) {
+    try { localStorage.setItem(CUSTOM_SYM_KEY, JSON.stringify(list.slice(0, CUSTOM_SYM_MAX))); } catch (e) {}
+  }
+  function addCustomSymbol(sym) {
+    const s = normSymbol(sym);
+    if (!SYM_RE.test(s)) return false;
+    const list = readCustomSymbols().filter(function(x) { return x !== s; });
+    list.unshift(s);
+    writeCustomSymbols(list);
+    return true;
+  }
+  function removeCustomSymbol(sym) {
+    writeCustomSymbols(readCustomSymbols().filter(function(x) { return x !== sym; }));
+  }
+  function readSymbolInstruments() {
+    try {
+      const o = JSON.parse(localStorage.getItem(SYM_INST_KEY) || '{}');
+      return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+    } catch (e) { return {}; }
+  }
+  function rememberSymbolInstrument(sym, inst, mult) {
+    const s = normSymbol(sym);
+    if (!s || !inst || !(mult > 0)) return;
+    const map = readSymbolInstruments();
+    delete map[s];
+    map[s] = { i: inst, m: mult };
+    const keys = Object.keys(map);
+    if (keys.length > 200) keys.slice(0, keys.length - 200).forEach(function(k) { delete map[k]; });
+    try { localStorage.setItem(SYM_INST_KEY, JSON.stringify(map)); } catch (e) {}
+  }
+
   // Aktif defterdeki son işlemlerin sembolleri (sayfa başına bir kez; kayıttan sonra pushRecentSymbol günceller)
   async function loadRecentSymbols() {
     if (!recentSymbols.length) recentSymbols = readRecentSymbols();
@@ -1211,6 +1258,16 @@ async function fileToCsvText(file) {
 
   function applyInstrumentFor(sym, force) {
     if (!force && instrumentTouched) return;
+    // Önce bu sembolle en son kaydedilen enstrüman/çarpan (özel semboller için asıl bilgi bu)
+    const saved = readSymbolInstruments()[normSymbol(sym)];
+    if (saved && saved.i && (saved.i === 'other' || MULTIPLIER_MAP[saved.i])) {
+      selectInstrument(saved.i, saved.i === 'other' ? null : MULTIPLIER_MAP[saved.i]);
+      if (saved.i === 'other') {
+        const cm = el('price-custom-multiplier');
+        if (cm) { cm.value = String(saved.m); updatePricePreview(); }
+      }
+      return;
+    }
     const inst = guessInstrument(sym);
     if (inst === 'other' || !MULTIPLIER_MAP[inst]) return;
     if (inst !== currentInstrument) selectInstrument(inst, MULTIPLIER_MAP[inst]);
@@ -1231,32 +1288,54 @@ async function fileToCsvText(file) {
     const box = el('qa-sym-list');
     const input = el('price-symbol');
     if (!box || !input) return;
-    const q = input.value.toUpperCase().replace(/\s+/g, '');
+    const q = normSymbol(input.value);
     const groups = [];
 
-    const recent = recentSymbols.filter(function(s) { return symbolMatches(s, q); }).sort(byPrefix(q)).slice(0, 6);
+    const custom = readCustomSymbols();
+    const mine = custom.filter(function(s) { return symbolMatches(s, q); }).sort(byPrefix(q));
+    // Boşken de başlık + ipucu görünsün: özellik keşfedilsin
+    if (mine.length || !q) groups.push({ label: t('quickmodal.sym_mine'), items: mine, mine: true });
+
+    const recent = recentSymbols.filter(function(s) { return symbolMatches(s, q) && custom.indexOf(s) === -1; }).sort(byPrefix(q)).slice(0, 6);
     if (recent.length) groups.push({ label: t('quickmodal.sym_recent'), items: recent, recent: true });
 
     const popular = [];
     Object.keys(POPULAR_SYMBOLS).forEach(function(inst) {
-      const items = POPULAR_SYMBOLS[inst].filter(function(s) { return symbolMatches(s, q) && recent.indexOf(s) === -1; }).sort(byPrefix(q));
+      const items = POPULAR_SYMBOLS[inst].filter(function(s) { return symbolMatches(s, q) && recent.indexOf(s) === -1 && custom.indexOf(s) === -1; }).sort(byPrefix(q));
       if (items.length) popular.push({ label: instrumentLabel(inst), items: items, prefix: !!q && items[0].indexOf(q) === 0 });
     });
     // Yazılanla başlayan sembolü olan gruplar üstte
     popular.sort(function(a, b) { return (b.prefix ? 1 : 0) - (a.prefix ? 1 : 0); });
     Array.prototype.push.apply(groups, popular);
 
-    // Tam eşleşme yazılmışsa (ör. "EURUSD") listeyi açık tutmanın anlamı yok
+    // Yazılan sembol henüz "Sembollerim"de değilse ekleme satırı
+    const canAdd = SYM_RE.test(q) && custom.indexOf(q) === -1;
+
     const total = groups.reduce(function(n, g) { return n + g.items.length; }, 0);
-    if (!total || (total === 1 && groups[0].items[0] === q)) { closeSymbolList(); return; }
+    if (!total && !canAdd && q) { closeSymbolList(); return; }
 
     let html = '';
     let idx = 0;
+    if (canAdd) {
+      html += '<button type="button" class="qa-sym-item qa-sym-add" role="option" id="qa-sym-opt-' + idx + '" data-idx="' + idx + '" data-add="' + escapeHtml(q) + '" tabindex="-1">' +
+        ICONS.plus + '<span>' + escapeHtml(t('quickmodal.sym_add', { symbol: q })) + '</span></button>';
+      idx++;
+    }
     groups.forEach(function(g) {
-      html += '<div class="qa-sym-group' + (g.recent ? ' is-recent' : '') + '">';
-      html += '<div class="qa-sym-label">' + escapeHtml(g.label) + '</div><div class="qa-sym-chips">';
+      html += '<div class="qa-sym-group' + (g.recent ? ' is-recent' : '') + (g.mine ? ' is-mine' : '') + '">';
+      html += '<div class="qa-sym-label">' + escapeHtml(g.label) + '</div>';
+      if (g.mine && !g.items.length) {
+        html += '<div class="qa-sym-hint">' + escapeHtml(t('quickmodal.sym_mine_hint')) + '</div></div>';
+        return;
+      }
+      html += '<div class="qa-sym-chips">';
       g.items.forEach(function(s) {
-        html += '<button type="button" class="qa-sym-item" role="option" id="qa-sym-opt-' + idx + '" data-idx="' + idx + '" data-sym="' + escapeHtml(s) + '" tabindex="-1">' + escapeHtml(s) + '</button>';
+        const btn = '<button type="button" class="qa-sym-item" role="option" id="qa-sym-opt-' + idx + '" data-idx="' + idx + '" data-sym="' + escapeHtml(s) + '" tabindex="-1">' + escapeHtml(s) + '</button>';
+        if (g.mine) {
+          html += '<span class="qa-sym-own">' + btn + '<button type="button" class="qa-sym-del" data-del="' + escapeHtml(s) + '" tabindex="-1" title="' + escapeHtml(t('quickmodal.sym_remove')) + '" aria-label="' + escapeHtml(t('quickmodal.sym_remove') + ' ' + s) + '">' + ICONS.close + '</button></span>';
+        } else {
+          html += btn;
+        }
         idx++;
       });
       html += '</div></div>';
@@ -1290,6 +1369,17 @@ async function fileToCsvText(file) {
     symActive = -1;
   }
 
+  // Listede bir öğe seçildi: ekleme satırı ise önce "Sembollerim"e kaydet
+  function pickSymbolItem(b) {
+    if (!b) return;
+    if (b.dataset.add) {
+      addCustomSymbol(b.dataset.add);
+      pickSymbol(normSymbol(b.dataset.add));
+      return;
+    }
+    pickSymbol(b.dataset.sym);
+  }
+
   function pickSymbol(sym) {
     const input = el('price-symbol');
     if (!input) return;
@@ -1319,14 +1409,14 @@ async function fileToCsvText(file) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (!open) { renderSymbolList(); symActive = 0; paintSymbolActive(); return; }
+        if (!count) return;
         symActive = (symActive + 1) % count; paintSymbolActive();
-      } else if (e.key === 'ArrowUp' && open) {
+      } else if (e.key === 'ArrowUp' && open && count) {
         e.preventDefault();
         symActive = symActive <= 0 ? count - 1 : symActive - 1; paintSymbolActive();
       } else if (e.key === 'Enter' && open && symActive >= 0) {
         e.preventDefault();
-        const b = box.querySelector('.qa-sym-item[data-idx="' + symActive + '"]');
-        if (b) pickSymbol(b.dataset.sym);
+        pickSymbolItem(box.querySelector('.qa-sym-item[data-idx="' + symActive + '"]'));
       } else if (e.key === 'Escape' && open) {
         e.stopPropagation(); // modalı kapatma, sadece listeyi kapat
         closeSymbolList();
@@ -1341,8 +1431,14 @@ async function fileToCsvText(file) {
     // Odak input'ta kalsın (blur listeyi kapatmasın)
     box.addEventListener('mousedown', function(e) { e.preventDefault(); });
     box.addEventListener('click', function(e) {
-      const b = e.target.closest('.qa-sym-item');
-      if (b) pickSymbol(b.dataset.sym);
+      const del = e.target.closest('.qa-sym-del');
+      if (del) {
+        removeCustomSymbol(del.dataset.del);
+        symActive = -1;
+        renderSymbolList();
+        return;
+      }
+      pickSymbolItem(e.target.closest('.qa-sym-item'));
     });
 
     qsa('.quick-add-instrument-btn').forEach(function(btn) {
@@ -2721,6 +2817,7 @@ async function fileToCsvText(file) {
       }
 
       pushRecentSymbol(tradeData.symbol);
+      rememberSymbolInstrument(tradeData.symbol, tradeData.instrument, tradeData.multiplier);
       try {
         window.dispatchEvent(new CustomEvent('trade-saved'));
       } catch (evErr) {}

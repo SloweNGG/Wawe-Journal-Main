@@ -7,6 +7,10 @@
 
 const quickTranslations = {
   en: {
+    "quickmodal.sym_mine": "My symbols",
+    "quickmodal.sym_mine_hint": "Type a symbol (e.g. USOIL, EURUSD.m) and add it to keep it here.",
+    "quickmodal.sym_add": "Add \"{{symbol}}\" to my symbols",
+    "quickmodal.sym_remove": "Remove",
     "quickmodal.sym_recent": "Recent",
     "quickmodal.csv_drop_title": "Drag and drop your file here",
     "quickmodal.bulk_use_example": "Add example",
@@ -187,6 +191,10 @@ const quickTranslations = {
   },
 
   tr: {
+    "quickmodal.sym_mine": "Sembollerim",
+    "quickmodal.sym_mine_hint": "Kutuya bir sembol yazıp ekleyin (ör. USOIL, EURUSD.m), hep burada dursun.",
+    "quickmodal.sym_add": "\"{{symbol}}\" sembollerime ekle",
+    "quickmodal.sym_remove": "Kaldır",
     "quickmodal.sym_recent": "Son kullanılanlar",
     "quickmodal.csv_drop_title": "Dosyanızı buraya sürükleyip bırakın",
     "quickmodal.csv_drop_hint": "Dosyayı bırakın",
@@ -358,6 +366,10 @@ const quickTranslations = {
   },
 
   de: {
+    "quickmodal.sym_mine": "Meine Symbole",
+    "quickmodal.sym_mine_hint": "Symbol eingeben (z. B. USOIL, EURUSD.m) und hinzufügen, damit es hier bleibt.",
+    "quickmodal.sym_add": "\"{{symbol}}\" zu meinen Symbolen hinzufügen",
+    "quickmodal.sym_remove": "Entfernen",
     "quickmodal.sym_recent": "Zuletzt verwendet",
     "quickmodal.csv_drop_title": "Datei hierher ziehen und ablegen",
     "quickmodal.bulk_use_example": "Beispiel einfügen",
