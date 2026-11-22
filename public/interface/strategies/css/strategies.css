@@ -305,7 +305,7 @@
   color: var(--muted);
   margin-bottom: 0.15rem;
   font-weight: 600;
-  font-family: var(--font-mono);
+  font-family: var(--font);
 }
 .sc-stat-val {
   font-family: var(--font);
@@ -342,7 +342,8 @@
   color: var(--text);
 }
 .sc-instrument-tag .tag-pnl {
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   font-size: 10px;
 }
@@ -485,7 +486,8 @@ body.light-theme .time-filter-btn:not(.active):hover { background: rgba(15, 23, 
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 10px;
   font-weight: 500;
   padding: 2px 8px 2px 6px;

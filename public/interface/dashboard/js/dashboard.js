@@ -1535,8 +1535,9 @@ function wwAccent() {
         locale: getChartLocale(),
         dateFormat: 'dd MMM yyyy',
         timeFormatter: formatChartTime,
+        // fiyat ekseni kısa ($400, $1K; localization.priceFormatter serinin priceFormat'ını eziyordu: "+$400.00")
         priceFormatter: function (price) {
-          return formatCurrency(price);
+          return window.WwChart ? window.WwChart.money(price) : formatCompactCurrency(price);
         }
       }
     }));
@@ -1693,7 +1694,8 @@ function wwAccent() {
         labels: {
           style: wwAxisLabels(),
           formatter: function (value) {
-            return isMobile ? formatCompactCurrency(value) : formatCurrency(value);
+            // eksen etiketi kısa ($400, $1K: WwChart.money, Analytics ile aynı); tam tutar ipucunda
+            return window.WwChart ? window.WwChart.money(value) : formatCompactCurrency(value);
           }
         },
         min: function (min) {
@@ -1884,7 +1886,8 @@ function wwAccent() {
         labels: {
           style: wwAxisLabels(),
           formatter: function (value) {
-            return isMobile ? formatCompactCurrency(value) : formatCurrency(value);
+            // eksen etiketi kısa ($400, $1K: WwChart.money, Analytics ile aynı); tam tutar ipucunda
+            return window.WwChart ? window.WwChart.money(value) : formatCompactCurrency(value);
           }
         }
       },

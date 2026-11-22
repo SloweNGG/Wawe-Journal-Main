@@ -555,6 +555,8 @@
       if (e.key === 'ww_language') { S.tickSig = ''; render(); }
     });
     if (global.i18n && typeof global.i18n.onChange === 'function') global.i18n.onChange(function () { S.tickSig = ''; render(); });
+    // ilk dil yüklemesi onChange'i tetiklemez: rozet çeviriler gelmeden çizildiyse yedek Türkçe metin ("Haberler") kalıyordu
+    if (global.i18nReady && typeof global.i18nReady.then === 'function') global.i18nReady.then(function () { S.tickSig = ''; render(); });
     if (global.sb && global.sb.auth && typeof global.sb.auth.onAuthStateChange === 'function') {
       global.sb.auth.onAuthStateChange(function (evt) { if (evt === 'SIGNED_IN' && !S.events.length) load(true); });
     }

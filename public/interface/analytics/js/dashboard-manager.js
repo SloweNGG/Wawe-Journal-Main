@@ -949,14 +949,14 @@ export async function updateNavbarAvatar() {
       } else {
         var initial = user.user_metadata && user.user_metadata.username ? user.user_metadata.username.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
         el.textContent = initial;
-        el.style.background = 'var(--accent)';
-        el.style.border = 'none';
+        el.style.background = ''; // navbar.js ile aynı görünüm: CSS vurgu gradyanı + kenar
+        el.style.border = '';
       }
     } else {
       var initial2 = user.user_metadata && user.user_metadata.username ? user.user_metadata.username.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
       el.textContent = initial2;
-      el.style.background = 'var(--accent)';
-      el.style.border = 'none';
+      el.style.background = '';
+      el.style.border = '';
     }
   } catch(e) {}
 }

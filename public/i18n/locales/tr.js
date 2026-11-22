@@ -1495,6 +1495,7 @@ export default {
   "direction.long": "Long",
   "direction.short": "Short",
   "dashboard.trades_count_suffix": "işlem",
+  "dashboard.trade_count_suffix_one": "işlem",
   "days.sun": "Paz",
   "days.mon": "Pzt",
   "days.tue": "Sal",

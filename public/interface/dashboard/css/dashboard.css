@@ -2511,14 +2511,18 @@ body.light-theme .prop-card-spinner { border-color: rgba(15, 23, 42, 0.12); bord
   cursor: pointer;
 }
 
+/* Başlık kontrolleri Strategies / Journals ile aynı ölçü: 40px hap grup, 32px seçenek, 12px yazı
+   (eskiden 28px / 10px idi; sayfalar arasında üç farklı boyut vardı) */
 .date-filter-group {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--surface2);
+  align-items: stretch;
+  gap: 2px;
+  height: 40px;
+  box-sizing: border-box;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 40px;
-  padding: 2px;
+  border-radius: 999px;
+  padding: 3px;
 }
 
 .date-filter-option {
@@ -2526,13 +2530,14 @@ body.light-theme .prop-card-spinner { border-color: rgba(15, 23, 42, 0.12); bord
   border: none;
   color: var(--muted);
   font-family: var(--font);
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 40px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 0.95rem;
+  border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
-  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .date-filter-option:hover {
@@ -2550,14 +2555,15 @@ body.light-theme .prop-card-spinner { border-color: rgba(15, 23, 42, 0.12); bord
   border-radius: 40px;
   color: var(--muted);
   font-family: var(--font);
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 1.15rem;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.45rem;
   cursor: pointer;
-  min-height: 28px;
+  height: 40px;
+  box-sizing: border-box;
 }
 
 .export-btn:hover {

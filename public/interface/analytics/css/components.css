@@ -638,12 +638,13 @@ body.light-theme .sc-head {
 }
 
 .ph-btn {
-  height: 34px;
+  /* Strategies / Dashboard başlık düğmeleriyle aynı ölçü (renk ve hap şekli: buttons.css) */
+  height: 40px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 0.85rem;
-  border-radius: 10px;
+  gap: 0.45rem;
+  padding: 0 1.15rem;
+  border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -723,13 +724,13 @@ body.light-theme .sc-head {
    DATE FILTER TOOLBAR
    ============================================================ */
 .date-filter-group {
-  height: 34px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 3px;
   box-sizing: border-box;
 }
@@ -738,8 +739,8 @@ body.light-theme .sc-head {
   height: 100%;
   background: transparent;
   border: none;
-  border-radius: 7px;
-  padding: 0 0.8rem;
+  border-radius: 999px;
+  padding: 0 0.95rem;
   font-size: 12px;
   font-family: var(--font);
   font-weight: 600;

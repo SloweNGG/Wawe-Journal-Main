@@ -1518,6 +1518,7 @@ export default {
   "direction.long": "Long",
   "direction.short": "Short",
   "dashboard.trades_count_suffix": "Trades",
+  "dashboard.trade_count_suffix_one": "Trade",
   "days.sun": "So",
   "days.mon": "Mo",
   "days.tue": "Di",

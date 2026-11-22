@@ -1476,11 +1476,11 @@ function applyAvatarToNav(url) {
         navAvatar.style.background = 'transparent';
       } else {
         navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
-        navAvatar.style.background = 'var(--surface2)';
+        navAvatar.style.background = ''; // CSS: vurgu gradyanı (gri zeminde açık temada beyaz harf görünmüyordu)
       }
     } else {
       navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
-      navAvatar.style.background = 'var(--surface2)';
+      navAvatar.style.background = ''; // CSS: vurgu gradyanı (gri zeminde açık temada beyaz harf görünmüyordu)
     }
   }
 
@@ -1492,11 +1492,11 @@ function applyAvatarToNav(url) {
         menuAvatar.style.background = 'transparent';
       } else {
         menuAvatar.innerHTML = '<span id="menu-avatar-text" style="font-size:20px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
-        menuAvatar.style.background = 'var(--surface2)';
+        menuAvatar.style.background = '';
       }
     } else {
       menuAvatar.innerHTML = '<span id="menu-avatar-text" style="font-size:20px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
-      menuAvatar.style.background = 'var(--surface2)';
+      menuAvatar.style.background = '';
     }
   }
 

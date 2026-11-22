@@ -1617,14 +1617,15 @@ body.light-theme .journal-prop-inactive-tip {
 }
 .journal-card-count { font-size: 0.8rem; color: var(--muted); }
 .journal-card-count b {
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--text);
   margin-right: 2px;
 }
 .journal-card-pnl {
-  font-family: var(--font-mono);
+  font-family: var(--font);
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.02em;

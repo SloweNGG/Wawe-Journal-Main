@@ -347,7 +347,8 @@ const isActive = (page: string) => {
     if (ddEmail) { ddEmail.textContent = uEmail && uEmail !== dName ? uEmail : ''; ddEmail.style.display = ddEmail.textContent ? '' : 'none'; }
     // Avatar: üst çubuk + mobil menü kartı. Resim yalnızca https adresinden, DOM ile eklenir (innerHTML'e ham adres yazılmaz)
     var okUrl = avUrl && /^https:\/\//.test(avUrl) ? avUrl : '';
-    var initials = dName ? (dName.indexOf('@') > 0 ? dName.split('@')[0] : dName).trim().slice(0, 2).toUpperCase() : '';
+    // tek harf: navbar.js / analytics ile aynı (iki harf "WA" çizilip sonra "W"ye dönüyordu)
+    var initials = dName ? (dName.indexOf('@') > 0 ? dName.split('@')[0] : dName).trim().charAt(0).toUpperCase() : '';
     var paintAvatar = function(host, txt) {
       if (!host) return;
       if (okUrl) {

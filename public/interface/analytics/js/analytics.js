@@ -696,6 +696,14 @@ async function loadProData(scope) {
     if (!user || !scope.alive) return;
     currentUser = user;
 
+    // Çeviriler gelmeden çizilen metinler (alt başlıklar, bilgi satırı) yedek Türkçe kalıyordu ve sonra
+    // yenilenmiyordu: İngilizce arayüzde "98 kazanan · 76 kaybeden". Veri çizimi çevirileri bekler (iskelet zaten
+    // görünür; data-i18n'li kabuk metinleri i18n.apply ile ayrıca çevrilir).
+    if (window.i18nReady && typeof window.i18nReady.then === 'function') {
+      try { await window.i18nReady; } catch (e) { /* çeviri yüklenemedi: yedek metinlerle devam */ }
+      if (!scope.alive) return;
+    }
+
     // Aktif defter kimliği — önce localStorage veya journal state'ten hemen al
     var jid = (window.journal && typeof window.journal.getActiveJournalId === 'function')
       ? window.journal.getActiveJournalId()

@@ -875,7 +875,7 @@ function updateAvatarElements(url) {
       navAvatar.style.background = 'transparent';
     } else {
       navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
-      navAvatar.style.background = 'var(--surface2)';
+      navAvatar.style.background = ''; // navbar.js ile aynı: CSS vurgu gradyanı
     }
   }
 

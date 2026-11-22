@@ -34,6 +34,8 @@
 .btn-solid,
 .btn-line,
 .btn-accent,
+.ph-btn,
+.btn-upload,
 #standard-edit-goal-btn,
 #cancel-advance-modal,
 #confirm-advance-modal {
@@ -71,6 +73,8 @@
 .btn-solid:hover,
 .btn-line:hover,
 .btn-accent:hover,
+.ph-btn:hover,
+.btn-upload:hover,
 #standard-edit-goal-btn:hover,
 #cancel-advance-modal:hover,
 #confirm-advance-modal:hover {
@@ -134,6 +138,8 @@
 .light-theme .btn-solid,
 .light-theme .btn-line,
 .light-theme .btn-accent,
+.light-theme .ph-btn,
+.light-theme .btn-upload,
 .light-theme #standard-edit-goal-btn,
 .light-theme #cancel-advance-modal,
 .light-theme #confirm-advance-modal {
@@ -171,6 +177,8 @@
 .light-theme .btn-solid:hover,
 .light-theme .btn-line:hover,
 .light-theme .btn-accent:hover,
+.light-theme .ph-btn:hover,
+.light-theme .btn-upload:hover,
 .light-theme #standard-edit-goal-btn:hover,
 .light-theme #cancel-advance-modal:hover,
 .light-theme #confirm-advance-modal:hover {
@@ -216,6 +224,9 @@
 #confirm-advance-modal,
 #standard-edit-goal-btn,
 .btn-accent,
+.ph-btn,
+.btn-upload,
+.btn-remove-avatar,
 .btn-add-strategy,
 .btn-export,
 .btn-ghost,

@@ -33,7 +33,7 @@
 .trades-page .ww-table th:nth-child(9) { width: 90px; }
 .trades-page .ww-table th:nth-child(10) { width: 55px; }
 .trades-page .ww-table th:nth-child(11) { width: 110px; }
-.trades-page .ww-table th:nth-child(12) { width: 100px; }
+.trades-page .ww-table th:nth-child(12) { width: 150px; } /* tarih + saat sığsın (100px'te "Nov 27, 2026, 12:…" kesiliyordu) */
 .trades-page .ww-table th:nth-child(13) { width: 70px; }
 
 .trades-page .ww-table th {
@@ -106,7 +106,7 @@
   align-items: center;
 }
 .symbol-text {
-  font-family: var(--font-mono);
+  font-family: var(--font);
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
@@ -769,7 +769,7 @@ body.light-theme .skeleton-row .skeleton-cell::after {
   margin-left: auto;
   font-size: 11px;
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 0;
 }

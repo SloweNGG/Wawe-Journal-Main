@@ -110,23 +110,28 @@ function formatCurrency(value) {
   }
 }
 
+// Gün hücresi için kısa tutar: para birimiyle ve uygulama diline göre ondalık ("+$165", "-$69", "+$61.9", "+$1.2K");
+// eskiden birimsizdi ve "-69.0" gibi gereksiz sıfır kalıyordu
 function formatShortPnL(value) {
   try {
     var num = parseFloat(value) || 0;
     var absVal = Math.abs(num);
+    var loc = window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR';
+    var sym = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '$';
+    var f = function (n, d) { return n.toLocaleString(loc, { minimumFractionDigits: 0, maximumFractionDigits: d, useGrouping: false }); };
     var formatted;
     if (absVal >= 1000000) {
-      formatted = (absVal / 1000000).toFixed(2) + 'M';
+      formatted = f(absVal / 1000000, 2) + 'M';
     } else if (absVal >= 1000) {
-      formatted = (absVal / 1000).toFixed(1) + 'K';
+      formatted = f(absVal / 1000, 1) + 'K';
     } else if (absVal >= 100) {
-      formatted = absVal.toFixed(0);
+      formatted = f(Math.round(absVal), 0);
     } else if (absVal >= 1) {
-      formatted = absVal.toFixed(1);
+      formatted = f(absVal, 1);
     } else {
-      formatted = absVal.toFixed(2);
+      formatted = f(absVal, 2);
     }
-    return (num > 0 ? '+' : (num < 0 ? '-' : '')) + formatted;
+    return (num > 0 ? '+' : (num < 0 ? '-' : '')) + sym + formatted;
   } catch (e) {
     return '';
   }
@@ -335,7 +340,7 @@ function renderCalendar() {
       var pnlClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       var barClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
 
-      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + calT('dashboard.trades_count_suffix', 'işlem')) : '';
+      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + (dayTrades.length === 1 ? calT('dashboard.trade_count_suffix_one', 'işlem') : calT('dashboard.trades_count_suffix', 'işlem'))) : '';
       var ariaLabel = d + ' ' + monthName + (hasTrade ? ', ' + dayTrades.length + ' işlem, ' + pnlDisplay : ', işlem yok');
 
       html += '<div class="cal-day ' + colorClass + ' ' + todayClass + ' ' + weekendClass2 + '" data-date="' + dateStr + '" role="button" tabindex="0" aria-label="' + ariaLabel + '" onclick="openDayModal(\'' + dateStr + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openDayModal(\'' + dateStr + '\');}">' +
