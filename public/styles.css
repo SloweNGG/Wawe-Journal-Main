@@ -150,6 +150,14 @@ body.light-theme {
   --modal-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.18);
 }
 
+/* Arka plan katmanı (ambient.js) --wwbg-base'i <html>'e "var(--bg)" olarak yazar; değişken orada çözülür.
+   Açık tema --bg yalnızca body'de olsaydı taban koyu #07070c kalırdı (açık temada koyu gece/orman sahnesi).
+   html.light-theme (0,1,1) :root'u geçer; tema stüdyosunun "html:root" (0,1,1) özel --bg'si styles.css'ten sonra
+   yüklendiği için yine üstte kalır. */
+html.light-theme {
+  --bg: #f4f4f9;
+}
+
 /* ============================================================
    ⭐ FAZ 4.1: SCOPE EDİLMİŞ TRANSITION - SADECE GEREKLİ BİLEŞENLER
    ============================================================ */
