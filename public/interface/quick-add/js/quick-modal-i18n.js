@@ -7,6 +7,7 @@
 
 const quickTranslations = {
   en: {
+    "quickmodal.sym_recent": "Recent",
     "quickmodal.csv_drop_title": "Drag and drop your file here",
     "quickmodal.bulk_use_example": "Add example",
     "quickmodal.bulk_format_label": "Format",
@@ -157,6 +158,7 @@ const quickTranslations = {
   },
 
   tr: {
+    "quickmodal.sym_recent": "Son kullanılanlar",
     "quickmodal.csv_drop_title": "Dosyanızı buraya sürükleyip bırakın",
     "quickmodal.csv_drop_hint": "Dosyayı bırakın",
     "quickmodal.broker_format": "Broker Formatı",
@@ -298,6 +300,7 @@ const quickTranslations = {
   },
 
   de: {
+    "quickmodal.sym_recent": "Zuletzt verwendet",
     "quickmodal.csv_drop_title": "Datei hierher ziehen und ablegen",
     "quickmodal.bulk_use_example": "Beispiel einfügen",
     "quickmodal.bulk_format_label": "Format",

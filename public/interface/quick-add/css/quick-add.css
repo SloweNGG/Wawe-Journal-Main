@@ -428,6 +428,95 @@ body.light-theme {
 }
 
 /* ============================================================
+   HAZIR SEMBOLLER (sembol kutusunun altında açılan panel)
+   ============================================================ */
+.qa-sym-wrap {
+  position: relative;
+}
+.qa-sym-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: 330px;
+  max-width: calc(100vw - 2.5rem);
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--modal-bg, var(--qa-surface));
+  border: 1px solid var(--qa-border-strong);
+  border-radius: var(--qa-r-md);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  animation: qaSymIn 0.14s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: var(--qa-border-strong) transparent;
+}
+.qa-sym-list::-webkit-scrollbar {
+  width: 6px;
+}
+.qa-sym-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.qa-sym-list::-webkit-scrollbar-thumb {
+  background: var(--qa-border-strong);
+  border-radius: 99px;
+}
+.qa-sym-list[hidden] {
+  display: none;
+}
+body.light-theme .qa-sym-list {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+}
+@keyframes qaSymIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.qa-sym-label {
+  font-family: var(--qa-font-body);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--qa-muted);
+  margin: 0 0 6px 2px;
+}
+.qa-sym-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.qa-sym-item {
+  height: 28px;
+  padding: 0 10px;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  color: var(--qa-text);
+  font-family: var(--qa-font-numeric);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.qa-sym-item:hover,
+.qa-sym-item.is-active {
+  border-color: var(--qa-accent);
+  background: var(--qa-accent-tint-strong);
+  color: var(--qa-accent-light);
+}
+.qa-sym-group.is-recent .qa-sym-item {
+  border-color: rgba(var(--ac-b1-rgb), 0.28);
+}
+.qa-sym-group.is-recent + .qa-sym-group {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--qa-border);
+}
+
+/* ============================================================
    ENSTRÜMAN TİPİ SEÇİCİ
    ============================================================ */
 .quick-add-instrument-grid {

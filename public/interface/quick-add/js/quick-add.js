@@ -747,7 +747,11 @@ async function fileToCsvText(file) {
                   <div class="quick-add-row qa-row-sym-side">
                     <div class="quick-add-field">
                       <label data-quick-i18n="quickmodal.symbol">Sembol *</label>
-                      <input type="text" id="price-symbol" placeholder="EURUSD" style="text-transform:uppercase;" autofocus>
+                      <div class="qa-sym-wrap">
+                        <input type="text" id="price-symbol" placeholder="EURUSD" style="text-transform:uppercase;" autofocus
+                               autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="qa-sym-list">
+                        <div class="qa-sym-list" id="qa-sym-list" role="listbox" hidden></div>
+                      </div>
                     </div>
                     <div class="quick-add-field">
                       <label data-quick-i18n="quickmodal.side">Yön *</label>
@@ -1101,6 +1105,220 @@ async function fileToCsvText(file) {
     }
 
     updatePricePreview();
+  }
+
+  // ============================================================
+  // HAZIR SEMBOLLER — son kullanılanlar + popüler, enstrüman otomatik
+  // ============================================================
+
+  const POPULAR_SYMBOLS = {
+    forex: ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURJPY', 'GBPJPY', 'EURGBP'],
+    gold: ['XAUUSD', 'XAGUSD'],
+    index: ['NAS100', 'US30', 'SPX500', 'GER40', 'UK100', 'JP225'],
+    crypto: ['BTCUSD', 'ETHUSD', 'SOLUSD', 'XRPUSD']
+  };
+  const RECENT_SYM_KEY = 'ww_qa_recent_symbols';
+  const RECENT_SYM_MAX = 8;
+  let recentSymbols = [];
+  let recentSymbolsLoaded = false;
+  let instrumentTouched = false; // kullanıcı enstrümanı elle seçtiyse yazarken ezme
+  let symActive = -1;
+
+  function readRecentSymbols() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(RECENT_SYM_KEY) || '[]');
+      return Array.isArray(arr) ? arr.filter(function(s) { return typeof s === 'string' && s; }).slice(0, RECENT_SYM_MAX) : [];
+    } catch (e) { return []; }
+  }
+  function writeRecentSymbols(list) {
+    recentSymbols = list.slice(0, RECENT_SYM_MAX);
+    try { localStorage.setItem(RECENT_SYM_KEY, JSON.stringify(recentSymbols)); } catch (e) {}
+  }
+  function pushRecentSymbol(sym) {
+    const s = String(sym || '').toUpperCase().trim();
+    if (!s) return;
+    writeRecentSymbols([s].concat(recentSymbols.filter(function(x) { return x !== s; })));
+  }
+
+  // Aktif defterdeki son işlemlerin sembolleri (sayfa başına bir kez; kayıttan sonra pushRecentSymbol günceller)
+  async function loadRecentSymbols() {
+    if (!recentSymbols.length) recentSymbols = readRecentSymbols();
+    if (recentSymbolsLoaded) return;
+    try {
+      if (!checkGlobals() || typeof requireAuth !== 'function') return;
+      const user = await requireAuth();
+      if (!user || !window.journal) return;
+      await window.journal.ensureActiveJournal(user.id);
+      const jid = window.journal.getActiveJournalId();
+      if (!jid) return;
+      if (!window.WwTrades || typeof window.WwTrades.applyScope !== 'function') return;
+      // Yalnızca canlı işlemler (backtest sembolleri önerilere karışmasın)
+      const { data, error } = await window.WwTrades.applyScope(
+        sb.from('trades')
+          .select('symbol')
+          .eq('user_id', user.id)
+          .eq('journal_id', jid),
+        'live'
+      )
+        .order('trade_date', { ascending: false })
+        .limit(200);
+      if (error || !data) return;
+      const seen = {};
+      const list = [];
+      data.forEach(function(r) {
+        const s = String(r.symbol || '').toUpperCase().trim();
+        if (s && !seen[s]) { seen[s] = true; list.push(s); }
+      });
+      recentSymbolsLoaded = true;
+      writeRecentSymbols(list);
+      const box = el('qa-sym-list');
+      if (box && !box.hidden) renderSymbolList();
+    } catch (e) { /* öneriler olmadan da çalışır */ }
+  }
+
+  function instrumentLabel(inst) {
+    return t('quickmodal.instrument_' + inst);
+  }
+
+  function applyInstrumentFor(sym, force) {
+    if (!force && instrumentTouched) return;
+    const inst = guessInstrument(sym);
+    if (inst === 'other' || !MULTIPLIER_MAP[inst]) return;
+    if (inst !== currentInstrument) selectInstrument(inst, MULTIPLIER_MAP[inst]);
+  }
+
+  function symbolMatches(sym, q) {
+    return !q || sym.indexOf(q) !== -1;
+  }
+  // Yazılanla başlayanlar öne ("US" → USDJPY, US30 … sonra EURUSD)
+  function byPrefix(q) {
+    return function(a, b) {
+      if (!q) return 0;
+      return (b.indexOf(q) === 0 ? 1 : 0) - (a.indexOf(q) === 0 ? 1 : 0);
+    };
+  }
+
+  function renderSymbolList() {
+    const box = el('qa-sym-list');
+    const input = el('price-symbol');
+    if (!box || !input) return;
+    const q = input.value.toUpperCase().replace(/\s+/g, '');
+    const groups = [];
+
+    const recent = recentSymbols.filter(function(s) { return symbolMatches(s, q); }).sort(byPrefix(q)).slice(0, 6);
+    if (recent.length) groups.push({ label: t('quickmodal.sym_recent'), items: recent, recent: true });
+
+    const popular = [];
+    Object.keys(POPULAR_SYMBOLS).forEach(function(inst) {
+      const items = POPULAR_SYMBOLS[inst].filter(function(s) { return symbolMatches(s, q) && recent.indexOf(s) === -1; }).sort(byPrefix(q));
+      if (items.length) popular.push({ label: instrumentLabel(inst), items: items, prefix: !!q && items[0].indexOf(q) === 0 });
+    });
+    // Yazılanla başlayan sembolü olan gruplar üstte
+    popular.sort(function(a, b) { return (b.prefix ? 1 : 0) - (a.prefix ? 1 : 0); });
+    Array.prototype.push.apply(groups, popular);
+
+    // Tam eşleşme yazılmışsa (ör. "EURUSD") listeyi açık tutmanın anlamı yok
+    const total = groups.reduce(function(n, g) { return n + g.items.length; }, 0);
+    if (!total || (total === 1 && groups[0].items[0] === q)) { closeSymbolList(); return; }
+
+    let html = '';
+    let idx = 0;
+    groups.forEach(function(g) {
+      html += '<div class="qa-sym-group' + (g.recent ? ' is-recent' : '') + '">';
+      html += '<div class="qa-sym-label">' + escapeHtml(g.label) + '</div><div class="qa-sym-chips">';
+      g.items.forEach(function(s) {
+        html += '<button type="button" class="qa-sym-item" role="option" id="qa-sym-opt-' + idx + '" data-idx="' + idx + '" data-sym="' + escapeHtml(s) + '" tabindex="-1">' + escapeHtml(s) + '</button>';
+        idx++;
+      });
+      html += '</div></div>';
+    });
+    box.innerHTML = html;
+    box.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+    symActive = Math.min(symActive, idx - 1);
+    paintSymbolActive();
+  }
+
+  function paintSymbolActive() {
+    const input = el('price-symbol');
+    qsa('#qa-sym-list .qa-sym-item').forEach(function(b) {
+      const on = Number(b.dataset.idx) === symActive;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on) b.scrollIntoView({ block: 'nearest' });
+    });
+    if (input) {
+      if (symActive >= 0) input.setAttribute('aria-activedescendant', 'qa-sym-opt-' + symActive);
+      else input.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  function closeSymbolList() {
+    const box = el('qa-sym-list');
+    const input = el('price-symbol');
+    if (box) { box.hidden = true; box.innerHTML = ''; }
+    if (input) { input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); }
+    symActive = -1;
+  }
+
+  function pickSymbol(sym) {
+    const input = el('price-symbol');
+    if (!input) return;
+    input.value = sym;
+    closeSymbolList();
+    applyInstrumentFor(sym, true);
+    input.dispatchEvent(new Event('input', { bubbles: true })); // önizleme güncellensin
+    const entry = el('price-entry');
+    if (entry) entry.focus();
+  }
+
+  function initSymbolPicker() {
+    const input = el('price-symbol');
+    const box = el('qa-sym-list');
+    if (!input || !box) return;
+
+    // Programla verilen odakta (modal açılışı) değil, kullanıcı tıklayınca / yazınca açılır
+    input.addEventListener('mousedown', function() { if (box.hidden) setTimeout(renderSymbolList, 0); });
+    input.addEventListener('input', function(e) {
+      if (!e.isTrusted) return;
+      symActive = -1;
+      renderSymbolList();
+    });
+    input.addEventListener('keydown', function(e) {
+      const open = !box.hidden;
+      const count = box.querySelectorAll('.qa-sym-item').length;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!open) { renderSymbolList(); symActive = 0; paintSymbolActive(); return; }
+        symActive = (symActive + 1) % count; paintSymbolActive();
+      } else if (e.key === 'ArrowUp' && open) {
+        e.preventDefault();
+        symActive = symActive <= 0 ? count - 1 : symActive - 1; paintSymbolActive();
+      } else if (e.key === 'Enter' && open && symActive >= 0) {
+        e.preventDefault();
+        const b = box.querySelector('.qa-sym-item[data-idx="' + symActive + '"]');
+        if (b) pickSymbol(b.dataset.sym);
+      } else if (e.key === 'Escape' && open) {
+        e.stopPropagation(); // modalı kapatma, sadece listeyi kapat
+        closeSymbolList();
+      } else if (e.key === 'Tab') {
+        closeSymbolList();
+      }
+    });
+    input.addEventListener('blur', function() { setTimeout(closeSymbolList, 120); });
+    // Elle yazılan sembolde de enstrümanı tahmin et (kullanıcı enstrümanı kendisi seçmediyse)
+    input.addEventListener('change', function() { if (input.value.trim()) applyInstrumentFor(input.value.trim().toUpperCase(), false); });
+
+    // Odak input'ta kalsın (blur listeyi kapatmasın)
+    box.addEventListener('mousedown', function(e) { e.preventDefault(); });
+    box.addEventListener('click', function(e) {
+      const b = e.target.closest('.qa-sym-item');
+      if (b) pickSymbol(b.dataset.sym);
+    });
+
+    qsa('.quick-add-instrument-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) { if (e.isTrusted) instrumentTouched = true; });
+    });
   }
 
   function getMultiplier() {
@@ -1521,7 +1739,10 @@ async function fileToCsvText(file) {
     setSide('BUY');
     switchTab('price');
     selectInstrument('forex', 100000);
+    instrumentTouched = false;
+    closeSymbolList();
     loadStrategies();
+    loadRecentSymbols();
 
     if (typeof quickI18n !== 'undefined' && typeof quickI18n.apply === 'function') {
       quickI18n.apply();
@@ -2464,6 +2685,7 @@ async function fileToCsvText(file) {
         return;
       }
 
+      pushRecentSymbol(tradeData.symbol);
       try {
         window.dispatchEvent(new CustomEvent('trade-saved'));
       } catch (evErr) {}
@@ -2668,6 +2890,7 @@ async function fileToCsvText(file) {
     }
 
     initCommissionPopover();
+    initSymbolPicker();
 
     const saveBtn = document.getElementById('quick-add-save');
     if (saveBtn) saveBtn.addEventListener('click', saveTrade);
