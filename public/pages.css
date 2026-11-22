@@ -128,6 +128,7 @@ a.gl-card h3{margin-top:0}
 
 /* blog: platform / prop firm logo strip under a post (src/components/blog/LogoStrip.astro) */
 .bl-logos{max-width:760px;margin-left:auto;margin-right:auto;text-align:center}
+.bl-logos > h2{margin-left:auto;margin-right:auto}
 .bl-logos .lead{margin:10px auto 0;max-width:560px}
 .bl-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:22px 0 0;padding:0;list-style:none}
 .bl-chip{display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 16px 0 9px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:14px;color:var(--ink);transition:border-color .15s,transform .15s}
@@ -137,3 +138,10 @@ a.gl-card h3{margin-top:0}
 .bl-sub{margin-top:30px;font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .bl-logos .fp-note{margin-top:18px}
 @media (max-width:480px){.bl-chip{height:42px;padding:0 13px 0 7px;font-size:13px;gap:8px}.bl-chip img{width:24px;height:24px}}
+
+/* Çevrilmiş (TR/DE) metinler daha uzun: başlıklar satırlara dengeli bölünsün, son satırda tek kelime kalmasın
+   ("Şimdi uygulamaya / geç."). Uzun Almanca bileşik kelimeler dar ekranda taşmasın diye tireleme. */
+.page-hero h1,.fp-sec > h2,.cta h2,.blog-card h2,.fp-item h3{text-wrap:balance}
+.page-lead,.fp-sec > p.lead,.cta p{text-wrap:pretty}
+:lang(de) .page-hero h1,:lang(de) .article h2,:lang(de) .blog-card h2{hyphens:auto;-webkit-hyphens:auto}
+.page-hero h1,.article h2,.article h3{overflow-wrap:break-word}

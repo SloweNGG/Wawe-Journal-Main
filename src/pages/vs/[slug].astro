@@ -27,7 +27,7 @@ export function getStaticPaths() {
   const WAWE = {
     price: 'Free Starter plan; Pro $12/month or $99/year',
     free: 'Yes, no time limit, no card',
-    sync: 'cTrader auto-sync (read-only); statement/CSV import for MetaTrader 4/5, TradingView, Binance, Bybit, IBKR, XTB, OANDA and Excel; MetaTrader auto-sync coming soon',
+    sync: 'cTrader and MetaTrader 4/5 auto-sync (read-only); statement/CSV import for TradingView, Binance, Bybit, IBKR, XTB, OANDA and Excel',
     replay: 'Candle-by-candle backtest replay on every plan (1 account free, up to 10 on Pro)',
     ai: 'AI coach on every plan, with five coach personas, live alerts, a trading plan and weekly reviews',
     prop: 'Prop firm rule tracker on every plan (1 free, up to 10 on Pro) with Monte Carlo pass probability',
@@ -55,14 +55,14 @@ export function getStaticPaths() {
         'A larger company with a big education library and community.',
       ],
       weWin: [
-        'A free plan with no time limit that already includes backtest replay, prop firm tracking, cTrader sync and the AI coach.',
+        'A free plan with no time limit that already includes backtest replay, prop firm tracking, cTrader and MetaTrader sync and the AI coach.',
         'Pro costs $12 a month or $99 a year, less than TradeZella’s entry plan.',
         'Candle-by-candle replay with drawing tools, multi-chart layouts, spread and commission on the free plan.',
         'Prop challenge pass probability from a Monte Carlo simulation of your own trades.',
       ],
       faq: [
-        { q: 'Is Wawe Journal a free TradeZella alternative?', a: 'Yes. Wawe Journal’s Starter plan is free with no time limit and includes trade logging, imports, cTrader auto-sync, core analytics, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.' },
-        { q: 'Can I move my trades from TradeZella to Wawe Journal?', a: 'Wawe Journal imports CSV and Excel files, and statements from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB and OANDA. The simplest route is to export your history from your broker or platform and import it, or connect cTrader for automatic sync.' },
+        { q: 'Is Wawe Journal a free TradeZella alternative?', a: 'Yes. Wawe Journal’s Starter plan is free with no time limit and includes trade logging, imports, cTrader and MetaTrader auto-sync, core analytics, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.' },
+        { q: 'Can I move my trades from TradeZella to Wawe Journal?', a: 'Wawe Journal imports CSV and Excel files, and statements from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB and OANDA. The simplest route is to export your history from your broker or platform and import it, or connect cTrader or MetaTrader 4/5 for automatic sync.' },
         { q: 'When is TradeZella the better choice?', a: 'If you need automatic sync with a broker Wawe Journal does not support yet, or TradeZella’s AI agents and automated AI backtests, TradeZella is the better fit. If price, a free plan and built-in replay, prop tracking and an AI coach matter most, try Wawe Journal.' },
       ],
     },
@@ -128,7 +128,7 @@ export function getStaticPaths() {
       faq: [
         { q: 'Is there a free Edgewonk alternative?', a: 'Wawe Journal’s Starter plan is free with no time limit. It includes journaling, imports, core analytics, emotion tags, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.' },
         { q: 'Which is better for trading psychology?', a: 'Edgewonk has dedicated psychology tools like the Tiltmeter. Wawe Journal approaches it through emotion tags, notes and an AI coach persona (Mira) that shows what each emotion costs you. Try both if psychology is your main focus.' },
-        { q: 'Can I move from Edgewonk to Wawe Journal?', a: 'Export your trades as CSV or Excel, or export statements from your broker, and import them. cTrader accounts can be connected for automatic sync.' },
+        { q: 'Can I move from Edgewonk to Wawe Journal?', a: 'Export your trades as CSV or Excel, or export statements from your broker, and import them. cTrader and MetaTrader 4/5 accounts can be connected for automatic sync.' },
       ],
     },
   ];

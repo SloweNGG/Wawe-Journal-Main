@@ -128,7 +128,7 @@ export const BLOG_UI = {
     updated: (d: string) => `Güncellendi: ${d}`,
     startFree: 'Günlüğünü ücretsiz başlat',
     moreGuides: 'Diğer rehberler',
-    ctaH: 'Şimdi uygulamaya geç.',
+    ctaH: 'Öğrendiğini uygula.',
     ctaP: 'Wawe Journal; analiz, AI koç, backtest replay ve prop firma takibi sunan ücretsiz bir işlem günlüğü.',
     ctaBtn: 'Ücretsiz başla',
     logosAria: 'Desteklenen platformlar',

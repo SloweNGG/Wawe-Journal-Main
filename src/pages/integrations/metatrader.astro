@@ -1,11 +1,11 @@
 ---
-// Entegrasyon sayfası: MetaTrader 4/5 dosya içe aktarma. İçerik İngilizce ve sunucuda hazır.
+// Entegrasyon sayfası: MetaTrader 4/5 otomatik senkron (WaweSync EA) ve dosya içe aktarma. İçerik İngilizce ve sunucuda hazır.
 // Kaynaklar (iddialar bunlarla aynı kalmalı):
 //  - MT4/MT5 kolon imzaları: public/interface/quick-add/js/broker-detector.js (mt4 + mt5 imzaları)
 //  - Başlık satırı ilk satır olmalı: public/interface/quick-add/js/parser-v2.js parse()
 //  - Dosya tipleri, Excel'de yalnızca ilk sayfa, HTML'de en büyük tablo, mükerrer atlama: quick-add.js
 //  - Saat dilimi ayarı: en.js settings.time_import_*
-// MT5 senkron eklentisi sitede DUYURULMADI: MetaTrader otomatik senkronu burada yalnızca "yakında" olarak geçer.
+//  - Otomatik senkron (WaweSync EA, 6 haneli kod, son 90 gün): en.js mt5.* metinleri, docs/2026-11-09-CTRADER-MT5.md, docs/2026-11-21-MT4.md
 import PageLayout from '../../layouts/PageLayout.astro';
 
 const faq = [
@@ -15,11 +15,11 @@ const faq = [
   },
   {
     q: 'Does Wawe Journal sync with MetaTrader automatically?',
-    a: 'Not yet. Auto-sync for the MetaTrader series is on the way and will be released once it gives correct numbers. Today you import a file; re-importing a longer history later is safe because trades already in the journal are skipped.',
+    a: 'Yes. Add the free WaweSync add-on to MT4 or MT5 on a computer or VPS, allow its web address once under Tools → Options → Expert Advisors, drag it onto a chart and enter the 6-digit code it shows on the Journals page. Closed trades from the last 90 days are imported, then every trade you close arrives on its own while MetaTrader is running. You can still import files instead.',
   },
   {
     q: 'Do I need to give my MetaTrader password or investor password?',
-    a: 'No. A file import only reads the file you upload. Wawe Journal never asks for your MetaTrader login and cannot place trades on your account.',
+    a: 'No. Neither WaweSync nor a file import asks for your MetaTrader login or investor password. WaweSync only reads your trade history, and Wawe Journal cannot open or close trades on your account.',
   },
   {
     q: 'Why are my imported trade times a few hours off?',
@@ -41,7 +41,7 @@ const schema = [
 ---
 <PageLayout
   title="MetaTrader 4 & 5 Trading Journal (MT4/MT5) | Wawe Journal"
-  description="Import your MT4 or MT5 trade history into Wawe Journal with stop loss, take profit and profit, then track win rate, drawdown and prop firm rules. Free to start."
+  description="Sync MT4 or MT5 automatically with the free, read-only WaweSync add-on, or import your trade history. Then track win rate, drawdown and prop firm rules. Free to start."
   crumb="MetaTrader journal"
   crumbParent={{ name: 'Integrations', href: '/integrations' }}
   schema={schema}
@@ -50,9 +50,9 @@ const schema = [
     <div class="wrap">
       <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><a href="/integrations">Integrations</a><span aria-hidden="true">/</span><span>MetaTrader journal</span></nav>
       <h1 class="anim wide" style="--d:.1s">MetaTrader trading journal for MT4 and MT5</h1>
-      <p class="page-lead anim" style="--d:.2s">MetaTrader keeps a record of every position, but it does not tell you which setups pay, which sessions hurt or how close you are to a prop firm limit. Import your MT4 or MT5 history into Wawe Journal and get those answers from your own trades.</p>
+      <p class="page-lead anim" style="--d:.2s">MetaTrader keeps a record of every position, but it does not tell you which setups pay, which sessions hurt or how close you are to a prop firm limit. Connect MT4 or MT5 with the free WaweSync add-on, or import your history, and get those answers from your own trades.</p>
       <div class="hero-actions anim" style="--d:.3s">
-        <a href="/register" class="btn btn-accent btn-lg">Import MetaTrader trades free</a>
+        <a href="/register" class="btn btn-accent btn-lg">Connect MetaTrader free</a>
         <a href="/integrations" class="btn btn-line btn-lg">All integrations</a>
       </div>
     </div>
@@ -60,7 +60,18 @@ const schema = [
 
   <div class="wrap">
     <section class="fp-sec reveal">
-      <h2>How to import MetaTrader trades <span class="dim">in three steps.</span></h2>
+      <h2>Auto-sync with WaweSync. <span class="dim">Set it up once.</span></h2>
+      <p class="lead">WaweSync is a free, read-only add-on that runs in your own MetaTrader and sends closed trades to your journal. Your MetaTrader password is never asked for.</p>
+      <div class="fp-grid two">
+        <div class="fp-item"><span class="num">01</span><h3>Add WaweSync to MetaTrader</h3><p>On the Journals page choose Connect MetaTrader 4 / 5 and download WaweSync. In MetaTrader open File → Open Data Folder → MQL5 (or MQL4) → Experts, copy the file there and refresh the Navigator.</p></div>
+        <div class="fp-item"><span class="num">02</span><h3>Allow the connection once</h3><p>In Tools → Options → Expert Advisors, tick “Allow WebRequest for listed URL” and add the address shown in the connect window.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Drag it onto a chart</h3><p>Drag WaweSync onto any chart and press OK. A 6-digit code appears on the chart. It is valid for 15 minutes, and a new one appears by itself.</p></div>
+        <div class="fp-item"><span class="num">04</span><h3>Enter the code</h3><p>Type the code into the connect window. Closed trades from the last 90 days are imported, and from then on every trade you close arrives within seconds.</p></div>
+      </div>
+    </section>
+
+    <section class="fp-sec reveal">
+      <h2>Prefer a file? <span class="dim">Import in three steps.</span></h2>
       <div class="fp-grid">
         <div class="fp-item"><span class="num">01</span><h3>Save your history</h3><p>In MetaTrader, open your account history, pick the period you want and save the closed positions as an Excel, HTML or CSV file.</p></div>
         <div class="fp-item"><span class="num">02</span><h3>Upload it as it is</h3><p>No editing needed: Wawe Journal finds the positions table under the account details at the top of the report and stops at the next section, such as orders or deals.</p></div>
@@ -90,7 +101,7 @@ const schema = [
     <section class="fp-sec reveal">
       <h2>Good to know <span class="dim">before you import.</span></h2>
       <div class="fp-grid">
-        <div class="fp-item"><h3>Import is manual for now</h3><p>MetaTrader auto-sync is coming soon. Until then, upload a new file when you want the journal updated; trades already imported are skipped.</p></div>
+        <div class="fp-item"><h3>Auto-sync needs MetaTrader running</h3><p>WaweSync runs in MetaTrader on a computer or VPS, not in the phone app. Trades closed while MetaTrader is off are sent once it is back. Re-importing a file is safe too: trades already in the journal are skipped.</p></div>
         <div class="fp-item"><h3>Closed positions only</h3><p>Each row needs an open and a close price, so open positions are not imported. Balance, deposit and withdrawal rows have no symbol and are skipped.</p></div>
         <div class="fp-item"><h3>One table per file</h3><p>From an Excel file the first sheet is read; from an HTML report, the largest table. Check the time zone setting so server times land on the right day.</p></div>
       </div>
@@ -114,7 +125,7 @@ const schema = [
 
     <section class="cta reveal">
       <h2>Turn your MetaTrader history into answers.</h2>
-      <p>Create a free Wawe Journal account and import your first MT4 or MT5 file in a minute.</p>
+      <p>Create a free Wawe Journal account and connect MT4 or MT5, or import your first file, in a few minutes.</p>
       <a href="/register" class="btn btn-accent btn-lg">Start for free</a>
     </section>
   </div>

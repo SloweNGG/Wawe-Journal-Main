@@ -9,7 +9,7 @@ const YEARLY = 99;
 const faq = [
   {
     q: 'Is Wawe Journal really free?',
-    a: 'Yes. The Starter plan is free with no time limit and no card required. It covers unlimited trade logging, imports, cTrader auto-sync, core analytics, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.',
+    a: 'Yes. The Starter plan is free with no time limit and no card required. It covers unlimited trade logging, imports, cTrader and MetaTrader auto-sync, core analytics, one backtest account, one prop firm tracker and the AI coach with a daily message allowance.',
   },
   {
     q: 'What does Pro add?',
@@ -43,7 +43,7 @@ const schema = [
 const rows: [string, string, string][] = [
   ['Trade logging & P&L calendar', 'Unlimited', 'Unlimited'],
   ['Import (MetaTrader 4/5, TradingView, Binance, Bybit, IBKR, XTB, OANDA, CSV, Excel)', 'Included', 'Included'],
-  ['cTrader auto-sync', 'Included', 'Included'],
+  ['cTrader & MetaTrader auto-sync', 'Included', 'Included'],
   ['Core analytics (win rate, profit factor, expectancy, drawdown)', 'Included', 'Included'],
   ['Strategy comparison & advanced analytics', '—', 'Included'],
   ['AI coach', 'Daily allowance', 'More messages every day'],
@@ -65,7 +65,7 @@ const rows: [string, string, string][] = [
     <div class="wrap">
       <nav class="crumbs anim" style="--d:.02s" aria-label="Breadcrumb"><a href="/">Wawe Journal</a><span aria-hidden="true">/</span><span>Pricing</span></nav>
       <h1 class="anim wide" style="--d:.1s">Simple pricing. Start free.</h1>
-      <p class="page-lead anim" style="--d:.2s">Backtesting, prop firm tracking, cTrader sync and the AI coach are on every plan. Pro is for traders running several accounts and strategies.</p>
+      <p class="page-lead anim" style="--d:.2s">Backtesting, prop firm tracking, cTrader and MetaTrader sync and the AI coach are on every plan. Pro is for traders running several accounts and strategies.</p>
       <div class="pr-toggle anim" style="--d:.25s" role="group" aria-label="Billing period">
         <button type="button" class="on" id="pick-monthly" aria-pressed="true">Monthly</button>
         <button type="button" id="pick-yearly" aria-pressed="false">Yearly · save 31%</button>
@@ -78,7 +78,7 @@ const rows: [string, string, string][] = [
           <p class="plan-desc">Everything you need to start journaling.</p>
           <ul class="plan-feats">
             <li>Unlimited trade logging &amp; calendar</li>
-            <li>CSV &amp; broker import, cTrader auto-sync</li>
+            <li>CSV &amp; broker import, cTrader &amp; MetaTrader auto-sync</li>
             <li>Core analytics</li>
             <li>1 backtest account</li>
             <li>1 prop firm rule tracker</li>

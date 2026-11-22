@@ -1,6 +1,6 @@
 # Wawe Journal (WaweJournal, wawejournal.com)
 
-> Wawe Journal is a web-based trading journal for forex, futures, stock and crypto traders. It combines trade logging, performance analytics, an AI coach, candle-by-candle backtest replay, cTrader auto-sync and prop firm rule tracking in one app. Available in English, Turkish and German. Free Starter plan; Pro costs $12 per month or $99 per year.
+> Wawe Journal is a web-based trading journal for forex, futures, stock and crypto traders. It combines trade logging, performance analytics, an AI coach, candle-by-candle backtest replay, cTrader and MetaTrader 4/5 auto-sync and prop firm rule tracking in one app. Available in English, Turkish and German. Free Starter plan; Pro costs $12 per month or $99 per year.
 
 The name is spelled Wawe (with a w) and pronounced like "wave". Wawe Journal is not affiliated with other products that have similar names.
 
@@ -21,7 +21,7 @@ Wawe Journal is not a broker and never places or closes trades on a user's real 
 - [Risk of ruin calculator](https://wawejournal.com/tools/risk-of-ruin-calculator): Monte Carlo chance of hitting a drawdown limit from win rate, reward:risk and risk per trade
 - [Prop firm drawdown calculator](https://wawejournal.com/tools/prop-firm-drawdown-calculator): daily loss limit, static or end-of-day trailing max drawdown and room left today
 - [Prop firm pass probability calculator](https://wawejournal.com/tools/prop-firm-pass-probability): Monte Carlo estimate of passing a challenge from win rate, average win/loss, risk and trades per day; same engine as the in-app tracker
-- [Help center](https://wawejournal.com/support): answers on importing trades, cTrader sync, analytics, prop firm tracker, backtest, AI coach, plans and billing, privacy and contacting support
+- [Help center](https://wawejournal.com/support): answers on importing trades, cTrader and MetaTrader sync, analytics, prop firm tracker, backtest, AI coach, plans and billing, privacy and contacting support
 - [Blog](https://wawejournal.com/blog): guides on [keeping a trading journal](https://wawejournal.com/blog/how-to-keep-a-trading-journal), [passing the FTMO challenge](https://wawejournal.com/blog/how-to-pass-ftmo-challenge), [backtesting a strategy manually](https://wawejournal.com/blog/how-to-backtest-a-trading-strategy), [calculating position size](https://wawejournal.com/blog/how-to-calculate-position-size), [win rate vs risk-reward](https://wawejournal.com/blog/win-rate-vs-risk-reward), [stopping revenge trading](https://wawejournal.com/blog/how-to-stop-revenge-trading), [forex trading sessions](https://wawejournal.com/blog/forex-trading-sessions), [what a good profit factor is](https://wawejournal.com/blog/what-is-a-good-profit-factor) and [trading the news with an economic calendar](https://wawejournal.com/blog/trading-the-news-economic-calendar)
 - [Trading glossary](https://wawejournal.com/glossary): win rate, profit factor, expectancy, max drawdown, R-multiple, risk-reward ratio, payoff ratio and Sharpe ratio, each with the formula Wawe Journal uses and a worked example
 - Comparisons: [vs TradeZella](https://wawejournal.com/vs/tradezella), [vs Tradervue](https://wawejournal.com/vs/tradervue), [vs Edgewonk](https://wawejournal.com/vs/edgewonk)
@@ -35,8 +35,8 @@ Wawe Journal is not a broker and never places or closes trades on a user's real 
 - AI coach: a chat coach that answers from the member's own journal (trades, strategies, notes, prop challenges, backtests), with chart screenshots and dictation. Five coach personas (Kai all-round, Mira psychology, Rex overtrading, Atlas discipline, Nova risk), live alerts after new trades (losing streaks, sizing up after a loss, prop limits getting close), a personal trading plan that scores every trade, and a weekly review with one goal. The coach is optional and only uses a member's data when they use it. AI answers are not investment advice.
 - Backtest replay: step candle by candle or play at up to 10x on Wawe's synthetic data, or on real cTrader candles up to the previous day. Simulated orders with lot size, stop loss and take profit; results are saved to a linked journal.
 - Prop firm tracking: daily loss limit, max drawdown and profit target tracked against ready presets for FTMO (1-Step, 2-Step), FundedNext (Stellar 2-Step, 1-Step, Lite) and FundingPips (2-Step Standard, Pro), or a custom rule set for any other firm.
-- Integrations: cTrader auto-sync is live. Statement or CSV import from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and any CSV or Excel file. MetaTrader auto-sync is in progress.
-- Starter (free): unlimited trade logging and calendar, CSV and broker import, core analytics, 1 backtest account, 1 prop firm rule tracker, cTrader auto-sync, AI coach with a daily message allowance.
+- Integrations: auto-sync is live for cTrader (read-only OAuth) and MetaTrader 4/5 (free read-only WaweSync add-on, no password needed). Statement or CSV import from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA and any CSV or Excel file.
+- Starter (free): unlimited trade logging and calendar, CSV and broker import, core analytics, 1 backtest account, 1 prop firm rule tracker, cTrader and MetaTrader auto-sync, AI coach with a daily message allowance.
 - Pro: everything in Starter, more AI coach messages per day, up to 10 backtest accounts, up to 10 prop firm rule trackers, strategy comparison and advanced analytics, overtrade and daily loss alerts, customizable dashboard charts.
 
 ## Company

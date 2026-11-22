@@ -2,7 +2,7 @@
 // Yardım merkezi (/support). Kategori ikonları: Lucide tarzı SVG path'leri (icon alanı). İçerik İngilizce ve sunucuda hazır; tek sayfa rehber düzeni (açılır-kapanır SSS değil, kullanıcı tercihi): solda yapışkan konu menüsü, cevaplar açık; arama tarayıcıda.
 // Cevaplar koddaki davranışla eşleşmeli: fiyat ve limitler pricing.astro + config.js + migration'lar, ödeme/iade
 // terms.astro, gizlilik privacy.astro, içe aktarma integrations/*.astro. Bir özellik değişince buradaki cevabı da güncelle.
-// MT5 otomatik senkron uygulamada var ama sitede "yakında" diye anılıyor (kullanıcı kararı, MQL5 Market listesine kadar).
+// MetaTrader 4/5 otomatik senkron canlı ve sitede duyuruluyor (2026-11-21'den beri); cevaplar en.js mt5.* metinleriyle aynı kalmalı.
 import PageLayout from '../layouts/PageLayout.astro';
 import { srcsetFor } from '../data/responsive-images';
 
@@ -19,7 +19,7 @@ const cats: Cat[] = [
     items: [
       { id: 'what-is-wawe', q: 'What is Wawe Journal?', a: 'A trading journal for forex, futures, stocks and crypto traders. It records your trades, calculates your statistics, replays charts for backtesting, tracks prop firm rules and has an AI coach that answers from your own trades. It is not a broker and never places trades on your real accounts.' },
       { id: 'create-account', q: 'How do I create an account?', a: 'Go to <a href="/register">Sign up</a> and register with your email and a password, or with Google. The free Starter plan starts right away; no card is needed.' },
-      { id: 'first-trades', q: 'How do I get my trades in?', a: 'Three ways: <strong>connect cTrader</strong> for automatic sync, <strong>import a statement file</strong> from your platform or exchange (Add Trade → CSV Import), or <strong>enter trades by hand</strong> with Add Trade. You can mix all three in the same journal. See <a href="#import">Importing trades</a>.' },
+      { id: 'first-trades', q: 'How do I get my trades in?', a: 'Three ways: <strong>connect cTrader or MetaTrader 4/5</strong> for automatic sync, <strong>import a statement file</strong> from your platform or exchange (Add Trade → CSV Import), or <strong>enter trades by hand</strong> with Add Trade. You can mix all three in the same journal. See <a href="#import">Importing trades</a>.' },
       { id: 'languages', q: 'Which languages are available?', a: 'English, Turkish and German. Change it in Settings → Region & Time, or with the language switch on the website. The AI coach answers in the same three languages.' },
       { id: 'mobile', q: 'Is there a mobile app?', a: 'There is no App Store or Google Play app. Wawe Journal runs in any modern browser on phone, tablet and desktop, and you can add it to your home screen from the browser menu to open it like an app.' },
     ],
@@ -37,9 +37,9 @@ const cats: Cat[] = [
   {
     id: 'import', icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>', name: 'Importing trades', blurb: 'Statement files from your platform or exchange.', shot: { src: '/images/landing/screen-trades.webp', w: 1800, h: 947, alt: 'Trades list in Wawe Journal after an import', cap: 'Imported trades in the Trades list, with symbol, direction, size, prices and P&L.' },
     items: [
-      { id: 'platforms', q: 'Which platforms and brokers can I import from?', a: 'MetaTrader 4 and 5, cTrader (automatic sync), TradingView, Binance, Bybit, Interactive Brokers, OANDA, XTB and any CSV or Excel file with your trades. Each one has a step-by-step guide under <a href="/integrations">Integrations</a>. Imports are free and unlimited on every plan.' },
+      { id: 'platforms', q: 'Which platforms and brokers can I import from?', a: 'MetaTrader 4 and 5 and cTrader (both also with automatic sync), TradingView, Binance, Bybit, Interactive Brokers, OANDA, XTB and any CSV or Excel file with your trades. Each one has a step-by-step guide under <a href="/integrations">Integrations</a>. Imports are free and unlimited on every plan.' },
       { id: 'how-import', q: 'How do I import a file?', a: 'Statement files go in through the CSV Import tab, and a preview shows every trade before anything is saved. Importing the same report twice does not create duplicates: trades already in the journal are skipped.', steps: ['Open <strong>Add Trade</strong> and switch to the <strong>CSV Import</strong> tab.', 'Drop your file (.csv, .xlsx, .xls, .htm, .html or .txt) or choose it from your computer.', 'Check the preview. Columns are recognised automatically.', 'Press <strong>Import</strong>.'] },
-      { id: 'metatrader', q: 'How do I import from MetaTrader 4 or 5?', a: 'Only closed positions are imported, and the positions table is found automatically, so no editing is needed. If times look shifted, set the time zone of imported files to your broker’s server time. Full guide: <a href="/integrations/metatrader">MetaTrader</a>. Automatic MetaTrader sync is on the way; until then, import the report file.', steps: ['In MetaTrader, open your account history and pick the period.', 'Save the closed positions as an Excel, HTML or CSV file.', 'Upload the file as it is in <strong>Add Trade → CSV Import</strong>.'] },
+      { id: 'metatrader', q: 'How do I import from MetaTrader 4 or 5?', a: 'Only closed positions are imported, and the positions table is found automatically, so no editing is needed. If times look shifted, set the time zone of imported files to your broker’s server time. Full guide: <a href="/integrations/metatrader">MetaTrader</a>. To sync automatically instead, see <a href="#connect-metatrader">How do I connect MetaTrader 4 or 5?</a>', steps: ['In MetaTrader, open your account history and pick the period.', 'Save the closed positions as an Excel, HTML or CSV file.', 'Upload the file as it is in <strong>Add Trade → CSV Import</strong>.'] },
       { id: 'tradingview', q: 'Why does my TradingView export fail?', a: 'TradingView’s Strategy Tester trade list has no symbol column. Add a column named “Symbol” with the instrument before you upload. The Profit column is ignored; the result is recalculated from prices and size. See the <a href="/integrations/tradingview">TradingView guide</a>.' },
       { id: 'crypto', q: 'How do Binance and Bybit imports work?', a: 'Binance trade history is paired into round trips first-in-first-out, with fees subtracted. For Bybit, use the Closed P&L export for derivatives or the trade history for spot. There is no API connection for these exchanges; you import a file. Guides: <a href="/integrations/binance">Binance</a>, <a href="/integrations/bybit">Bybit</a>.' },
       { id: 'ibkr', q: 'How do I import from Interactive Brokers?', a: 'Use a report with one row per closed round trip (a closed trades or realised P&L view). Single executions are not paired into trades. See the <a href="/integrations/interactive-brokers">Interactive Brokers guide</a>.' },
@@ -55,6 +55,16 @@ const cats: Cat[] = [
       { id: 'read-only', q: 'Can Wawe place or close trades on my account?', a: 'No. The connection is read-only: it imports your trading history and nothing else. The only orders you place in Wawe are simulated ones in backtest accounts.' },
       { id: 'disconnect', q: 'How do I disconnect cTrader?', a: 'Open the journal’s broker connection and press Disconnect. Trades that were already imported stay in your journal.' },
       { id: 'missing-trades', q: 'A cTrader trade is missing. What should I do?', a: 'Press Sync on the journal and wait a few seconds. If it still doesn’t appear, disconnect and connect the account again to renew cTrader’s authorisation. If that doesn’t help, send us the account number and the trade time at ' + mail + '.' },
+    ],
+  },
+  {
+    id: 'metatrader-sync', icon: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>', name: 'MetaTrader auto-sync', blurb: 'WaweSync add-on, no password.',
+    items: [
+      { id: 'connect-metatrader', q: 'How do I connect MetaTrader 4 or 5?', a: 'WaweSync is a free, read-only add-on (expert advisor) that runs in your own MetaTrader. Wawe never asks for your MetaTrader password. More on the <a href="/integrations/metatrader">MetaTrader page</a>.', steps: ['Open <strong>Journals</strong> and choose <strong>Connect MetaTrader 4 / 5</strong> in a journal’s menu, or pick MetaTrader when you create a journal.', 'Download WaweSync and copy it into MetaTrader’s Experts folder (File → Open Data Folder → MQL5 or MQL4 → Experts), then refresh the Navigator.', 'In <strong>Tools → Options → Expert Advisors</strong>, tick “Allow WebRequest for listed URL” and add the address shown in the connect window.', 'Drag WaweSync onto any chart, press OK and enter the 6-digit code it shows.'] },
+      { id: 'mt-sync-frequency', q: 'How often are MetaTrader trades synced?', a: 'On first connect, closed trades from the last 90 days are imported. After that, while MetaTrader is open with WaweSync on a chart, every closed trade arrives within seconds. If MetaTrader is closed, trades closed in between are sent once it is back.' },
+      { id: 'mt-phone', q: 'Does MetaTrader sync work from my phone?', a: 'No. Expert advisors do not run in the MetaTrader phone apps. Run WaweSync in MetaTrader on a computer or a VPS; the journal card shows Online while it is connected.' },
+      { id: 'mt-permission', q: 'The chart says “Permission needed”, or the code is not accepted.', a: '“Permission needed” means the web address from the connect window has not been added under Tools → Options → Expert Advisors yet. A code is valid for 15 minutes and a new one appears on the chart by itself, so always enter the code currently shown.' },
+      { id: 'mt-disconnect', q: 'How do I disconnect MetaTrader?', a: 'Open the journal’s menu and choose Disconnect. WaweSync stops sending trades from that account, and trades already imported stay in your journal. You can then remove WaweSync from the chart.' },
     ],
   },
   {
@@ -105,7 +115,7 @@ const cats: Cat[] = [
   {
     id: 'billing', icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>', name: 'Plans & billing', blurb: 'Pro, payments, cancelling and refunds.',
     items: [
-      { id: 'free-vs-pro', q: 'What is free and what does Pro add?', a: 'Starter is free forever: unlimited trades, imports, cTrader sync, core analytics, the P&L calendar, 2 journals, 1 prop firm tracker, 1 backtest account and a daily AI coach allowance. Pro adds up to 10 journals, prop trackers and backtest accounts, the Analytics page with strategy comparison, unlimited real-data backtest trades, more AI coach messages, overtrade and daily loss alerts, a customisable dashboard, the detailed PDF report and Theme Studio. Compare everything on the <a href="/pricing">pricing page</a>.' },
+      { id: 'free-vs-pro', q: 'What is free and what does Pro add?', a: 'Starter is free forever: unlimited trades, imports, cTrader and MetaTrader sync, core analytics, the P&L calendar, 2 journals, 1 prop firm tracker, 1 backtest account and a daily AI coach allowance. Pro adds up to 10 journals, prop trackers and backtest accounts, the Analytics page with strategy comparison, unlimited real-data backtest trades, more AI coach messages, overtrade and daily loss alerts, a customisable dashboard, the detailed PDF report and Theme Studio. Compare everything on the <a href="/pricing">pricing page</a>.' },
       { id: 'price', q: 'How much is Pro?', a: '$12 a month, or $99 a year (about $8.25 a month).' },
       { id: 'upgrade', q: 'How do I upgrade?', a: '', steps: ['Open <strong>Settings → Plan</strong>, or choose <strong>Upgrade to Pro</strong> in the profile menu.', 'Pick monthly or yearly.', 'Choose card or crypto. If you have a promotion or partner code, enter it at checkout.', 'Complete the payment. Pro switches on once the payment is confirmed.'] },
       { id: 'payment-methods', q: 'How can I pay?', a: 'By card through Creem, our Merchant of Record, which issues the receipt and handles sales tax; card plans renew automatically. Or with crypto (Bitcoin or Litecoin) through NOWPayments: a one-time payment for one period that does not renew.' },
@@ -148,7 +158,7 @@ const schema = [
 ---
 <PageLayout
   title="Help Center & Support | Wawe Journal"
-  description="Wawe Journal help center: getting started, importing trades, cTrader sync, analytics, prop firm tracker, backtest, AI coach, billing, privacy and how to contact support."
+  description="Wawe Journal help center: getting started, importing trades, cTrader and MetaTrader sync, analytics, prop firm tracker, backtest, AI coach, billing, privacy and how to contact support."
   crumb="Support"
   schema={schema}
 >

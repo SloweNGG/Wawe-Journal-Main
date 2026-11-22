@@ -34,7 +34,7 @@
         "plat": {
           "more": "See every integration →",
           "label": "IMPORT FROM YOUR BROKER OR PLATFORM",
-          "note": "cTrader syncs automatically. For the others, import a statement or CSV.",
+          "note": "MetaTrader and cTrader sync automatically. For the others, import a statement or CSV.",
           "auto": "AUTO-SYNC",
           "soon": "AUTO-SYNC SOON"
         },
@@ -194,7 +194,7 @@
           "f3": "Core analytics",
           "f4": "1 backtest account",
           "f5": "1 prop firm rule tracker",
-          "f6": "cTrader auto-sync",
+          "f6": "cTrader & MetaTrader auto-sync",
           "f7": "AI coach with a daily message allowance",
           "free_btn": "Start for free",
           "pro_name": "PRO",
@@ -256,7 +256,9 @@
           "contact": "Contact",
           "support": "Support",
           "tm": "MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.",
-          "risk_h": "<strong>Risk disclosure:</strong> Trading forex, futures, stocks and crypto involves substantial risk and is not suitable for everyone. You can lose some or all of your capital. Past and backtested performance does not guarantee future results. Wawe Journal does not provide investment advice."
+          "risk_h": "<strong>Risk disclosure:</strong> Trading forex, futures, stocks and crypto involves substantial risk and is not suitable for everyone. You can lose some or all of your capital. Past and backtested performance does not guarantee future results. Wawe Journal does not provide investment advice.",
+          "legal_lead_h": "<strong>Risk Disclosure:</strong> Trading forex, futures, stocks, crypto assets and other financial instruments involves substantial financial risk and may not be suitable for everyone. You may lose some or all of the capital you invest. Past performance is not indicative of future results.",
+          "legal_more": "Risk Disclosure and Disclaimer (full text) →"
         }
       },
       nav: { login: 'Login', register: 'Sign Up →', strategies: 'Strategies', pricing: 'Pricing', home: 'Home' },
@@ -501,7 +503,7 @@
         "plat": {
           "more": "Tüm entegrasyonları gör →",
           "label": "BROKER VEYA PLATFORMUNDAN İÇE AKTAR",
-          "note": "cTrader otomatik senkronize olur. Diğerleri için ekstre veya CSV içe aktar.",
+          "note": "MetaTrader ve cTrader otomatik senkronize olur. Diğerleri için ekstre veya CSV içe aktar.",
           "auto": "OTOMATİK",
           "soon": "OTO SENK YAKINDA"
         },
@@ -661,7 +663,7 @@
           "f3": "Temel analizler",
           "f4": "1 backtest hesabı",
           "f5": "1 prop firma kural takipçisi",
-          "f6": "cTrader otomatik senkronizasyon",
+          "f6": "cTrader ve MetaTrader otomatik senkron",
           "f7": "Günlük mesaj hakkıyla AI koç",
           "free_btn": "Ücretsiz başla",
           "pro_name": "PRO",
@@ -723,7 +725,9 @@
           "contact": "İletişim",
           "support": "Destek",
           "tm": "MetaTrader, cTrader, TradingView, FTMO ve diğer aracı kurum, platform ve prop firma adları ilgili sahiplerinin ticari markalarıdır. Wawe Journal bu şirketlerle bağlantılı değildir ve onlar tarafından desteklenmez.",
-          "risk_h": "<strong>Risk bildirimi:</strong> Forex, vadeli işlem, hisse senedi ve kripto ticareti önemli risk içerir ve herkes için uygun değildir. Sermayenin bir kısmını veya tamamını kaybedebilirsin. Geçmiş ve backtest performansı gelecekteki sonuçları garanti etmez. Wawe Journal yatırım tavsiyesi vermez."
+          "risk_h": "<strong>Risk bildirimi:</strong> Forex, vadeli işlem, hisse senedi ve kripto ticareti önemli risk içerir ve herkes için uygun değildir. Sermayenin bir kısmını veya tamamını kaybedebilirsin. Geçmiş ve backtest performansı gelecekteki sonuçları garanti etmez. Wawe Journal yatırım tavsiyesi vermez.",
+          "legal_lead_h": "<strong>Risk Bildirimi:</strong> Forex, vadeli işlemler, hisse senetleri, kripto varlıklar ve diğer finansal araçlarla işlem yapmak önemli ölçüde finansal risk içerir ve herkes için uygun olmayabilir. Yatırdığın sermayenin bir kısmını veya tamamını kaybedebilirsin. Geçmiş performans gelecekteki sonuçların göstergesi değildir.",
+          "legal_more": "Risk Bildirimi ve Sorumluluk Reddi (tam metin, İngilizce) →"
         }
       },
       nav: { login: 'Giriş', register: 'Kayıt Ol →', strategies: 'Stratejiler', pricing: 'Fiyatlandırma', home: 'Anasayfa' },
@@ -962,7 +966,7 @@
         "plat": {
           "more": "Alle Integrationen ansehen →",
           "label": "IMPORT VON DEINEM BROKER ODER DEINER PLATTFORM",
-          "note": "cTrader synchronisiert automatisch. Für alle anderen importierst du einen Kontoauszug oder eine CSV.",
+          "note": "MetaTrader und cTrader synchronisieren automatisch. Für alle anderen importierst du einen Kontoauszug oder eine CSV.",
           "auto": "AUTO-SYNC",
           "soon": "AUTO-SYNC BALD"
         },
@@ -1122,7 +1126,7 @@
           "f3": "Kernanalysen",
           "f4": "1 Backtest-Konto",
           "f5": "1 Prop-Firm-Regel-Tracker",
-          "f6": "cTrader-Auto-Sync",
+          "f6": "cTrader- & MetaTrader-Auto-Sync",
           "f7": "KI-Coach mit täglichem Nachrichtenkontingent",
           "free_btn": "Kostenlos starten",
           "pro_name": "PRO",
@@ -1184,7 +1188,9 @@
           "contact": "Kontakt",
           "support": "Hilfe",
           "tm": "MetaTrader, cTrader, TradingView, FTMO und andere Broker-, Plattform- und Prop-Firm-Namen sind Marken ihrer jeweiligen Inhaber. Wawe Journal ist mit ihnen weder verbunden noch wird es von ihnen unterstützt.",
-          "risk_h": "<strong>Risikohinweis:</strong> Der Handel mit Forex, Futures, Aktien und Krypto ist mit erheblichem Risiko verbunden und nicht für jeden geeignet. Du kannst einen Teil oder dein gesamtes Kapital verlieren. Vergangene und gebacktestete Ergebnisse garantieren keine zukünftigen Ergebnisse. Wawe Journal bietet keine Anlageberatung."
+          "risk_h": "<strong>Risikohinweis:</strong> Der Handel mit Forex, Futures, Aktien und Krypto ist mit erheblichem Risiko verbunden und nicht für jeden geeignet. Du kannst einen Teil oder dein gesamtes Kapital verlieren. Vergangene und gebacktestete Ergebnisse garantieren keine zukünftigen Ergebnisse. Wawe Journal bietet keine Anlageberatung.",
+          "legal_lead_h": "<strong>Risikohinweis:</strong> Der Handel mit Forex, Futures, Aktien, Krypto-Assets und anderen Finanzinstrumenten ist mit erheblichen finanziellen Risiken verbunden und möglicherweise nicht für jeden geeignet. Du kannst einen Teil oder dein gesamtes eingesetztes Kapital verlieren. Vergangene Ergebnisse sind kein verlässlicher Indikator für künftige Ergebnisse.",
+          "legal_more": "Risikohinweis und Haftungsausschluss (vollständiger Text, Englisch) →"
         }
       },
       nav: { login: 'Anmelden', register: 'Registrieren →', strategies: 'Strategien', pricing: 'Preise', home: 'Startseite' },

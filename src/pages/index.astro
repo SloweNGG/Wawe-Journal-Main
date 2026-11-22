@@ -56,7 +56,7 @@ import { srcsetFor } from '../data/responsive-images';
         "@id": "https://wawejournal.com/#app",
         "name": "Wawe Journal",
         "alternateName": ["WaweJournal", "wawejournal"],
-        "description": "Wawe Journal is a trading journal with performance analytics, an AI coach that answers from your own trades, built-in candle-by-candle backtest replay, cTrader sync and prop firm rule tracking.",
+        "description": "Wawe Journal is a trading journal with performance analytics, an AI coach that answers from your own trades, built-in candle-by-candle backtest replay, cTrader and MetaTrader sync and prop firm rule tracking.",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "Web",
         "url": "https://wawejournal.com/",
@@ -73,7 +73,7 @@ import { srcsetFor } from '../data/responsive-images';
           "Performance analytics: win rate, profit factor, expectancy, drawdown",
           "AI trading coach that answers from your own journal, with live alerts, a trading plan and weekly reviews",
           "Candle-by-candle backtest replay on synthetic or cTrader data",
-          "cTrader auto-sync (read-only)",
+          "cTrader and MetaTrader 4/5 auto-sync (read-only)",
           "Import from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA, CSV and Excel",
           "Prop firm rule tracking: daily loss, max drawdown, profit target",
           "Overtrade and daily loss alerts",
@@ -275,9 +275,9 @@ import { srcsetFor } from '../data/responsive-images';
       <div class="g platforms-box">
         <div class="mono eyebrow" data-i18n="lp.plat.label">IMPORT FROM YOUR BROKER OR PLATFORM</div>
         <div class="chips">
-          <span class="chip chip-live"><span class="dot-live" aria-hidden="true"></span>MetaTrader 4/5 <span class="mono chip-tag" data-i18n="lp.plat.auto">AUTO-SYNC</span></span><span class="chip chip-live"><span class="dot-live" aria-hidden="true"></span>cTrader <span class="mono chip-tag" data-i18n="lp.plat.auto">AUTO-SYNC</span></span><span class="chip">Binance</span><span class="chip">Bybit</span><span class="chip">Interactive Brokers</span><span class="chip">XTB</span><span class="chip">OANDA</span><span class="chip">CSV &amp; Excel</span>
+          <span class="chip chip-live"><img class="chip-logo" src="/images/platforms/mt5.png" alt="" width="20" height="20" loading="lazy" decoding="async" />MetaTrader 4/5 <span class="mono chip-tag" data-i18n="lp.plat.auto">AUTO-SYNC</span></span><span class="chip chip-live"><img class="chip-logo" src="/images/platforms/ctrader_icon.png" alt="" width="20" height="20" loading="lazy" decoding="async" />cTrader <span class="mono chip-tag" data-i18n="lp.plat.auto">AUTO-SYNC</span></span><span class="chip"><img class="chip-logo" src="/images/platforms/binance.svg" alt="" width="20" height="20" loading="lazy" decoding="async" />Binance</span><span class="chip"><img class="chip-logo" src="/images/platforms/bybit_icon.png" alt="" width="20" height="20" loading="lazy" decoding="async" />Bybit</span><span class="chip"><img class="chip-logo" src="/images/platforms/ibkr_icon.png" alt="" width="20" height="20" loading="lazy" decoding="async" />Interactive Brokers</span><span class="chip"><img class="chip-logo" src="/images/platforms/xtb_icon.png" alt="" width="20" height="20" loading="lazy" decoding="async" />XTB</span><span class="chip"><img class="chip-logo" src="/images/platforms/oanda_icon.png" alt="" width="20" height="20" loading="lazy" decoding="async" />OANDA</span><span class="chip"><img class="chip-logo" src="/images/platforms/excel.svg" alt="" width="20" height="20" loading="lazy" decoding="async" />CSV &amp; Excel</span>
         </div>
-        <p class="platforms-note" data-i18n="lp.plat.note">cTrader syncs automatically. For the others, import a statement or CSV.</p>
+        <p class="platforms-note" data-i18n="lp.plat.note">MetaTrader and cTrader sync automatically. For the others, import a statement or CSV.</p>
         <a href="/integrations" class="more-link" data-i18n="lp.plat.more">See every integration →</a>
       </div>
     </section>
@@ -561,7 +561,7 @@ import { srcsetFor } from '../data/responsive-images';
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f3">Core analytics</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f4">1 backtest account</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f5">1 prop firm rule tracker</span></div>
-              <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f6">cTrader auto-sync</span></div>
+              <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f6">cTrader &amp; MetaTrader auto-sync</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f7">AI coach with a daily message allowance</span></div>
             </div>
             <a href="/register" class="b" data-i18n="lp.pr.free_btn">Start for free</a>
