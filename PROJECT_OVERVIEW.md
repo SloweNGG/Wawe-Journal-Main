@@ -267,7 +267,7 @@ Her tabloda `user_id` sahiplik alanıdır ve RLS politikaları `user_id = auth.u
 ### 5.2 Kullanıcı ve defterler
 
 **`user_profiles`** — PK `id` = `auth.users.id`
-- Alanlar: `email`, `username`, `avatar_url`, `plan` (`'free'` / `'premium'`), `plan_expires_at`, `role` (yalnızca gösterim için), `is_active`, `max_journals` (varsayılan 2), `last_active`, `created_at`, `preferred_currency`, `onboarding_completed`, `onboarding_tour_completed`, `btc_payout_address`, `ltc_payout_address`, `theme` (jsonb, en fazla 4 KB: tema stüdyosu paleti, cihazlar arası; migration `202611050001`).
+- Alanlar: `email`, `username`, `avatar_url`, `plan` (`'free'` / `'premium'`), `plan_expires_at`, `role` (yalnızca gösterim için), `is_active`, `max_journals` (varsayılan 2), `last_active`, `created_at`, `preferred_currency`, `onboarding_completed`, `onboarding_tour_completed`, `btc_payout_address`, `ltc_payout_address`, `theme` (jsonb, en fazla 4 KB: tema stüdyosu paleti, cihazlar arası; migration `202611050001`), `quick_add_prefs` (jsonb, en fazla 8 KB: Hızlı Ekle'deki "Sembollerim" ve sembol başına enstrüman/çarpan, cihazlar arası; migration `202611230001`).
 - `guard_user_profile_privileges` trigger'ı (migration `202611050002`) API rollerinden gelen isteklerde admin olmayan kullanıcının `plan`, `plan_expires_at`, `role`, `is_active`, `max_journals`, `id`, `created_at` alanlarını değiştirmesini engeller; INSERT'te bunları güvenli varsayılanlara çeker. SECURITY DEFINER fonksiyonlar ve service role etkilenmez. (Baseline'daki `protect_user_profile_privileges` canlıda hiç uygulanmamıştı.)
 - Realtime yayınında.
 
@@ -536,6 +536,12 @@ Varsayılan tema koyudur. Açık tema `body.light-theme` sınıfıyla gelir.
 - `ww_theme`: açık / koyu tema.
 - `ww_custom_theme`: tema stüdyosu paleti (Pro; Ayarlar > Görünüm, `public/settings/js/theme-studio.js`). Biçim v2: koyu ve açık mod için ayrı palet. Hesaba da yazılır (`user_profiles.theme`), yeni olan kazanır. `public/src/features/theme.js` yalnızca motora köprüdür.
 - Diğerleri: `ww_font_size`, `ww_ambient_mode`, `ww_bg`, `ww_language`, `ww_time_settings`.
+
+**Hızlı Ekle sembol anahtarları (localStorage, `public/interface/quick-add/js/quick-add.js`):**
+- `ww_qa_custom_symbols`: kullanıcının eklediği semboller ("Sembollerim", en fazla 30).
+- `ww_qa_symbol_instruments`: sembol başına en son kaydedilen enstrüman ve çarpan (`{ USOIL: { i: 'other', m: 1000 } }`, en fazla 200).
+- `ww_qa_prefs_ts`: bu ikisinin son yerel değişiklik zamanı. İkisi hesaba da yazılır (`user_profiles.quick_add_prefs`, son 80 enstrüman). Pencere açılınca en fazla dakikada bir okunur, yeni olan kazanır. Sembol listesi olduğu gibi alınır, enstrümanlar birleştirilir. Kolon yoksa yalnızca yerelde çalışır.
+- `ww_qa_recent_symbols`: son kullanılan semboller (canlı işlemlerden, yalnızca önbellek).
 
 `BaseHead` tema motorunu satır içi çalıştırır; tema, plan ve dil sayfa çizilmeden önce `<html>` öğesine uygulanır, böylece ekran yanıp sönmez.
 

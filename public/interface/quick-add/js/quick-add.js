@@ -1170,7 +1170,7 @@ async function fileToCsvText(file) {
     writeRecentSymbols([s].concat(recentSymbols.filter(function(x) { return x !== s; })));
   }
 
-  // ---- Kullanıcının kendi sembolleri ("Sembollerim") — bu tarayıcıda saklanır (komisyon şablonları gibi)
+  // ---- Kullanıcının kendi sembolleri ("Sembollerim") — tarayıcıda + hesapta (user_profiles.quick_add_prefs)
   const CUSTOM_SYM_KEY = 'ww_qa_custom_symbols';
   const CUSTOM_SYM_MAX = 30;
   // Sembol başına son kullanılan enstrüman/çarpan (USOIL → Diğer ×1000 gibi özel semboller için)
@@ -1186,8 +1186,9 @@ async function fileToCsvText(file) {
       return Array.isArray(arr) ? arr.filter(function(s) { return typeof s === 'string' && SYM_RE.test(s); }).slice(0, CUSTOM_SYM_MAX) : [];
     } catch (e) { return []; }
   }
-  function writeCustomSymbols(list) {
+  function writeCustomSymbols(list, fromRemote) {
     try { localStorage.setItem(CUSTOM_SYM_KEY, JSON.stringify(list.slice(0, CUSTOM_SYM_MAX))); } catch (e) {}
+    if (!fromRemote) markPrefsChanged();
   }
   function addCustomSymbol(sym) {
     const s = normSymbol(sym);
@@ -1206,15 +1207,133 @@ async function fileToCsvText(file) {
       return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
     } catch (e) { return {}; }
   }
+  function writeSymbolInstruments(map) {
+    const keys = Object.keys(map);
+    if (keys.length > 200) keys.slice(0, keys.length - 200).forEach(function(k) { delete map[k]; });
+    try { localStorage.setItem(SYM_INST_KEY, JSON.stringify(map)); } catch (e) {}
+  }
   function rememberSymbolInstrument(sym, inst, mult) {
     const s = normSymbol(sym);
     if (!s || !inst || !(mult > 0)) return;
     const map = readSymbolInstruments();
+    const prev = map[s];
+    const changed = !prev || prev.i !== inst || prev.m !== mult;
     delete map[s];
-    map[s] = { i: inst, m: mult };
-    const keys = Object.keys(map);
-    if (keys.length > 200) keys.slice(0, keys.length - 200).forEach(function(k) { delete map[k]; });
-    try { localStorage.setItem(SYM_INST_KEY, JSON.stringify(map)); } catch (e) {}
+    map[s] = { i: inst, m: mult }; // sona taşı: en son kullanılanlar sonda
+    writeSymbolInstruments(map);
+    if (changed) markPrefsChanged(); // her kayıtta değil, yalnızca değer değişince hesaba yaz
+  }
+
+  // ---- Hesapla eşitleme (user_profiles.quick_add_prefs, migration 202611230001)
+  // Yeni olan (ts) kazanır; sembol listesi olduğu gibi alınır (silmeler de taşınsın), enstrüman hafızası birleştirilir.
+  // Sütun yoksa / oturum yoksa sessizce yalnızca yerelde çalışır.
+  const PREFS_TS_KEY = 'ww_qa_prefs_ts';
+  const PREFS_SYNC_INST_MAX = 80; // hesaba en son kullanılan 80 sembolün enstrümanı (8 KB sınırının çok altında)
+  let prefsPushTimer = null;
+  let prefsLastPull = 0;
+  let prefsPulling = null;
+
+  function readPrefsTs() {
+    try { return Number(localStorage.getItem(PREFS_TS_KEY)) || 0; } catch (e) { return 0; }
+  }
+  function markPrefsChanged() {
+    try { localStorage.setItem(PREFS_TS_KEY, String(Date.now())); } catch (e) {}
+    clearTimeout(prefsPushTimer);
+    prefsPushTimer = setTimeout(pushQuickAddPrefs, 800);
+  }
+  function prefsClient() {
+    return (typeof sb !== 'undefined' && sb) || window.sb || null;
+  }
+  async function prefsUserId() {
+    const c = prefsClient();
+    if (!c || !c.auth || typeof c.auth.getSession !== 'function') return null;
+    try {
+      const r = await c.auth.getSession();
+      return (r && r.data && r.data.session && r.data.session.user && r.data.session.user.id) || null;
+    } catch (e) { return null; }
+  }
+  function buildPrefsPayload() {
+    const map = readSymbolInstruments();
+    let keys = Object.keys(map).slice(-PREFS_SYNC_INST_MAX);
+    const payload = { v: 1, ts: readPrefsTs() || Date.now(), symbols: readCustomSymbols(), instruments: {} };
+    function fill() { payload.instruments = {}; keys.forEach(function(k) { payload.instruments[k] = map[k]; }); }
+    fill();
+    while (keys.length && JSON.stringify(payload).length > 6000) { keys = keys.slice(Math.ceil(keys.length / 4)); fill(); }
+    return payload;
+  }
+  async function pushQuickAddPrefs() {
+    try {
+      const uid = await prefsUserId();
+      if (!uid) return false;
+      const { error } = await prefsClient().from('user_profiles').update({ quick_add_prefs: buildPrefsPayload() }).eq('id', uid);
+      return !error;
+    } catch (e) { return false; }
+  }
+  function cleanRemotePrefs(o) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    const symbols = Array.isArray(o.symbols)
+      ? o.symbols.map(normSymbol).filter(function(s, i, a) { return SYM_RE.test(s) && a.indexOf(s) === i; }).slice(0, CUSTOM_SYM_MAX)
+      : [];
+    const instruments = {};
+    if (o.instruments && typeof o.instruments === 'object' && !Array.isArray(o.instruments)) {
+      Object.keys(o.instruments).forEach(function(k) {
+        const v = o.instruments[k];
+        const s = normSymbol(k);
+        if (SYM_RE.test(s) && v && typeof v.i === 'string' && (v.i === 'other' || MULTIPLIER_MAP[v.i]) && Number(v.m) > 0) {
+          instruments[s] = { i: v.i, m: Number(v.m) };
+        }
+      });
+    }
+    return { ts: Number(o.ts) || 0, symbols: symbols, instruments: instruments };
+  }
+  // Pencere açılışında (en fazla dakikada bir): hesaptaki daha yeniyse al, yereldeki daha yeniyse hesaba yaz
+  function pullQuickAddPrefs() {
+    if (prefsPulling) return prefsPulling;
+    if (Date.now() - prefsLastPull < 60000) return Promise.resolve(false);
+    prefsPulling = (async function() {
+      try {
+        const uid = await prefsUserId();
+        if (!uid) return false;
+        const { data, error } = await prefsClient().from('user_profiles').select('quick_add_prefs').eq('id', uid).maybeSingle();
+        prefsLastPull = Date.now();
+        if (error || !data) return false; // sütun henüz yoksa sessizce geç
+        const remote = cleanRemotePrefs(data.quick_add_prefs);
+        const localTs = readPrefsTs();
+        // Senkrondan önce (zaman damgasız) bu tarayıcıda eklenmiş semboller: ezilmesin, hesaptakilerle birleşsin
+        const localSyms = readCustomSymbols();
+        if (!localTs && (localSyms.length || Object.keys(readSymbolInstruments()).length)) {
+          if (remote) {
+            const union = remote.symbols.concat(localSyms.filter(function(s) { return remote.symbols.indexOf(s) === -1; }));
+            writeCustomSymbols(union.slice(0, CUSTOM_SYM_MAX), true);
+            const merged = readSymbolInstruments();
+            Object.keys(remote.instruments).forEach(function(k) { if (!merged[k]) merged[k] = remote.instruments[k]; });
+            writeSymbolInstruments(merged);
+          }
+          try { localStorage.setItem(PREFS_TS_KEY, String(Date.now())); } catch (e) {}
+          await pushQuickAddPrefs();
+          const box0 = el('qa-sym-list');
+          if (box0 && !box0.hidden) renderSymbolList();
+          return 'merged';
+        }
+        if (remote && remote.ts > localTs) {
+          writeCustomSymbols(remote.symbols, true);
+          const merged = readSymbolInstruments();
+          Object.keys(remote.instruments).forEach(function(k) { delete merged[k]; merged[k] = remote.instruments[k]; });
+          writeSymbolInstruments(merged);
+          try { localStorage.setItem(PREFS_TS_KEY, String(remote.ts)); } catch (e) {}
+          const box = el('qa-sym-list');
+          if (box && !box.hidden) renderSymbolList();
+          return 'pulled';
+        }
+        if (localTs && (!remote || localTs > remote.ts)) { await pushQuickAddPrefs(); return 'pushed'; }
+        return false;
+      } catch (e) {
+        return false;
+      } finally {
+        prefsPulling = null;
+      }
+    })();
+    return prefsPulling;
   }
 
   // Aktif defterdeki son işlemlerin sembolleri (sayfa başına bir kez; kayıttan sonra pushRecentSymbol günceller)
@@ -1869,6 +1988,7 @@ async function fileToCsvText(file) {
     closeSymbolList();
     loadStrategies();
     loadRecentSymbols();
+    pullQuickAddPrefs();
 
     if (typeof quickI18n !== 'undefined' && typeof quickI18n.apply === 'function') {
       quickI18n.apply();
