@@ -15,7 +15,14 @@
 ## Yarın bakılacaklar
 
 - [ ] **AI koç token azaltma.** Adım (0) canlıda (22 Kasım öğleden sonra): her cevapta `ai-coach tokens` log satırı
-      (Supabase → Edge Functions → ai-coach → Logs; `_shared/token-usage.ts`). Gerçek sayılar gelince sıradaki adımlara geçilecek. Ölçüm: her mesajda ~12-15 bin token (bilgi tabanı ~5.400, kullanıcı
+      (Supabase → Edge Functions → ai-coach → Logs; `_shared/token-usage.ts`). Adım 1 de canlıda (`38af47b` + `eec4f57`,
+      `_shared/coach-compact.ts`): modele sıkıştırılmış veri, değişen değerler son mesajda `[App context]` satırında, geçmiş
+      20-25 mesaj (başlangıç 6'şar kayar). Demo ölçüm (`scripts/coach-prompt/measure.ts`): yeni sohbet ~17.200 → ~14.800
+      token. Sıradaki: canlı logdan gerçek sayılar; kalite testi (~15 soru, Gemini anahtarı gerekir) sonrası
+      `compactForModel(ctx, { tables: true })` ve bilgi tabanı kısaltma / veriye göre gönderme. Düşünme imzalarına dokunulmaz
+      (Google: MUST resend). Ücretsiz planda Flash Lite önbelleği yok. Geri dönüş yedeği:
+      `C:/Users/kadir/WaweJournal-Backups/2026-11-22-pre-token-cuts` (functions deploy ile geri yüklenir). İlk plan ve
+      ölçüm: her mesajda ~12-15 bin token (bilgi tabanı ~5.400, kullanıcı
       özeti ~5.000-5.700, sohbet geçmişi 20 mesaj → uzun sohbette 25 bin+). Sıra: (0) her mesajda gönderilen / önbellekten
       okunan / üretilen token sayısını logla; (1) prompt'ta sabit kısmı (kurallar + bilgi tabanı) başa al ki Gemini önbelleği
       tutsun, koç kişiliği ve para birimi sonra; (3) geçmiş 20 → 8-10 mesaj, eski mesajlarda düşünme adımları yerine metin;
