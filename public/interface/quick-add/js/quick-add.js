@@ -897,30 +897,37 @@ async function fileToCsvText(file) {
             </div>
 
             <div class="quick-tab-content" id="tab-csv">
-              <div class="quick-import-area" id="quick-import-dropzone">
-                <div class="qa-drop-hint" data-quick-i18n="quickmodal.csv_drop_hint">📁 Dosyayı buraya bırak</div>
+              <div class="qa-csv-wrap">
+                <!-- Bırakma alanı: tıklayınca da dosya seçici açılır -->
+                <div class="quick-import-area" id="quick-import-dropzone" role="button" tabindex="0">
+                  <div class="qa-drop-hint">${ICONS.upload}<span data-quick-i18n="quickmodal.csv_drop_hint">Dosyayı bırak</span></div>
 
-                <div class="quick-import-icon">${ICONS.fileLarge}</div>
-                <p data-quick-i18n="quickmodal.csv_import_desc">MT4/MT5, cTrader, Binance veya Excel dışa aktarım dosyanızı yükleyin</p>
+                  <div class="quick-import-icon">${ICONS.fileLarge}</div>
+                  <div class="qa-drop-title" data-quick-i18n="quickmodal.csv_drop_title">Dosyayı sürükleyip bırak</div>
+                  <p data-quick-i18n="quickmodal.csv_import_desc">MT4/MT5 veya Excel'den dışa aktardığınız CSV dosyasını yükleyin</p>
+                  <button type="button" class="quick-import-btn" id="quick-csv-select">${ICONS.upload}<span data-quick-i18n="quickmodal.csv_choose_file">Dosya Seç</span></button>
+                  <div class="qa-drop-formats">CSV · XLSX · XLS · HTML · TXT</div>
+                </div>
+                <input type="file" id="quick-csv-file" accept=".csv,.xlsx,.xls,.htm,.html,.txt" hidden>
 
-                <div class="quick-add-field" style="text-align:left; margin-top:0.9rem; margin-bottom:0.75rem;">
-                  <label data-quick-i18n="quickmodal.broker_format">Broker Formatı</label>
-                  <select id="quick-csv-broker">
-                    <option value="auto" data-quick-i18n="quickmodal.broker_auto">🔍 Otomatik Algıla</option>
-                    <option value="turkish" data-quick-i18n="quickmodal.broker_turkish">Türkçe Broker</option>
-                    <option value="mt5">MetaTrader 4/5</option>
-                    <option value="ctrader">cTrader</option>
-                    <option value="binance">Binance</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="coinbase">Coinbase</option>
-                    <option value="generic" data-quick-i18n="quickmodal.broker_generic">Genel Format</option>
-                  </select>
+                <div class="qa-csv-options">
+                  <label for="quick-csv-broker" data-quick-i18n="quickmodal.broker_format">Broker Formatı</label>
+                  <div class="quick-add-field">
+                    <select id="quick-csv-broker">
+                      <option value="auto" data-quick-i18n="quickmodal.broker_auto">Otomatik Algıla</option>
+                      <option value="turkish" data-quick-i18n="quickmodal.broker_turkish">Türk Broker</option>
+                      <option value="mt5">MetaTrader 4/5</option>
+                      <option value="ctrader">cTrader</option>
+                      <option value="binance">Binance</option>
+                      <option value="bybit">Bybit</option>
+                      <option value="coinbase">Coinbase</option>
+                      <option value="generic" data-quick-i18n="quickmodal.broker_generic">Genel Format</option>
+                    </select>
+                  </div>
                 </div>
 
-                <button class="quick-import-btn" id="quick-csv-select">${ICONS.upload}<span data-quick-i18n="quickmodal.csv_choose_file">Dosya Seç</span></button>
-                <input type="file" id="quick-csv-file" accept=".csv,.xlsx,.xls,.htm,.html,.txt" style="display:none;">
-
                 <div class="quick-import-status" id="quick-csv-status" style="display:none;">
+                  <span class="status-icon">${ICONS.file}</span>
                   <span class="status-text" id="quick-csv-filename"></span>
                   <span class="status-badge" id="quick-csv-badge"></span>
                 </div>
@@ -932,12 +939,18 @@ async function fileToCsvText(file) {
 
             <div class="quick-tab-content" id="tab-bulk">
               <div class="quick-bulk-area">
-                <p style="font-size:12px;color:var(--muted);margin-bottom:0.5rem;" data-quick-i18n="quickmodal.bulk_desc">Her satıra bir işlem gelecek şekilde girin:</p>
-                <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;margin-bottom:0.75rem;">
-                  <span data-quick-i18n="quickmodal.bulk_format">sembol,yön,lot,giriş,çıkış,tarih,not</span><br>
-                  <span data-quick-i18n="quickmodal.bulk_example">EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem</span>
+                <div class="qa-bulk-guide">
+                  <div class="qa-bulk-guide-head">
+                    <p data-quick-i18n="quickmodal.bulk_desc">Her satıra bir işlem gelecek şekilde aşağıdaki formatta girin:</p>
+                    <button type="button" class="qa-bulk-example-btn" id="quick-bulk-example">${ICONS.plus}<span data-quick-i18n="quickmodal.bulk_use_example">Örneği ekle</span></button>
+                  </div>
+                  <div class="qa-bulk-line is-format"><span class="qa-bulk-k" data-quick-i18n="quickmodal.bulk_format_label">Format</span><code data-quick-i18n="quickmodal.bulk_format">sembol,yön,lot,giriş,çıkış,tarih,not</code></div>
+                  <div class="qa-bulk-line"><span class="qa-bulk-k" data-quick-i18n="quickmodal.bulk_example_label">Örnek</span><code data-quick-i18n="quickmodal.bulk_example">EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem</code></div>
                 </div>
-                <textarea id="quick-bulk-textarea" rows="6" data-quick-i18n-placeholder="quickmodal.bulk_placeholder" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem"></textarea>
+                <div class="qa-bulk-editor">
+                  <textarea id="quick-bulk-textarea" rows="7" spellcheck="false" data-quick-i18n-placeholder="quickmodal.bulk_placeholder" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem"></textarea>
+                  <span class="qa-bulk-count" id="quick-bulk-count"></span>
+                </div>
                 <div class="quick-bulk-progress" id="quick-bulk-progress" style="display:none;">
                   <span id="quick-bulk-status"></span>
                   <div class="quick-bulk-bar"><div class="quick-bulk-fill" id="quick-bulk-fill"></div></div>
@@ -1535,6 +1548,7 @@ async function fileToCsvText(file) {
     isSubmitting = false;
     isImporting = false;
     csvPreviewData = null;
+    syncImportBtn();
 
     const loading = el('quick-add-loading');
     if (loading) loading.classList.remove('active');
@@ -1574,6 +1588,7 @@ async function fileToCsvText(file) {
 
     const bulkText = el('quick-bulk-textarea');
     if (bulkText) bulkText.value = '';
+    updateBulkCount();
 
     const error = el('quick-add-error');
     if (error) error.classList.remove('active');
@@ -1637,6 +1652,7 @@ async function fileToCsvText(file) {
 
     if (saveBtn) saveBtn.style.display = (tab === 'csv' || tab === 'bulk') ? 'none' : '';
     if (importBtn) importBtn.style.display = (tab === 'csv') ? '' : 'none';
+    syncImportBtn();
     if (bulkBtn) bulkBtn.style.display = (tab === 'bulk') ? '' : 'none';
 
     const error = el('quick-add-error');
@@ -1685,63 +1701,83 @@ async function fileToCsvText(file) {
     }
   }
 
+  // Footer "İçe Aktar" yalnızca okunmuş bir dosya varken aktif
+  function syncImportBtn() {
+    const btn = el('quick-import-btn');
+    if (btn) btn.disabled = !csvPreviewData || isImporting;
+  }
+
+  // Önizlemede ISO zaman damgası ("2026-11-20T07:00:00.000Z") yerine yerel "2026-11-20 10:00"
+  function previewDate(d) {
+    if (!d) return '—';
+    const s = String(d);
+    if (s.indexOf('T') === -1) return s;
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return s;
+    const p = function(n) { return String(n).padStart(2, '0'); };
+    return dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate()) + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes());
+  }
+
+  function colLabel(key, fallback) {
+    const s = t(key);
+    return (s && s !== key ? s : fallback).replace(/\s*\*\s*$/, '');
+  }
+
   function showBrokerPreview(rows, detected, errors) {
     const container = el('csv-preview-container');
     if (!container) return;
 
     container.style.display = 'block';
-    let html = '<div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);text-align:left;">';
+    let html = '<div class="qa-csv-preview">';
 
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">';
-    html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-    html += '<span style="font-size:13px;font-weight:600;">' + escapeHtml(t('quickmodal.csv_import_title') || 'İçe Aktarılacak') + '</span>';
-    html += '<span style="font-size:10px;font-family:monospace;padding:2px 8px;border-radius:12px;background:rgba(var(--ac-b1-rgb),0.15);color:var(--accent2);border:1px solid rgba(var(--ac-b1-rgb),0.25);letter-spacing:0.05em;">';
-    html += escapeHtml(String(detected || 'unknown').toUpperCase());
-    html += '</span>';
-    html += '<span style="font-size:11px;color:var(--muted);font-family:monospace;">' + rows.length + ' kayıt</span>';
-    html += '</div>';
-    html += '<button class="btn btn-primary" id="csv-confirm-import" style="font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:4px;">' + ICONS.check + '<span>' + escapeHtml(t('quickmodal.import') || 'İçe Aktar') + '</span></button>';
+    html += '<div class="qa-csv-preview-head">';
+    html += '<span class="qa-csv-title">' + escapeHtml(t('quickmodal.csv_import_title') || 'İçe Aktarılacak') + '</span>';
+    html += '<span class="qa-csv-tag">' + escapeHtml(String(detected || 'unknown').toUpperCase()) + '</span>';
+    html += '<span class="qa-csv-count">' + rows.length + ' ' + escapeHtml(t('quickmodal.records')) + '</span>';
     html += '</div>';
 
     if (errors && errors.length > 0) {
-      html += '<div style="font-size:11px;color:var(--red);background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:6px;margin-bottom:8px;border:1px solid rgba(239,68,68,0.15);font-family:monospace;">';
+      html += '<div class="qa-csv-errors">';
       errors.slice(0, 3).forEach(function(e) {
-        html += '<div>⚠️ ' + escapeHtml(e) + '</div>';
+        html += '<div>' + ICONS.alert + '<span>' + escapeHtml(e) + '</span></div>';
       });
       if (errors.length > 3) {
-        html += '<div>' + escapeHtml(t('quickmodal.more_errors', { count: errors.length - 3 })) + '</div>';
+        html += '<div class="qa-csv-errors-more">' + escapeHtml(t('quickmodal.more_errors', { count: errors.length - 3 })) + '</div>';
       }
       html += '</div>';
     }
 
-    html += '<div style="overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;border-radius:6px;border:1px solid var(--border);">';
-    html += '<table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);">';
     const hasCommOrSwap = rows.some(function(r) {
       return (r.commission != null && Number(r.commission) > 0) || (r.swap != null && Number(r.swap) !== 0);
     });
 
-    const headers = ['Symbol', 'Side', 'Lot', 'Entry', 'Exit', 'P&L'];
+    const headers = [
+      colLabel('quickmodal.symbol', 'Symbol'),
+      colLabel('quickmodal.side', 'Side'),
+      colLabel('quickmodal.lot', 'Lot'),
+      colLabel('quickmodal.entry_price', 'Entry'),
+      colLabel('quickmodal.exit_price', 'Exit'),
+      'P&L'
+    ];
     if (hasCommOrSwap) {
-      headers.push('Comm', 'Swap');
+      headers.push(colLabel('quickmodal.commission', 'Comm'), colLabel('quickmodal.swap', 'Swap'));
     }
-    headers.push('Date');
+    headers.push(colLabel('quickmodal.date', 'Date'));
 
-    headers.forEach(function(h) {
-      html += '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--muted);font-size:10px;letter-spacing:0.05em;">' + h + '</th>';
-    });
+    html += '<div class="qa-csv-table-wrap"><table class="qa-csv-table"><thead><tr>';
+    headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
     html += '</tr></thead><tbody>';
 
     rows.slice(0, 30).forEach(function(r) {
-      const dirColor = r.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
       html += '<tr>';
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;">' + escapeHtml(r.symbol) + '</td>';
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:' + dirColor + ';font-weight:600;">' + escapeHtml(r.direction) + '</td>';
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);">' + (r.lot != null ? r.lot : '—') + '</td>';
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);">' + (r.entry_price || '—') + '</td>';
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + (r.exit_price != null ? r.exit_price : '—') + '</td>';
+      html += '<td class="sym">' + escapeHtml(r.symbol) + '</td>';
+      html += '<td class="' + (r.direction === 'LONG' ? 'pos' : 'neg') + '">' + escapeHtml(r.direction) + '</td>';
+      html += '<td>' + (r.lot != null ? escapeHtml(String(r.lot)) : '—') + '</td>';
+      html += '<td>' + (r.entry_price ? escapeHtml(String(r.entry_price)) : '—') + '</td>';
+      html += '<td class="muted">' + (r.exit_price != null ? escapeHtml(String(r.exit_price)) : '—') + '</td>';
 
       var pnlDisplay = '—';
-      var pnlColor = 'var(--muted)';
+      var pnlCls = 'muted';
       var pnlVal = r.pnl;
 
       // Fallback: Eğer r.pnl yoksa veya null ise, entry/exit/lot üzerinden çarpanla hesapla
@@ -1755,81 +1791,39 @@ async function fileToCsvText(file) {
       if (pnlVal != null && !isNaN(pnlVal)) {
         var pnlNum = parseFloat(pnlVal);
         pnlDisplay = (pnlNum >= 0 ? '+' : '') + pnlNum.toFixed(2);
-        pnlColor = pnlNum >= 0 ? 'var(--green)' : 'var(--red)';
+        pnlCls = pnlNum >= 0 ? 'pos' : 'neg';
       }
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:' + pnlColor + ';font-weight:600;">' + pnlDisplay + '</td>';
+      html += '<td class="' + pnlCls + ' strong">' + pnlDisplay + '</td>';
 
       if (hasCommOrSwap) {
         var commNum = parseFloat(r.commission);
         var commStr = (!isNaN(commNum) && commNum > 0) ? '-' + commNum.toFixed(2) : '—';
         var swapNum = parseFloat(r.swap);
         var swapStr = (!isNaN(swapNum) && swapNum !== 0) ? (swapNum > 0 ? '+' : '') + swapNum.toFixed(2) : '—';
-        html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + commStr + '</td>';
-        html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + swapStr + '</td>';
+        html += '<td class="muted">' + commStr + '</td>';
+        html += '<td class="muted">' + swapStr + '</td>';
       }
 
-      html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + escapeHtml(r.trade_date) + '</td>';
+      html += '<td class="muted">' + escapeHtml(previewDate(r.trade_date)) + '</td>';
       html += '</tr>';
     });
 
     if (rows.length > 30) {
-      html += '<tr><td colspan="' + headers.length + '" style="padding:8px;text-align:center;color:var(--muted);">+ve ' + (rows.length - 30) + ' kayıt daha</td></tr>';
+      html += '<tr class="qa-csv-more"><td colspan="' + headers.length + '">' + escapeHtml(t('quickmodal.more_records', { count: rows.length - 30 })) + '</td></tr>';
     }
     html += '</tbody></table></div></div>';
 
     container.innerHTML = html;
-
-    const confirmBtn = el('csv-confirm-import');
-    if (confirmBtn) {
-      confirmBtn.addEventListener('click', function() {
-        executeCsvImport();
-      });
-    }
-  }
-
-  function showCsvPreview(rows, headers) {
-    const container = el('csv-preview-container');
-    if (!container) return;
-
-    container.style.display = 'block';
-    let html = '<div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-    html += '<span style="font-size:13px;font-weight:600;">' + escapeHtml(t('quickmodal.csv_import_title')) + ' (' + rows.length + ')</span>';
-    html += '<button class="btn btn-primary" id="csv-confirm-import" style="font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:4px;">' + ICONS.check + '<span>' + escapeHtml(t('quickmodal.import')) + '</span></button>';
-    html += '</div>';
-    html += '<div style="overflow-x:auto;max-height:200px;overflow-y:auto;font-size:12px;">';
-    html += '<table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);">';
-
-    html += '<thead><tr style="background:var(--surface);">';
-    headers.forEach(function(h) {
-      html += '<th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border);">' + escapeHtml(h) + '</th>';
-    });
-    html += '</tr></thead><tbody>';
-
-    const displayRows = rows.slice(0, 10);
-    displayRows.forEach(function(row) {
-      html += '<tr>';
-      row.forEach(function(cell) {
-        html += '<td style="padding:4px 8px;border-bottom:1px solid var(--border);">' + escapeHtml(String(cell || '')) + '</td>';
-      });
-      html += '</tr>';
-    });
-    if (rows.length > 10) {
-      html += '<tr><td colspan="' + headers.length + '" style="padding:8px;text-align:center;color:var(--muted);">+' + (rows.length - 10) + '</td></tr>';
-    }
-    html += '</tbody></table></div></div>';
-
-    container.innerHTML = html;
-
-    const confirmBtn = el('csv-confirm-import');
-    if (confirmBtn) {
-      confirmBtn.addEventListener('click', function() {
-        executeCsvImport();
-      });
-    }
   }
 
   async function handleCsvFileSelect(file) {
+    // Önceki dosyanın önizlemesi/verisi yeni dosya okunamazsa ekranda (ve içe aktarımda) kalmasın
+    csvPreviewData = null;
+    syncImportBtn();
+    renderCSVLog([]);
+    const oldPreview = el('csv-preview-container');
+    if (oldPreview) { oldPreview.style.display = 'none'; oldPreview.innerHTML = ''; }
+
     try {
       csvFile = file;
 
@@ -1883,6 +1877,7 @@ async function fileToCsvText(file) {
           rawText: csvText,
           detected: detected
         };
+        syncImportBtn();
         return;
       }
 
@@ -1916,6 +1911,7 @@ async function fileToCsvText(file) {
     const log = [];
 
     isImporting = true;
+    syncImportBtn();
     if (statusText) statusText.textContent = t('quickmodal.csv_processing');
     if (badge) badge.innerHTML = badgeIcon('loading');
     if (progressEl) progressEl.style.display = 'flex';
@@ -1974,6 +1970,7 @@ async function fileToCsvText(file) {
         if (progressEl) progressEl.style.display = 'none';
         if (badge) badge.innerHTML = badgeIcon('error');
         isImporting = false;
+        syncImportBtn();
         showToast('Mevcut işlemler yüklenirken hata oluştu: ' + fetchErr.message + '. Yarım veriyle işleme devam edilmedi.', 'error');
         return;
       }
@@ -2146,12 +2143,28 @@ async function fileToCsvText(file) {
     }
 
     isImporting = false;
+    syncImportBtn();
     if (badge) badge.innerHTML = badgeIcon(failed > 0 ? 'warning' : 'success');
   }
 
   // ============================================================
   // BULK IMPORT
   // ============================================================
+
+  // Hatalı satırı içeriğiyle göster ("× — #3" yerine "3. satırda geçersiz format: EURUSD,LONG,abc")
+  function bulkLineError(idx, raw) {
+    var line = String(raw || '').trim();
+    if (line.length > 70) line = line.slice(0, 70) + '…';
+    return '<div>' + logTag('error') + ' ' + escapeHtml(t('quickmodal.bulk_invalid_format', { line: idx + 1, error: line })) + '</div>';
+  }
+
+  function updateBulkCount() {
+    var ta = el('quick-bulk-textarea');
+    var out = el('quick-bulk-count');
+    if (!ta || !out) return;
+    var n = ta.value.split('\n').filter(function(l) { return l.trim(); }).length;
+    out.textContent = n > 0 ? t('quickmodal.bulk_lines', { count: n }) : '';
+  }
 
   async function handleBulkImport() {
     if (isSubmitting) return;
@@ -2198,7 +2211,7 @@ async function fileToCsvText(file) {
     for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
       const parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
       if (parts.length < 5) {
-        errors.push('<div>' + logTag('error') + ' — #' + (lineIdx + 1) + '</div>');
+        errors.push(bulkLineError(lineIdx, lines[lineIdx]));
         continue;
       }
 
@@ -2211,7 +2224,7 @@ async function fileToCsvText(file) {
       const notes = parts[6] || 'Bulk import - ' + new Date().toLocaleString();
 
       if (!symbol || !finalDir || isNaN(lot) || lot <= 0 || isNaN(entry) || isNaN(exit)) {
-        errors.push('<div>' + logTag('error') + ' — #' + (lineIdx + 1) + '</div>');
+        errors.push(bulkLineError(lineIdx, lines[lineIdx]));
         continue;
       }
 
@@ -2667,9 +2680,29 @@ async function fileToCsvText(file) {
     const csvSelectBtn = document.getElementById('quick-csv-select');
     const csvFileInput = document.getElementById('quick-csv-file');
     if (csvSelectBtn && csvFileInput) {
-      csvSelectBtn.addEventListener('click', function() { csvFileInput.click(); });
+      csvSelectBtn.addEventListener('click', function(e) { e.stopPropagation(); csvFileInput.click(); });
+      // Bırakma alanının tamamı tıklanabilir (klavyede Enter/Boşluk)
+      const dz = document.getElementById('quick-import-dropzone');
+      if (dz) {
+        dz.addEventListener('click', function() { csvFileInput.click(); });
+        dz.addEventListener('keydown', function(e) {
+          if (e.target === dz && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); csvFileInput.click(); }
+        });
+      }
       csvFileInput.addEventListener('change', function() {
         if (this.files && this.files[0]) handleCsvFileSelect(this.files[0]);
+      });
+    }
+
+    const bulkTa = document.getElementById('quick-bulk-textarea');
+    if (bulkTa) bulkTa.addEventListener('input', updateBulkCount);
+    const bulkExample = document.getElementById('quick-bulk-example');
+    if (bulkExample && bulkTa) {
+      bulkExample.addEventListener('click', function() {
+        const sample = t('quickmodal.bulk_placeholder');
+        bulkTa.value = bulkTa.value.trim() ? bulkTa.value.replace(/\s*$/, '\n') + sample : sample;
+        updateBulkCount();
+        bulkTa.focus();
       });
     }
 
