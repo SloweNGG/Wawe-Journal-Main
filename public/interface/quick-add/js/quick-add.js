@@ -458,7 +458,9 @@ async function fileToCsvText(file) {
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
     chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
-    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
   };
 
   function badgeIcon(type) {
@@ -732,6 +734,7 @@ async function fileToCsvText(file) {
             <button class="quick-tab active" data-tab="price">${ICONS.edit}<span data-quick-i18n="quickmodal.tab_price">Fiyattan Hesapla</span></button>
             <button class="quick-tab" data-tab="csv">${ICONS.file}<span data-quick-i18n="quickmodal.tab_csv">CSV İçe Aktar</span></button>
             <button class="quick-tab" data-tab="bulk">${ICONS.list}<span data-quick-i18n="quickmodal.tab_bulk">Toplu Metin</span></button>
+            <button class="quick-tab qa-tab-ai" data-tab="ai">${ICONS.sparkle}<span data-quick-i18n="quickmodal.tab_ai">AI ile Ekle</span></button>
           </div>
 
           <div class="quick-add-body">
@@ -964,6 +967,31 @@ async function fileToCsvText(file) {
               </div>
             </div>
 
+            <div class="quick-tab-content" id="tab-ai">
+              <div class="qa-ai-wrap">
+                <div class="quick-import-area qa-ai-drop" id="qa-ai-drop" role="button" tabindex="0">
+                  <div class="qa-drop-hint">${ICONS.image}<span data-quick-i18n="quickmodal.ai_drop_hint">Görseli bırak</span></div>
+                  <div class="quick-import-icon">${ICONS.sparkle}</div>
+                  <div class="qa-drop-title" data-quick-i18n="quickmodal.ai_drop_title">Ekran görüntüsünü yapıştır veya bırak</div>
+                  <p data-quick-i18n="quickmodal.ai_drop_desc">MT4/MT5, cTrader, TradingView, broker uygulaması ya da prop firma paneli. Ctrl+V ile de yapıştırabilirsin.</p>
+                  <button type="button" class="quick-import-btn" id="qa-ai-pick">${ICONS.image}<span data-quick-i18n="quickmodal.ai_choose_image">Görsel Seç</span></button>
+                </div>
+                <div class="qa-ai-thumb" id="qa-ai-thumb" hidden>
+                  <img id="qa-ai-thumb-img" alt="">
+                  <span class="qa-ai-thumb-name" id="qa-ai-thumb-name"></span>
+                  <button type="button" class="qa-ai-thumb-x" id="qa-ai-thumb-x" data-quick-i18n-title="quickmodal.ai_remove_image" title="Görseli kaldır" aria-label="Görseli kaldır">${ICONS.close}</button>
+                </div>
+                <input type="file" id="qa-ai-file" accept="image/png,image/jpeg,image/webp" hidden>
+                <label class="qa-ai-label" for="qa-ai-text" data-quick-i18n="quickmodal.ai_text_label">veya yazarak anlat</label>
+                <textarea id="qa-ai-text" rows="3" maxlength="2000" data-quick-i18n-placeholder="quickmodal.ai_text_placeholder" placeholder="örn: Altın 0.5 lot long, 2350'den girdim 2365'te kapattım, stop 2340"></textarea>
+                <div class="qa-ai-meta">
+                  <span data-quick-i18n="quickmodal.ai_privacy">Görsel saklanmaz. AI hiçbir şeyi kendisi kaydetmez; önce sen kontrol edersin.</span>
+                  <span class="qa-ai-usage" id="qa-ai-usage"></span>
+                </div>
+                <div class="qa-ai-msg" id="qa-ai-msg" hidden></div>
+              </div>
+            </div>
+
             <div class="quick-add-loading" id="quick-add-loading">
               <div class="spinner"></div>
               <span data-quick-i18n="quickmodal.loading_saving">İşlem kaydediliyor...</span>
@@ -975,6 +1003,7 @@ async function fileToCsvText(file) {
             <button class="btn-save" id="quick-add-save">${ICONS.check}<span data-quick-i18n="quickmodal.save">Kaydet</span></button>
             <button class="btn-save" id="quick-import-btn" style="display:none;">${ICONS.upload}<span data-quick-i18n="quickmodal.import">İçe Aktar</span></button>
             <button class="btn-save" id="quick-bulk-btn" style="display:none;">${ICONS.send}<span data-quick-i18n="quickmodal.paste_add">İşlemleri Ekle</span></button>
+            <button class="btn-save" id="quick-ai-btn" style="display:none;">${ICONS.sparkle}<span data-quick-i18n="quickmodal.ai_read">AI ile Oku</span></button>
           </div>
 
           <!-- Komisyon & Swap Şablon Modalı (Panelin Ortasında Açılır) -->
@@ -1784,6 +1813,8 @@ async function fileToCsvText(file) {
 
     const dropzone = el('quick-import-dropzone');
     if (dropzone) dropzone.classList.remove('qa-dragover');
+
+    resetAi();
   }
 
   function resetForm() {
@@ -1872,10 +1903,14 @@ async function fileToCsvText(file) {
     const importBtn = el('quick-import-btn');
     const bulkBtn = el('quick-bulk-btn');
 
-    if (saveBtn) saveBtn.style.display = (tab === 'csv' || tab === 'bulk') ? 'none' : '';
+    const aiBtn = el('quick-ai-btn');
+
+    if (saveBtn) saveBtn.style.display = (tab === 'csv' || tab === 'bulk' || tab === 'ai') ? 'none' : '';
     if (importBtn) importBtn.style.display = (tab === 'csv') ? '' : 'none';
     syncImportBtn();
     if (bulkBtn) bulkBtn.style.display = (tab === 'bulk') ? '' : 'none';
+    if (aiBtn) aiBtn.style.display = (tab === 'ai') ? '' : 'none';
+    if (tab === 'ai') { syncAiBtn(); showAiUsage(); }
 
     const error = el('quick-add-error');
     if (error) error.classList.remove('active');
@@ -2891,6 +2926,7 @@ async function fileToCsvText(file) {
 
     initCommissionPopover();
     initSymbolPicker();
+    initAiTab();
 
     const saveBtn = document.getElementById('quick-add-save');
     if (saveBtn) saveBtn.addEventListener('click', saveTrade);
@@ -3046,6 +3082,372 @@ async function fileToCsvText(file) {
         }
       });
     }
+  }
+
+  // ============================================================
+  // AI İLE EKLE — ekran görüntüsü ve/veya yazıdan işlem okuma
+  // ============================================================
+  // Sunucu: supabase/functions/ai-trade-parse (AI koçun günlük hakkını paylaşır, görseli saklamaz, hiçbir şey kaydetmez).
+  // Tek işlem → "Fiyattan Hesapla" formu doldurulur, kullanıcı kontrol edip kaydeder.
+  // Birden fazla → CSV önizlemesi (mükerrer kontrolü, kayıt ve yönlendirme executeCsvImport'ta).
+
+  const AI_FALLBACK_URL = 'https://odasapyhtdopbnlfhwde.supabase.co';
+  const AI_MAX_SIDE = 2000;   // tablo ekran görüntülerinde küçük rakamlar okunabilsin
+  const AI_JPEG_Q = 0.88;
+  let aiImage = null;         // { mimeType, data (base64), url (önizleme) }
+  let aiBusy = false;
+  let aiUsage = null;         // { used, limit, premium }
+
+  function aiEndpoint() { const c = window.WW_CONFIG || {}; return window.SUPABASE_URL || c.SUPABASE_URL || AI_FALLBACK_URL; }
+  function aiAnonKey() { const c = window.WW_CONFIG || {}; return window.SUPABASE_ANON_KEY || c.SUPABASE_ANON_KEY || ''; }
+  function aiLang() {
+    const l = (typeof quickI18n !== 'undefined' && quickI18n.currentLang) || localStorage.getItem('ww_language') || 'tr';
+    return ['tr', 'en', 'de'].indexOf(l) >= 0 ? l : 'en';
+  }
+  function aiTz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } }
+
+  // Görsel dosyası → en uzun kenarı AI_MAX_SIDE olan JPEG (base64). Dosya hiçbir yere kaydedilmez.
+  function prepareAiImage(file) {
+    return new Promise(function(resolve, reject) {
+      if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return reject(new Error('type'));
+      if (file.size > 25 * 1024 * 1024) return reject(new Error('size'));
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function() {
+        const k = Math.min(1, AI_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * k));
+        c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        const dataUrl = c.toDataURL('image/jpeg', AI_JPEG_Q);
+        resolve({ mimeType: 'image/jpeg', data: dataUrl.slice(dataUrl.indexOf(',') + 1), url: url, name: file.name || '' });
+      };
+      img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('decode')); };
+      img.src = url;
+    });
+  }
+
+  function setAiMsg(html, kind) {
+    const m = el('qa-ai-msg');
+    if (!m) return;
+    if (!html) { m.hidden = true; m.innerHTML = ''; return; }
+    m.hidden = false;
+    m.className = 'qa-ai-msg' + (kind ? ' is-' + kind : '');
+    m.innerHTML = html;
+  }
+
+  function syncAiBtn() {
+    const btn = el('quick-ai-btn');
+    if (!btn) return;
+    const text = (el('qa-ai-text')?.value || '').trim();
+    btn.disabled = aiBusy || (!aiImage && !text);
+    btn.classList.toggle('is-busy', aiBusy);
+    const label = btn.querySelector('span');
+    if (label) label.textContent = aiBusy ? t('quickmodal.ai_reading') : t('quickmodal.ai_read');
+  }
+
+  let aiUsageAsked = false;
+  function showAiUsage() {
+    const u = el('qa-ai-usage');
+    if (!u) return;
+    u.textContent = aiUsage && aiUsage.limit ? t('quickmodal.ai_usage', { used: aiUsage.used, limit: aiUsage.limit }) : '';
+    // ilk açılışta AI koçla ortak günlük hak (get_ai_usage, migration 202611120002)
+    if (!aiUsage && !aiUsageAsked && window.sb && typeof window.sb.rpc === 'function') {
+      aiUsageAsked = true;
+      window.sb.rpc('get_ai_usage').then(function(r) {
+        if (r && r.data && r.data.limit) { aiUsage = r.data; showAiUsage(); }
+      }, function() {});
+    }
+  }
+
+  async function setAiImage(file) {
+    try {
+      const img = await prepareAiImage(file);
+      if (aiImage && aiImage.url) URL.revokeObjectURL(aiImage.url);
+      aiImage = img;
+      const thumb = el('qa-ai-thumb');
+      const tImg = el('qa-ai-thumb-img');
+      const tName = el('qa-ai-thumb-name');
+      if (tImg) tImg.src = img.url;
+      if (tName) tName.textContent = img.name || t('quickmodal.ai_pasted_image');
+      if (thumb) thumb.hidden = false;
+      el('qa-ai-drop')?.classList.add('has-image');
+      setAiMsg('');
+    } catch (e) {
+      setAiMsg(escapeHtml(t('quickmodal.ai_bad_image')), 'error');
+    }
+    syncAiBtn();
+  }
+
+  function clearAiImage() {
+    if (aiImage && aiImage.url) URL.revokeObjectURL(aiImage.url);
+    aiImage = null;
+    const thumb = el('qa-ai-thumb');
+    if (thumb) thumb.hidden = true;
+    const tImg = el('qa-ai-thumb-img');
+    if (tImg) tImg.removeAttribute('src');
+    const fi = el('qa-ai-file');
+    if (fi) fi.value = '';
+    el('qa-ai-drop')?.classList.remove('has-image', 'qa-dragover');
+    syncAiBtn();
+  }
+
+  function resetAi() {
+    clearAiImage();
+    const ta = el('qa-ai-text');
+    if (ta) ta.value = '';
+    aiBusy = false;
+    setAiMsg('');
+    syncAiBtn();
+  }
+
+  // "YYYY-MM-DD HH:mm" (kaynağın gösterdiği duvar saati) → içe aktarma saat dilimi ayarıyla ISO; sadece tarih aynen kalır
+  function aiTradeDate(tr) {
+    const s = tr.close_time || tr.open_time;
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    if (typeof BrokerDictionary !== 'undefined' && BrokerDictionary.parseDate) {
+      const d = BrokerDictionary.parseDate(s);
+      if (d && !isNaN(d.getTime())) return d.toISOString();
+    }
+    return s.slice(0, 10);
+  }
+
+  // Okunan K/Z fiyatlardan hesaplananla tutuyor mu? Yalnızca USD kotasyonlu forex/altın/kriptoda (çarpan kesin) bakılır.
+  function aiPnlMismatch(tr) {
+    if (tr.pnl == null || tr.exit == null || tr.lot == null) return null;
+    const sym = String(tr.symbol || '');
+    const inst = guessInstrument(sym);
+    if (['forex', 'gold', 'crypto'].indexOf(inst) < 0 || !/USDT?$/.test(sym)) return null;
+    const mult = MULTIPLIER_MAP[inst] || 1;
+    const calc = (tr.direction === 'LONG' ? tr.exit - tr.entry : tr.entry - tr.exit) * tr.lot * mult;
+    const gross = Math.abs(tr.pnl);
+    // komisyon/swap farkına pay bırakılır: %20 ya da 2 birim
+    if (Math.abs(calc - tr.pnl) <= Math.max(2, gross * 0.2)) return null;
+    return calc;
+  }
+
+  function markAiFilled(ids) {
+    ids.forEach(function(id) {
+      const e = el(id);
+      if (!e) return;
+      e.classList.add('qa-ai-filled');
+      e.addEventListener('input', function off() { e.classList.remove('qa-ai-filled'); e.removeEventListener('input', off); });
+    });
+  }
+
+  // Tek işlem: formu doldur, kullanıcı kontrol edip kaydetsin
+  function fillPriceFormFromAi(tr, note) {
+    ['price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier', 'price-notes'].forEach(function(id) {
+      const e = el(id); if (e) e.value = '';
+    });
+    const qa = document.querySelectorAll('.qa-ai-filled');
+    qa.forEach(function(e) { e.classList.remove('qa-ai-filled'); });
+
+    const filled = ['price-symbol', 'price-entry'];
+    const sym = el('price-symbol');
+    if (sym) sym.value = tr.symbol;
+    setSide(tr.direction === 'SHORT' ? 'SELL' : 'BUY');
+    instrumentTouched = false;
+    // önce sembolün bilinen/kaydedilmiş enstrümanı; tanınmayan sembol "Diğer" olur ve çarpanı kullanıcı girer
+    applyInstrumentFor(tr.symbol, true);
+    const guessed = guessInstrument(tr.symbol);
+    if ((guessed === 'other' || !MULTIPLIER_MAP[guessed]) && currentInstrument !== 'other') selectInstrument('other', 1);
+    const multEl = el('price-custom-multiplier');
+    const needsMult = currentInstrument === 'other' && !(multEl && parseFloat(multEl.value) > 0);
+
+    const setNum = function(id, v) { const e = el(id); if (e && v != null) { e.value = String(v); filled.push(id); } };
+    setNum('price-entry', tr.entry);
+    setNum('price-exit', tr.exit);
+    setNum('price-sl', tr.sl);
+    setNum('price-tp', tr.tp);
+    if (tr.lot != null) {
+      const lotEl = el('price-lot');
+      if (lotEl) { lotEl.value = String(tr.lot); filled.push('price-lot'); }
+      qsa('.lot-preset').forEach(function(b) { b.classList.toggle('active', parseFloat(b.dataset.lot) === tr.lot); });
+    }
+    const comm = el('price-commission');
+    if (comm && tr.commission != null) {
+      comm.value = String(Math.abs(tr.commission));
+      comm.dataset.userEdited = 'true';
+      filled.push('price-commission');
+    } else {
+      syncCommissionWithLot(true);
+    }
+    if (tr.swap != null) setNum('price-swap', tr.swap);
+    const iso = (tr.close_time || tr.open_time || '').slice(0, 10);
+    const dateEl = el('price-date');
+    if (dateEl && /^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      dateEl.setAttribute('data-iso', iso);
+      dateEl.value = formatDateDisplay(iso);
+      filled.push('price-date');
+    }
+    const notes = el('price-notes');
+    if (notes && tr.notes) { notes.value = tr.notes; filled.push('price-notes'); }
+
+    switchTab('price');
+    updatePricePreview();
+    markAiFilled(filled);
+
+    const hints = [t('quickmodal.ai_filled')];
+    if (tr.exit == null) hints.push(t('quickmodal.ai_no_exit'));
+    if (tr.lot == null) hints.push(t('quickmodal.ai_no_lot_single'));
+    if (needsMult) hints.push(t('quickmodal.ai_check_multiplier'));
+    const mm = aiPnlMismatch(tr);
+    if (mm != null) hints.push(t('quickmodal.ai_pnl_mismatch', { n: 1, symbol: tr.symbol, pnl: tr.pnl.toFixed(2), calc: mm.toFixed(2) }));
+    if (note) hints.push(note);
+    showToast(hints.join(' '), hints.length > 1 ? 'info' : 'success');
+    const focusId = tr.exit == null ? 'price-exit' : (needsMult ? 'price-custom-multiplier' : null);
+    if (focusId) setTimeout(function() { el(focusId)?.focus(); }, 50);
+  }
+
+  // Birden fazla işlem: CSV önizlemesine koy, "İçe Aktar" mevcut akışla kaydeder
+  function previewManyFromAi(trades, note) {
+    const rows = [];
+    const notes = [];
+    let open = 0, noDate = 0;
+    trades.forEach(function(tr, i) {
+      if (tr.exit == null) { open++; return; }
+      if (tr.lot == null) { notes.push(t('quickmodal.ai_no_lot', { n: i + 1, symbol: tr.symbol })); return; }
+      const mm = aiPnlMismatch(tr);
+      if (mm != null) notes.push(t('quickmodal.ai_pnl_mismatch', { n: i + 1, symbol: tr.symbol, pnl: tr.pnl.toFixed(2), calc: mm.toFixed(2) }));
+      let date = aiTradeDate(tr);
+      if (!date) { noDate++; date = todayIso(); }
+      rows.push({
+        symbol: tr.symbol, direction: tr.direction, lot: tr.lot,
+        entry_price: tr.entry, exit_price: tr.exit, stop_loss: tr.sl, take_profit: tr.tp,
+        trade_date: date, notes: tr.notes || 'AI', pnl: tr.pnl, gross_pnl: null,
+        commission: tr.commission != null ? Math.abs(tr.commission) : 0, swap: tr.swap != null ? tr.swap : 0, ticket: null
+      });
+    });
+    if (open) notes.unshift(t('quickmodal.ai_open_skipped', { count: open }));
+    if (noDate) notes.push(t('quickmodal.ai_no_date', { count: noDate }));
+    if (note) notes.push(note);
+
+    if (!rows.length) {
+      setAiMsg(escapeHtml(notes.join(' ') || t('quickmodal.ai_none')), 'error');
+      return;
+    }
+
+    csvFile = null;
+    switchTab('csv');
+    const statusEl = el('quick-csv-status');
+    const filenameEl = el('quick-csv-filename');
+    const badgeEl = el('quick-csv-badge');
+    if (statusEl) statusEl.style.display = 'flex';
+    if (filenameEl) filenameEl.textContent = t('quickmodal.ai_found_many', { count: rows.length });
+    if (badgeEl) badgeEl.innerHTML = badgeIcon('success');
+    renderCSVLog([]);
+    showBrokerPreview(rows, 'AI', notes);
+    csvPreviewData = { isBrokerParsed: true, parsed: { rows: rows }, rawText: '', detected: 'AI' };
+    syncImportBtn();
+  }
+
+  async function runAiRead() {
+    if (aiBusy) return;
+    const text = (el('qa-ai-text')?.value || '').trim();
+    if (!aiImage && !text) { setAiMsg(escapeHtml(t('quickmodal.ai_need_input')), 'error'); return; }
+
+    const session = (window.sb && window.sb.auth) ? (await window.sb.auth.getSession().catch(function() { return null; })) : null;
+    const token = session && session.data && session.data.session ? session.data.session.access_token : null;
+    if (!token) { setAiMsg(escapeHtml(t('quickmodal.ai_login')), 'error'); return; }
+
+    aiBusy = true;
+    setAiMsg('');
+    syncAiBtn();
+    try {
+      const body = { text: text, lang: aiLang(), tz: aiTz(), recentSymbols: (recentSymbols || []).slice(0, 12) };
+      if (aiImage) body.image = { mimeType: aiImage.mimeType, data: aiImage.data };
+      const res = await fetch(aiEndpoint() + '/functions/v1/ai-trade-parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': aiAnonKey() },
+        body: JSON.stringify(body)
+      });
+      let j = null;
+      try { j = await res.json(); } catch (e) { j = null; }
+      if (j && j.usage) { aiUsage = j.usage; showAiUsage(); }
+      if (!res.ok || !j || !j.ok) {
+        const code = j && j.code;
+        const key = code === 'LIMIT' ? 'quickmodal.ai_limit' : code === 'BUSY' ? 'quickmodal.ai_busy'
+          : code === 'BAD_IMAGE' || code === 'TOO_LARGE' ? 'quickmodal.ai_bad_image' : code === 'UNAUTHORIZED' ? 'quickmodal.ai_login' : 'quickmodal.ai_error';
+        setAiMsg(escapeHtml(t(key)), 'error');
+        return;
+      }
+      const trades = Array.isArray(j.trades) ? j.trades : [];
+      if (!trades.length) { setAiMsg(escapeHtml(j.note || t('quickmodal.ai_none')), 'error'); return; }
+      if (trades.length === 1) fillPriceFormFromAi(trades[0], j.note);
+      else previewManyFromAi(trades, j.note);
+    } catch (e) {
+      wwLog.warn('AI okuma hatası:', e);
+      setAiMsg(escapeHtml(t('quickmodal.ai_error')), 'error');
+    } finally {
+      aiBusy = false;
+      syncAiBtn();
+    }
+  }
+
+  function initAiTab() {
+    const drop = el('qa-ai-drop');
+    const fileInput = el('qa-ai-file');
+    const pick = el('qa-ai-pick');
+    const ta = el('qa-ai-text');
+    const btn = el('quick-ai-btn');
+    const x = el('qa-ai-thumb-x');
+    if (!drop || !fileInput) return;
+
+    if (x) {
+      x.title = t('quickmodal.ai_remove_image');
+      x.setAttribute('aria-label', t('quickmodal.ai_remove_image'));
+      x.addEventListener('click', clearAiImage);
+    }
+    if (pick) pick.addEventListener('click', function(e) { e.stopPropagation(); fileInput.click(); });
+    drop.addEventListener('click', function() { fileInput.click(); });
+    drop.addEventListener('keydown', function(e) {
+      if (e.target === drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); fileInput.click(); }
+    });
+    fileInput.addEventListener('change', function() { if (this.files && this.files[0]) setAiImage(this.files[0]); });
+
+    let depth = 0;
+    const isFiles = function(e) { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; };
+    drop.addEventListener('dragenter', function(e) { if (!isFiles(e)) return; depth++; drop.classList.add('qa-dragover'); });
+    drop.addEventListener('dragover', function(e) { if (!isFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+    drop.addEventListener('dragleave', function(e) { if (!isFiles(e)) return; if (--depth <= 0) { depth = 0; drop.classList.remove('qa-dragover'); } });
+    drop.addEventListener('drop', function(e) {
+      if (!isFiles(e)) return;
+      e.preventDefault(); e.stopPropagation();
+      depth = 0; drop.classList.remove('qa-dragover');
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) setAiImage(f);
+    });
+
+    // Pencere açıkken panodaki görsel: "Fiyattan Hesapla" ya da AI sekmesindeyken yapıştırınca AI sekmesine alınır
+    document.addEventListener('paste', function(e) {
+      const overlay = el('quick-add-overlay');
+      if (!overlay || !overlay.classList.contains('active')) return;
+      if (currentTab !== 'ai' && currentTab !== 'price') return;
+      const items = (e.clipboardData && e.clipboardData.items) || [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type)) {
+          const f = items[i].getAsFile();
+          if (!f) continue;
+          e.preventDefault();
+          if (currentTab !== 'ai') switchTab('ai');
+          setAiImage(f);
+          return;
+        }
+      }
+    });
+
+    if (ta) {
+      ta.addEventListener('input', syncAiBtn);
+      ta.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runAiRead(); }
+      });
+    }
+    if (btn) btn.addEventListener('click', runAiRead);
+    syncAiBtn();
   }
 
   // ============================================================
