@@ -1218,6 +1218,7 @@
     function setAccount(id) {
       flush(); closePop(); cancelAll();
       acc = id || null; failShown = false; setTool('cursor');
+      clip = null;                                         // a copied drawing belongs to its account (another symbol, other prices)
       var seq = ++loadSeq;
       if (!acc) { set.reset([]); return Promise.resolve(); }
       var sess = [];
@@ -1238,11 +1239,14 @@
       if (TOOLS.indexOf(id) < 0) id = 'cursor';
       if (!allowed(id)) { opts.upgrade(); return; }
       tool = id;
+      if (id !== 'cursor') showAll();                      // drawing while everything is hidden would make an invisible, selected drawing
       if (id !== 'cursor') { closePop(); var gi = groupOf(ui.groups, id); if (gi >= 0 && ui.groups[gi].c !== id) { ui.groups[gi].c = id; saveUi(); } }
       closeFly();
       layers.forEach(function (l) { l.toolChanged(); });
       renderBar();
     }
+    // "hide all" ends when the user draws or pastes (as on TradingView)
+    function showAll() { if (!ui.hidden) return; ui.hidden = false; saveUi(); set.setHidden(false); renderBar(); }
     function created(d) {
       if (set.list().length >= MAX_DRAWINGS) { opts.toast(opts.t('backtest.draw.too_many', 'En fazla {n} çizim olabilir.', { n: MAX_DRAWINGS }), 'warning'); setTool('cursor'); return; }
       var def = ui.defaults[d.tool];
@@ -1262,6 +1266,7 @@
       if (!src) return false;
       if (set.list().length >= MAX_DRAWINGS) { opts.toast(opts.t('backtest.draw.too_many', 'En fazla {n} çizim olabilir.', { n: MAX_DRAWINGS }), 'warning'); return true; }
       var n = cloneOf(src); if (!n) return false;
+      showAll();
       var added = set.add(n); if (added) { set.select(added.id); clip = clone(added); }   // pasting again puts the next copy further right
       return true;
     }

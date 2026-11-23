@@ -7,10 +7,12 @@
 
   var WARN_AT = 0.8;                                  // bar turns orange from 80 % of the limit, red at the limit
   var DRAW_TOOLS = 18;                               // = WwBtDraw.TOOLS (unit tested)
+  var INDICATORS = 7;                                // = WwBtInd.TYPE_IDS (unit tested)
   // `feat: null`: free for every plan (the drawing tools and saved drawings since 2026-10-26)
   var FEATURES = [
     { id: 'drawing_tools', feat: null, icon: 'pen-tool' },
     { id: 'saved_drawings', feat: null, icon: 'save' },
+    { id: 'indicators', feat: null, icon: 'chart-spline' },
     { id: 'themes', feat: 'backtestThemes', icon: 'palette' },
     { id: 'stats', feat: 'backtestStats', icon: 'bar-chart-3' },
     { id: 'multi', feat: 'backtestMultiChart', icon: 'layout-grid' }
@@ -48,7 +50,7 @@
     feat = feat || {};
     return FEATURES.map(function (f) {
       var on = f.feat === null || feat[f.feat] === true;
-      return { id: f.id, icon: f.icon, on: on, value: f.id === 'drawing_tools' ? DRAW_TOOLS + ' / ' + DRAW_TOOLS : null };
+      return { id: f.id, icon: f.icon, on: on, value: f.id === 'drawing_tools' ? DRAW_TOOLS + ' / ' + DRAW_TOOLS : f.id === 'indicators' ? INDICATORS + ' / ' + INDICATORS : null };
     });
   }
 
@@ -169,6 +171,6 @@
     return k.c;
   }
 
-  global.WwBtPlan = { WARN_AT: WARN_AT, DRAW_TOOLS: DRAW_TOOLS, FEATURES: FEATURES,
+  global.WwBtPlan = { WARN_AT: WARN_AT, DRAW_TOOLS: DRAW_TOOLS, INDICATORS: INDICATORS, FEATURES: FEATURES,
     normalize: normalize, level: level, pct: pct, badge: badge, features: features, render: render };
 })(typeof window !== 'undefined' ? window : globalThis);

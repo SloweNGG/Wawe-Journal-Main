@@ -21,7 +21,7 @@ page = '''<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name=
 ''' + links + '''</head>
 ''' + body + '''
 <script>
-(function(){var cur={alive:true,_c:[],onLeave:function(f){this._c.push(f)},on:function(t,e,f,o){t.addEventListener(e,f,o)},onI18nChange:function(){},expose:function(n,v){window[n]=v}};
+(function(){var cur={alive:true,_c:[],onLeave:function(f){this._c.push(f)},on:function(t,e,f,o){t.addEventListener(e,f,o)},onI18nChange:function(f){if(window.i18n&&typeof window.i18n.onChange==='function')window.i18n.onChange(f)},expose:function(n,v){window[n]=v}};
 window.wwPage={current:function(){return cur}};window.__BT_TEST__=true;
 var qp=new URLSearchParams(location.search);var role=qp.get('role')||'admin';
 if(qp.get('backend')!=='supabase')window.WW_BT_BACKEND='local';

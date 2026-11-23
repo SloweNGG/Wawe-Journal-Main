@@ -49,6 +49,7 @@ const skelCandles = (() => {
   <script src="/interface/backtest/js/bt-layout.js" is:inline defer></script>
   <script src="/interface/backtest/js/bt-desk.js" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-ind.js" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js" is:inline defer></script>
   <script src="/interface/backtest/js/bt-plan.js" is:inline defer></script>
@@ -214,6 +215,9 @@ const skelCandles = (() => {
             </button>
             <div id="bt-panels-pop" class="bt-layout-pop" role="menu" hidden></div>
           </div>
+          <button type="button" id="bt-ind-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-ind-drawer" data-i18n-title="backtest.ind.title" title="İndikatörler">
+            <i data-lucide="chart-spline" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.ind.title">İndikatörler</span>
+          </button>
           <button type="button" id="bt-look-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-look-drawer" data-i18n-title="backtest.look.title" title="Görünüm ayarları">
             <i data-lucide="palette" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.look.title">Görünüm ayarları</span>
           </button>
@@ -708,6 +712,15 @@ const skelCandles = (() => {
       <button type="button" id="bt-look-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
     </div>
     <div id="bt-look-body" class="bt-drawer-body"></div>
+  </aside>
+
+  <!-- indicators drawer (bt-ind.js builds the body) -->
+  <aside id="bt-ind-drawer" class="bt-drawer" aria-labelledby="bt-ind-title" hidden>
+    <div class="bt-drawer-head">
+      <h3 id="bt-ind-title" data-i18n="backtest.ind.title">İndikatörler</h3>
+      <button type="button" id="bt-ind-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+    </div>
+    <div id="bt-ind-body" class="bt-drawer-body"></div>
   </aside>
 
   <!-- ================= MODALS (page slot: SPA removes them with the page) ================= -->

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import '../public/interface/backtest/js/bt-plan.js';
 import '../public/interface/backtest/js/bt-draw.js';
+import '../public/interface/backtest/js/bt-ind.js';
 
 const P = globalThis.WwBtPlan;
 const rpc = (o = {}) => ({ premium: false, plan: 'free', plan_expires_at: null, accounts: { used: 1, limit: 1 },
@@ -37,13 +38,14 @@ describe('bt-plan', () => {
     assert.deepEqual(P.badge(P.normalize(rpc({ trades: { used: 100, limit: 100 } }))), { level: 'full', used: 100, limit: 100 });
     assert.equal(P.badge(P.normalize(rpc({ premium: true, trades: { used: 500, limit: 100 } }))), null);
   });
-  it('features: drawing tools (18 / 18) and saved drawings on for every plan; the rest by plan; the count matches bt-draw.js', () => {
+  it('features: drawing tools (18 / 18), saved drawings and indicators (7 / 7) on for every plan; the rest by plan; the counts match bt-draw.js / bt-ind.js', () => {
     assert.equal(P.DRAW_TOOLS, globalThis.WwBtDraw.TOOLS.length);
+    assert.equal(P.INDICATORS, globalThis.WwBtInd.TYPE_IDS.length);
     const free = P.features({});
-    assert.deepEqual(free.map((f) => f.id), ['drawing_tools', 'saved_drawings', 'themes', 'stats', 'multi']);
-    assert.deepEqual(free.map((f) => f.on), [true, true, false, false, false]); assert.equal(free[0].value, '18 / 18');
+    assert.deepEqual(free.map((f) => f.id), ['drawing_tools', 'saved_drawings', 'indicators', 'themes', 'stats', 'multi']);
+    assert.deepEqual(free.map((f) => f.on), [true, true, true, false, false, false]); assert.equal(free[0].value, '18 / 18'); assert.equal(free[2].value, '7 / 7');
     const pro = P.features({ backtestThemes: true, backtestStats: true, backtestMultiChart: true });
     assert.ok(pro.every((f) => f.on)); assert.equal(pro[0].value, '18 / 18');
-    assert.deepEqual(P.features({ backtestStats: true }).map((f) => f.on), [true, true, false, true, false]);
+    assert.deepEqual(P.features({ backtestStats: true }).map((f) => f.on), [true, true, true, false, true, false]);
   });
 });

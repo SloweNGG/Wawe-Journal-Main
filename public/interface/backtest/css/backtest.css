@@ -478,7 +478,30 @@ body.light-theme .bt-pro { background: #fff; color: var(--ac-d4); border-color: 
 .bt-look-mine-name[aria-pressed="true"] { border-color: var(--accent); }
 .bt-look-del { color: var(--red); margin: 0 !important; }
 .bt-look-foot { margin-top: 12px; }
-#bt-look-btn[aria-expanded="true"] { border-color: var(--accent); }
+#bt-look-btn[aria-expanded="true"], #bt-ind-btn[aria-expanded="true"] { border-color: var(--accent); }
+/* indicators drawer (bt-ind.js) */
+.bt-ind-add { position: sticky; top: 0; z-index: 1; background: var(--modal-bg); }
+.bt-ind-types { display: flex; flex-wrap: wrap; gap: 6px; }
+.bt-ind-type { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--modal-line-strong); background: var(--modal-field-bg); color: var(--text);
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.bt-ind-type:hover:not(:disabled) { border-color: var(--accent3); }
+.bt-ind-type:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bt-ind-type:disabled { opacity: 0.45; cursor: not-allowed; }
+.bt-ind-card { border: 1px solid var(--modal-line-strong); border-radius: 10px; padding: 8px 10px 10px; margin-bottom: 8px; background: var(--modal-field-bg); scroll-margin-top: 92px; }
+.bt-ind-new { animation: bt-ind-flash 1.2s ease-out; }
+@keyframes bt-ind-flash { from { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); } }
+@media (prefers-reduced-motion: reduce) { .bt-ind-new { animation: none; } }
+.bt-ind-card[data-hidden] { opacity: 0.6; }
+.bt-ind-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bt-ind-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.bt-ind-name { font-size: 13px; white-space: nowrap; }
+.bt-ind-kind { font-size: 11.5px; color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-ind-btn { width: 28px; height: 28px; flex: none; }
+.bt-ind-btn svg { width: 15px; height: 15px; }
+.bt-ind-params { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px 8px; margin: 8px 0; }
+.bt-ind-field { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--muted); min-width: 0; }
+.bt-ind-field .bt-input, .bt-ind-field .bt-select { width: 100%; padding: 5px 7px; font-size: 13px; background: var(--modal-bg); border-color: var(--modal-field-line); }
+.bt-ind-colors { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
 
 /* ---------------------------------------------------------------- Çizim araçları (bt-draw.js) */
 .bt-chart-body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; gap: 8px; }

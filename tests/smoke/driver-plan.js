@@ -93,7 +93,7 @@
       ok('premium: cTrader trades unlimited, this month\'s count shown', val('ct_trades') === TX.unlimited && new RegExp(String(used0)).test(card('ct_trades').textContent) && !q('.bt-plan-bar', card('ct_trades')), card('ct_trades').textContent);
       ok('premium: synthetic unlimited', val('syn_trades') === TX.unlimited);
       var fr = document.querySelectorAll('#bt-plan-panel .bt-plan-feat');
-      ok('premium: all five features on, drawing tools 18 / 18', fr.length === 5 && Array.prototype.every.call(fr, function (f) { return f.getAttribute('data-on') === 'true' && f.textContent.indexOf(TX.on) >= 0; }) && /18 \/ 18/.test(fr[0].textContent));
+      ok('premium: all six features on, drawing tools 18 / 18, indicators 7 / 7', fr.length === 6 && Array.prototype.every.call(fr, function (f) { return f.getAttribute('data-on') === 'true' && f.textContent.indexOf(TX.on) >= 0; }) && /18 \/ 18/.test(fr[0].textContent) && /7 \/ 7/.test(fr[2].textContent));
       if (qp.get('shot') === '1') throw 'shot';
       throw 'done';
     }
@@ -146,9 +146,9 @@
     ok('reset date in the user\'s time zone + UTC note', tc2.textContent.indexOf(TX.resets) >= 0 && /20\d\d/.test(tc2.textContent) && q('.bt-plan-utc', tc2).textContent.indexOf(TX.utc) >= 0, tc2.textContent);
     ok('synthetic: unlimited', val('syn_trades') === TX.unlimited);
     var fr2 = document.querySelectorAll('#bt-plan-panel .bt-plan-feat');
-    ok('features: drawing tools 18 / 18 and saved drawings on (free for every plan); themes, stats, multi locked with a lock and PRO tag', fr2.length === 5 &&
-      Array.prototype.slice.call(fr2, 0, 2).every(function (f) { return f.getAttribute('data-on') === 'true' && f.textContent.indexOf(TX.on) >= 0 && !q('.bt-pro', f); }) &&
-      Array.prototype.slice.call(fr2, 2).every(function (f) { return f.getAttribute('data-on') === 'false' && q('.bt-pro', f) && q('.bt-plan-feat-state svg', f); }) && /18 \/ 18/.test(fr2[0].textContent));
+    ok('features: drawing tools 18 / 18, saved drawings and indicators 7 / 7 on (free for every plan); themes, stats, multi locked with a lock and PRO tag', fr2.length === 6 &&
+      Array.prototype.slice.call(fr2, 0, 3).every(function (f) { return f.getAttribute('data-on') === 'true' && f.textContent.indexOf(TX.on) >= 0 && !q('.bt-pro', f); }) &&
+      Array.prototype.slice.call(fr2, 3).every(function (f) { return f.getAttribute('data-on') === 'false' && q('.bt-pro', f) && q('.bt-plan-feat-state svg', f); }) && /18 \/ 18/.test(fr2[0].textContent) && /7 \/ 7/.test(fr2[2].textContent));
     ok('icons rendered (lucide)', document.querySelectorAll('#bt-plan-panel svg').length >= 10 && !document.querySelector('#bt-plan-panel i[data-lucide]'), document.querySelectorAll('#bt-plan-panel i[data-lucide]').length);
     // keyboard
     $('bt-acc-tab-plan').focus();

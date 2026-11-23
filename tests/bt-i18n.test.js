@@ -32,7 +32,7 @@ describe('bt-i18n', () => {
     for (const g of ['forex', 'gold', 'crypto']) for (const l of LANGS) assert.ok(`backtest.group.${g}` in loc[l]);
   });
   it('the new modules (layout, look, drawings, stats, charts, plan) only use existing keys', async () => {
-    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|desk|look|draw|stats|multi|plan|range|fsedit)/.test(f));
+    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|desk|look|ind|draw|stats|multi|plan|range|fsedit)/.test(f));
     const used = new Set();
     for (const f of files) {
       const src = fs.readFileSync('public/interface/backtest/js/' + f, 'utf8');

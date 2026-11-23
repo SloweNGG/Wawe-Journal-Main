@@ -33,12 +33,13 @@
   // the account the replay was last open in ({ u: user id, a: account id }); backtest.astro reads it before the first paint
   var RESUME_KEY = 'ww_bt_resume';
   var syncToastShown = false;
-  var L = { user: null, plan: 'free', feat: {}, look: null, usage: null, pu: null, puErr: false, puLoading: false, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
+  var L = { user: null, plan: 'free', feat: {}, look: null, ind: null, usage: null, pu: null, puErr: false, puLoading: false, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
   var LAY = null;                               // window.WwBtLayout controller (mode, full screen, shortcut sheet)
   var DESK = null, statsFs = false;             // window.WwBtDesk controller (windows, layouts, full-screen multi-chart grid, stats widgets)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
+  var IND_DRAWER = null;                        // indicators drawer (WwBtInd.mountDrawer)
   var booted = false;                           // init drew the page once (plan changes are applied from then on)
   var SKELETON_HTML = '';                       // the skeleton cards of the page, restored while the list reloads
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
@@ -137,7 +138,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtDraw && window.WwBtStats && window.WwBtPlan && window.WwBtRange && window.WwBtFsEdit &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtInd && window.WwBtDraw && window.WwBtStats && window.WwBtPlan && window.WwBtRange && window.WwBtFsEdit &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -178,6 +179,7 @@
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; } });
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
     L.look = window.WwBtLook.load(safeStorage());
+    L.ind = window.WwBtInd.load(safeStorage());
     DRAW = window.WwBtDraw.createController({
       // every tool, drawings saved to the account: free for every plan (owner, 2026-10-26; migration 202610260002)
       bar: $('bt-draw-bar'), t: _t, pro: function () { return true; }, saveable: function () { return true; },
@@ -268,7 +270,10 @@
   function planMode() { return isPro() ? 'advanced' : 'simple'; }
   function can(f) { return L.feat[f] === true; }
   // free user on a Premium control: the upgrade window (the control shows a small PRO tag)
-  function openUpgrade(feature) { if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: feature || 'backtest_pro' }); }
+  function openUpgrade(feature) {
+    if (R && R.playing) pause();                           // the replay never runs on behind the upgrade window
+    if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: feature || 'backtest_pro' });
+  }
   // Monthly trade limit of cTrader-data accounts on the free plan (migration 202610240002, enforced by the database trigger;
   // the page shows it and disables the order buttons). Synthetic-data accounts are never limited. null usage = no limit shown.
   function loadUsage() {
@@ -513,7 +518,8 @@
     $(id).classList.remove('active');
     if (modalOpener && modalOpener.focus && document.contains(modalOpener)) { try { modalOpener.focus(); } catch (e) { /* ignore */ } }
   }
-  function anyModalOpen() { return !!document.querySelector('.bt-modal.active'); }
+  // the site's upgrade window counts too (it does not take the focus: Space / Shift+B went to the replay behind it)
+  function anyModalOpen() { return !!document.querySelector('.bt-modal.active, #ww-upgrade-modal-backdrop.active'); }
   function closeAllModals() {
     if (backResolve) finishBack('cancel');
     var m = document.querySelectorAll('.bt-modal.active'); for (var i = 0; i < m.length; i++) m[i].classList.remove('active');
@@ -1032,6 +1038,7 @@
     if (LAY) LAY.setFullscreen(false);
     openStatsFs(false);
     if ($('bt-look-drawer')) $('bt-look-drawer').hidden = true;
+    if ($('bt-ind-drawer')) $('bt-ind-drawer').hidden = true;
     if (DRAW) DRAW.setAccount(null);
     if (STATS) STATS.destroy();
     pause(); saveReplayTime(true);
@@ -1092,6 +1099,16 @@
     if (mode === 'goto' && k >= m.n) {
       var nk = nextPresent(cov.months, key);
       if (nk) { try { m = await monthMinutes(nk, tok); } catch (e2) { return dataFailed(e2); } if (stale(tok) || !m) return; key = nk; k = 0; R.winMonths = [nk]; } else k = m.n - 1;
+    }
+    // A target inside the trading hours becomes the clock itself: the cursor stops on the minute before it, so the target minute
+    // is the next one played (as "resume" does). Before, going to 12:00 showed 12:01 with the 12:00 minute already played and an
+    // order "at the 12:00 open" filled at its close. A target in closed hours keeps landing on the next session's first minute.
+    if (mode === 'goto' && want === Math.floor(targetSec / 60) * 60 && k < m.n && m.t[k] >= want) {
+      if (k > 0) k--;
+      else {
+        var bk = prevPresent(cov.months, key);
+        if (bk) { try { pm = await monthMinutes(bk, tok); } catch (e4) { return dataFailed(e4); } if (stale(tok) || !pm) return; m = C.concatMinutes(pm, m); k = pm.n - 1; R.winMonths = [bk, key]; }
+      }
     }
     if (mode === 'resume' && k < 0) {
       var pk = prevPresent(cov.months, key);
@@ -1880,6 +1897,14 @@
       v.vol = v.chart.addHistogramSeries({ priceScaleId: 'bt-vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
       v.chart.priceScale('bt-vol').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 }, visible: false });
     }
+    // indicators (WwBtInd): overlays on the candles' scale, oscillators in bands at the bottom (the candles and volume move up)
+    v.ind = window.WwBtInd.attach({ chart: v.chart, series: v.series, bars: function () { return v.bars || []; }, priceFormat: S.priceFormat(R.sym.id),
+      fmt: function (p) { return Number(p).toFixed(R.sym.digits); }, vol: function () { return !!v.vol; }, light: function () { return window.WwChart.isLight(); },
+      layout: function (m) {
+        v.chart.priceScale('right').applyOptions({ scaleMargins: m.main });
+        if (v.vol) v.chart.priceScale('bt-vol').applyOptions({ scaleMargins: m.vol });
+      } });
+    v.ind.apply(L.ind.list);
     v.sessions = LK.createSessionPrimitive({ bars: function () { return v.bars || []; }, tfMin: function () { return v.tfMin; } });
     v.series.attachPrimitive(v.sessions); v.sessions.setVisible(lk.showSessions);
     if (v === R) v.chart.subscribeCrosshairMove(renderLegend);
@@ -1899,6 +1924,7 @@
     v = v || R;
     if (!v || !v.chart) return;
     if (v.layer) { DRAW.detach(v.layer); v.layer = null; }
+    if (v.ind) { v.ind.destroy(); v.ind = null; }
     try { v.chart.remove(); } catch (e) { /* ignore */ }
     v.chart = null; v.series = null; v.vol = null; v.sessions = null; v.tlines = null; v.markGroups = {}; v.lines = {}; v.askLine = null; v.bidLine = null;
     markTip(v, null);
@@ -1941,6 +1967,7 @@
     v.ha = v.look.style === 'heikin' ? window.WwBtLook.heikinAshi(v.bars, 0, []) : null;
     v.series.setData(window.WwBtLook.toSeriesData(v.look, v.bars, v.ha));
     if (v.vol) v.vol.setData(v.candles.map(function (x) { return volPoint(v, x); }));
+    if (v.ind) v.ind.setData();
     v.dirtyFrom = -1;
     fitZoomLimit(v);
     if (v === R) renderLegend();
@@ -1964,6 +1991,7 @@
         if (!C.validBar(v.bars[i])) continue;
         v.series.update(seriesPoint(v, i)); if (v.vol) v.vol.update(volPoint(v, v.candles[i]));
       }
+      if (v.ind) v.ind.update(from);
       v.dirtyFrom = -1;
       fitZoomLimit(v);                                     // one more candle: a little further out is allowed
     });
@@ -2128,8 +2156,13 @@
     var lo = Math.min(a, b), hi = Math.max(a, b), n = v.bars.length, clo = Infinity, chi = -Infinity;
     for (var i = Math.max(0, Math.ceil(r.from)); i <= Math.min(n - 1, Math.floor(r.to)); i++) { clo = Math.min(clo, v.bars[i].low); chi = Math.max(chi, v.bars[i].high); }
     if (!isFinite(clo)) return;
+    // the overlay indicators are part of the auto scale too (a moving average far from the candles widens it), and oscillator
+    // bands leave the candles less room: the axis may span more in that proportion
+    var ir = v.ind ? v.ind.range(Math.max(0, Math.ceil(r.from)), Math.min(n - 1, Math.floor(r.to))) : null;
+    if (ir) { clo = Math.min(clo, ir.lo); chi = Math.max(chi, ir.hi); }
+    var mm = v.ind ? v.ind.margins().main : null, room = mm ? Math.max(0.1, 1 - mm.top - mm.bottom) : 0.84;
     var span = Math.max(chi - clo, chi * 1e-4);
-    if (isFinite(lo) && isFinite(hi) && lo <= clo + span * 0.05 && hi >= chi - span * 0.05 && hi - lo <= span * 4) return;
+    if (isFinite(lo) && isFinite(hi) && lo <= clo + span * 0.05 && hi >= chi - span * 0.05 && hi - lo <= span * 4 * Math.max(1, 0.84 / room)) return;
     wwLogWarn(new Error('price scale off the candles: axis [' + lo + ', ' + hi + '] candles [' + clo + ', ' + chi + '] style ' + (v.look && v.look.style) + (again ? ' (after rebuild)' : '')));
     if (again) return;
     var range = v.chart.timeScale().getVisibleLogicalRange();
@@ -2208,7 +2241,7 @@
     var host = el('div', 'bt-chart'); cell.appendChild(host);
     cellHost(i).appendChild(cell);
     var v = { el: host, cell: cell, pane: 'chart' + (i + 2), tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1 };
-    sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); });
+    sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); sel.blur(); });
     return v;
   }
   // the drawing toolbar: its own window on the free desk (sized by that window's width), next to the main chart otherwise
@@ -2327,8 +2360,12 @@
     clearTimeout(chipTimer); chipTimer = later(function () { n.textContent = ''; }, 4000);
   }
   function durText(min) {
-    var d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
-    return (d ? d + 'g ' : '') + (h ? h + 's ' : '') + (!d && !h ? m + 'dk' : '').trim() || '0dk';
+    // in the page's language ("2d skipped", not "2g  skipped"): days and hours, minutes only below an hour
+    var d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60, parts = [];
+    if (d) parts.push(_t('backtest.draw.days', '{n}g', { n: d }));
+    if (h) parts.push(_t('backtest.draw.hours', '{n}s', { n: h }));
+    if (!d && !h) parts.push(_t('backtest.draw.minutes', '{n}dk', { n: m }));
+    return parts.join(' ');
   }
 
   function renderClock() {
@@ -2621,8 +2658,10 @@
       $(id).addEventListener('click', function (e) { if (e.target === $(id)) closeModal(id); });
     });
     // toolbar
-    $('bt-tf').addEventListener('change', function () { setTimeframe(this.value); });
-    $('bt-speed').addEventListener('change', function () { setSpeed(parseFloat(this.value)); });
+    // the select gives the focus back after a choice: the replay keys (→, Space) work again, and on Windows / Linux → no longer
+    // changes the closed select
+    $('bt-tf').addEventListener('change', function () { setTimeframe(this.value); this.blur(); });
+    $('bt-speed').addEventListener('change', function () { setSpeed(parseFloat(this.value)); this.blur(); });
     $('bt-play-btn').addEventListener('click', function () { if (R && R.playing) pause(); else play(); });
     $('bt-step-btn').addEventListener('click', stepCandle);
     $('bt-step1m-btn').addEventListener('click', stepMinute);
@@ -2658,6 +2697,11 @@
       light: function () { return window.WwChart.isLight(); }, upgrade: function () { openUpgrade('backtest_themes'); }, newId: newId,
       change: function (next, how) { L.look = next; window.WwBtLook.save(safeStorage(), next); applyLook(how); } });
     $('bt-look-btn').addEventListener('click', function () { toggleDrawer(); });
+    // indicators drawer (every plan): the same list on every chart of the page, stored in this browser
+    IND_DRAWER = window.WwBtInd.mountDrawer({ box: $('bt-ind-body'), t: _t, state: function () { return L.ind; },
+      change: function (next) { L.ind = next; window.WwBtInd.save(safeStorage(), next); views().forEach(function (v) { if (v.ind) v.ind.apply(next.list); }); } });
+    $('bt-ind-btn').addEventListener('click', function () { toggleIndDrawer(); });
+    $('bt-ind-close').addEventListener('click', function () { toggleIndDrawer(false); });
     $('bt-limit-upgrade').addEventListener('click', function () { openUpgrade('backtest_trades'); });
     $('bt-back-continue').addEventListener('click', function () { finishBack('continue'); });
     $('bt-back-reset').addEventListener('click', function () { finishBack('reset'); });
@@ -2725,6 +2769,8 @@
       if (FSEDIT && FSEDIT.isEditing()) return;                // arranging the full screen: arrows move the boxes
       if ((e.ctrlKey || e.metaKey) && DRAW && DRAW.undoKey(e)) { e.preventDefault(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // a held key repeats only the step (→); held Shift+B opened a position per repeat, held Space flickered play / pause
+      if (e.repeat && e.key !== 'ArrowRight') { if (e.key === ' ') e.preventDefault(); return; }
       if (e.key === ' ') { e.preventDefault(); if (R.playing) pause(); else play(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) stepMinute(); else stepCandle(); }
       else if (e.key === '?') { e.preventDefault(); openKeys(null); }
@@ -2744,6 +2790,7 @@
     if (!$('bt-widgets-pop').hidden) { togglePop('bt-widgets', false); return true; }
     if (!$('bt-layout-pop').hidden) { toggleLayoutPop(false); return true; }
     if (!$('bt-look-drawer').hidden) { toggleDrawer(false); return true; }
+    if (!$('bt-ind-drawer').hidden) { toggleIndDrawer(false); return true; }
     if (DRAW && DRAW.escape()) return true;
     // real full screen → back to the page view → closed (the browser usually takes Esc itself in real full screen: bt-layout.js)
     if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(LAY.isRealFullscreen(), false); return true; }
@@ -2759,8 +2806,15 @@
   }
   function toggleDrawer(on) {
     var d = $('bt-look-drawer'); if (on === undefined) on = d.hidden;
+    if (on) toggleIndDrawer(false);
     if (on) { DRAWER.render(); d.hidden = false; $('bt-look-btn').setAttribute('aria-expanded', 'true'); var f = d.querySelector('button, input'); if (f) f.focus(); }
     else if (!d.hidden) { d.hidden = true; $('bt-look-btn').setAttribute('aria-expanded', 'false'); try { $('bt-look-btn').focus(); } catch (e) { /* ignore */ } }
+  }
+  function toggleIndDrawer(on) {
+    var d = $('bt-ind-drawer'), b = $('bt-ind-btn'); if (!d || !IND_DRAWER) return;
+    if (on === undefined) on = d.hidden;
+    if (on) { toggleDrawer(false); IND_DRAWER.render(); d.hidden = false; b.setAttribute('aria-expanded', 'true'); var f = d.querySelector('button, input'); if (f) f.focus(); }
+    else if (!d.hidden) { d.hidden = true; b.setAttribute('aria-expanded', 'false'); try { b.focus(); } catch (e) { /* ignore */ } }
   }
   function openKeys(opener) {
     var box = $('bt-keys-list'); LAY.renderSheet(box);
@@ -2941,7 +2995,10 @@
     var last = document.body.classList.contains('light-theme');
     themeObserver = new MutationObserver(function () {
       var now = document.body.classList.contains('light-theme');
-      if (now !== last) { last = now; rebuildChart(); renderStats(); }
+      if (now !== last) {
+        last = now; rebuildChart(); renderStats();
+        if (DRAWER && !$('bt-look-drawer').hidden) DRAWER.render();   // the theme previews follow light / dark
+      }
     });
     themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }
@@ -2956,7 +3013,12 @@
           views().forEach(function (v) { if (v.chart) v.chart.applyOptions({ localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) }, timeScale: { tickMarkFormatter: tickLabelFor(v) } }); });
           rebuildMarkers(); renderLayoutPicker();
         if (FSEDIT) FSEDIT.relabel();
+        if (RANGE) RANGE.refresh();
         } else if (L.store) renderList();
+        // the drawing toolbar and the open drawers were built in the old language
+        if (DRAW) DRAW.render();
+        if (DRAWER && !$('bt-look-drawer').hidden) DRAWER.render();
+        if (IND_DRAWER && !$('bt-ind-drawer').hidden) IND_DRAWER.render();
         if (L.store) renderPlan();
       });
     });
