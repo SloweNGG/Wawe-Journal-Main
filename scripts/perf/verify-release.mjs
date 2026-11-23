@@ -64,8 +64,8 @@ try {
       await ctx.close();
     }
     check('F1', 'Google Fonts isteği yok (index, login, about, dashboard, analytics)', google.length === 0, google.length ? google.slice(0, 3).join(', ') : '0 istek');
-    const bad = fonts.filter((f) => f.status !== 200 || f.cc !== 'public, max-age=31536000, immutable' || !/\?v=\d+$/.test(f.url));
-    check('F2', '/fonts/*.woff2 ?v=<build> ile, "public, max-age=31536000, immutable"', fonts.length > 0 && bad.length === 0,
+    const bad = fonts.filter((f) => f.status !== 200 || f.cc !== 'public, max-age=31536000, immutable' || !/\?v=(?:[0-9a-f]{10}|\d+)$/.test(f.url));
+    check('F2', '/fonts/*.woff2 ?v=<içerik hash\'i> ile, "public, max-age=31536000, immutable"', fonts.length > 0 && bad.length === 0,
       `${fonts.length} yanıt, ${[...new Set(fonts.map((f) => f.url.replace(/\?.*/, '')))].length} dosya; sorunlu ${bad.length}${bad[0] ? ' (' + bad[0].url + ' ' + bad[0].cc + ')' : ''}`);
   }
 

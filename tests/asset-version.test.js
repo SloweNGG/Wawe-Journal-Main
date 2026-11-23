@@ -1,10 +1,10 @@
-// Yerel JS/CSS sürümleme (scripts/asset-version.mjs) — tek build ID, immutable önbellek güvenliği
+// Yerel JS/CSS sürümleme (scripts/asset-version.mjs) — dosya başına içerik hash'i, immutable önbellek güvenliği
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { stampHtml, stampJs, stampCss, findUnversioned, versionDist, stampImages, findUnversionedImages, TOKEN } from '../scripts/asset-version.mjs';
+import { stampHtml, stampJs, stampCss, findUnversioned, versionDist, stampImages, findUnversionedImages, resolveRef, TOKEN } from '../scripts/asset-version.mjs';
 
 const ID = '1790000000000';
 
@@ -87,19 +87,141 @@ describe('asset-version: CSS', () => {
   });
 });
 
-describe('asset-version: dist pass', () => {
-  it('stamps a dist tree and reports stale (not current) files separately', () => {
+describe('asset-version: dist pass (content hashes)', () => {
+  const H = /^[0-9a-f]{10}$/;
+  function tree(files) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wj-av-'));
-    fs.mkdirSync(path.join(dir, 'js'));
-    fs.writeFileSync(path.join(dir, 'page.html'), '<meta name="ww-build" content="' + ID + '"><script src="/js/a.js?v=3"></script>');
-    fs.writeFileSync(path.join(dir, 'js', 'a.js'), "import './b.js';");
-    fs.writeFileSync(path.join(dir, 'old.html'), '<meta name="ww-build" content="1"><script>s.src="/js/c.js"</script>');
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.join(dir, path.dirname(rel)), { recursive: true });
+      fs.writeFileSync(path.join(dir, rel), text);
+    }
+    return dir;
+  }
+  const read = (dir, rel) => fs.readFileSync(path.join(dir, rel), 'utf8');
+  const verIn = (text, ref) => (text.match(new RegExp(ref.replace(/[.]/g, '\\.') + '\\?v=([^"\'`)&]+)')) || [])[1];
+
+  it('stamps a dist tree and reports stale (not current) files separately', () => {
+    const dir = tree({
+      'page.html': '<meta name="ww-build" content="' + ID + '"><script src="/js/a.js?v=3"></script>',
+      'js/a.js': "import './b.js';",
+      'js/b.js': 'export const b = 1;',
+      'old.html': '<meta name="ww-build" content="1"><script>s.src="/js/c.js"</script>',
+    });
     const r = versionDist(dir, ID, (rel) => rel !== '/old.html');
     assert.deepEqual(r.problems, []);
     assert.equal(r.stale.length, 2, r.stale.join());
-    assert.ok(fs.readFileSync(path.join(dir, 'page.html'), 'utf8').includes('/js/a.js?v=' + ID));
-    assert.ok(fs.readFileSync(path.join(dir, 'js', 'a.js'), 'utf8').includes("./b.js?v=" + ID));
+    assert.match(verIn(read(dir, 'page.html'), '/js/a.js'), H);
+    assert.match(verIn(read(dir, 'js/a.js'), './b.js'), H);
     assert.throws(() => versionDist(dir, 'abc'), /rakam/);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('an unchanged file keeps its address across builds; a change ripples up the import chain only', () => {
+    const files = {
+      'p.html': '<script src="/js/main.js"></script><script src="/js/other.js"></script><link rel="stylesheet" href="/css/s.css">',
+      'js/main.js': "import { b } from './lib/b.js'; console.log(b);",
+      'js/lib/b.js': "import '../../shared/c.js'; export const b = 1;",
+      'shared/c.js': 'export const c = 1;',
+      'js/other.js': 'console.log(2);',
+      'css/s.css': "@font-face{src:url(/fonts/f.woff2)}@import '/css/t.css';",
+      'css/t.css': '.t{color:red}',
+      'fonts/f.woff2': 'FONT1',
+    };
+    const d1 = tree(files);
+    const d2 = tree(files);
+    const r1 = versionDist(d1, '1790000000001');
+    const r2 = versionDist(d2, '1790000000002');
+    assert.deepEqual([r1.problems, r2.problems], [[], []]);
+    assert.equal(read(d1, 'p.html'), read(d2, 'p.html'), 'different build IDs, same content → identical output');
+    // c.js değişir → b.js ve main.js'in adresi değişir; other.js ve CSS aynı kalır
+    const d3 = tree({ ...files, 'shared/c.js': 'export const c = 2;' });
+    versionDist(d3, '1790000000003');
+    const p1 = read(d1, 'p.html');
+    const p3 = read(d3, 'p.html');
+    assert.notEqual(verIn(p3, '/js/main.js'), verIn(p1, '/js/main.js'));
+    assert.notEqual(verIn(read(d3, 'js/main.js'), './lib/b.js'), verIn(read(d1, 'js/main.js'), './lib/b.js'));
+    assert.equal(verIn(p3, '/js/other.js'), verIn(p1, '/js/other.js'));
+    assert.equal(verIn(p3, '/css/s.css'), verIn(p1, '/css/s.css'));
+    // font değişir → onu kullanan CSS'in adresi de değişir
+    const d4 = tree({ ...files, 'fonts/f.woff2': 'FONT2' });
+    versionDist(d4, '1790000000004');
+    assert.notEqual(verIn(read(d4, 'p.html'), '/css/s.css'), verIn(p1, '/css/s.css'));
+    for (const d of [d1, d2, d3, d4]) fs.rmSync(d, { recursive: true, force: true });
+  });
+
+  it('import cycles get one shared hash and still change when a member changes', () => {
+    const files = {
+      'p.html': '<script type="module" src="/m/a.js"></script>',
+      'm/a.js': "import './b.js'; export const a = 1;",
+      'm/b.js': "import './a.js'; export const b = 1;",
+    };
+    const d1 = tree(files);
+    const r = versionDist(d1, ID);
+    assert.deepEqual(r.problems, []);
+    const va = verIn(read(d1, 'm/b.js'), './a.js');
+    assert.match(va, H);
+    assert.equal(va, verIn(read(d1, 'm/a.js'), './b.js'));
+    assert.equal(va, verIn(read(d1, 'p.html'), '/m/a.js'));
+    const d2 = tree({ ...files, 'm/b.js': "import './a.js'; export const b = 2;" });
+    versionDist(d2, ID);
+    assert.notEqual(verIn(read(d2, 'p.html'), '/m/a.js'), va);
+    for (const d of [d1, d2]) fs.rmSync(d, { recursive: true, force: true });
+  });
+
+  it('code-built URLs: literal → file hash, prefix+var+suffix → hash of the matching files, __WW_GLOB(...)__ → hash of the glob', () => {
+    const files = {
+      'p.html': '<link rel="preload" href="/fonts/a.woff2?v=' + TOKEN + '"><script src="/x.js"></script>',
+      'x.js':
+        "s.src='/lazy/l.js?v=" + TOKEN + "';fetch(\"/fonts/pdf/D-\"+w+\".ttf?v=" + TOKEN + "\");" +
+        'fetch(`/fonts/pdf/D-${w}.ttf?v=' + TOKEN + '`);var u=P+lang+".js?v=__WW_GLOB(/i18n/*.js)__";',
+      'lazy/l.js': 'console.log(1)',
+      'fonts/a.woff2': 'A',
+      'fonts/pdf/D-Bold.ttf': 'B',
+      'fonts/pdf/D-Regular.ttf': 'R',
+      'i18n/en.js': 'export default {}',
+      'i18n/tr.js': 'export default {}',
+    };
+    const d1 = tree(files);
+    const r = versionDist(d1, ID);
+    assert.deepEqual([r.problems, r.warnings], [[], []]);
+    const x1 = read(d1, 'x.js');
+    assert.ok(!x1.includes(TOKEN) && !x1.includes('__WW_GLOB'), x1);
+    assert.match(verIn(x1, '/lazy/l.js'), H);
+    assert.ok(x1.includes('"/fonts/pdf/D-"+w+".ttf?v='), x1);
+    assert.ok(/`\/fonts\/pdf\/D-\$\{w\}\.ttf\?v=[0-9a-f]{10}`/.test(x1), x1);
+    assert.match(verIn(x1, '".js'), H);
+    assert.match(verIn(read(d1, 'p.html'), '/fonts/a.woff2'), H);
+    // tr.js değişir → glob hash'i (ve x.js'in adresi) değişir; font hash'leri aynı kalır
+    const d2 = tree({ ...files, 'i18n/tr.js': 'export default {a:1}' });
+    versionDist(d2, ID);
+    const x2 = read(d2, 'x.js');
+    assert.notEqual(verIn(x2, '".js'), verIn(x1, '".js'));
+    assert.equal(verIn(x2, '/lazy/l.js'), verIn(x1, '/lazy/l.js'));
+    assert.equal(x2.match(/D-"\+w\+"\.ttf\?v=([0-9a-f]+)/)[1], x1.match(/D-"\+w\+"\.ttf\?v=([0-9a-f]+)/)[1]);
+    for (const d of [d1, d2]) fs.rmSync(d, { recursive: true, force: true });
+  });
+
+  it('a reference to a file that is not in dist falls back to the build ID with a warning', () => {
+    const dir = tree({ 'p.html': '<script src="/gone.js"></script>', 'y.js': "var t='" + TOKEN + "';" });
+    const r = versionDist(dir, ID);
+    assert.deepEqual(r.problems, []);
+    assert.ok(read(dir, 'p.html').includes('/gone.js?v=' + ID));
+    assert.ok(r.warnings.some((w) => w.includes('/gone.js')), r.warnings.join());
+    assert.ok(r.warnings.some((w) => w.includes('/y.js')), 'leftover token is reported as a build-ID fallback');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('a hand-written wrong version is caught by the check', () => {
+    assert.deepEqual(findUnversioned('<script src="/a.js?v=1111111111"></script>', 'html', { ver: () => 'abcdef0123', glob: () => '', fallback: ID }), [
+      '/a.js?v=1111111111',
+    ]);
+  });
+
+  it('resolves relative references against the referencing file', () => {
+    assert.equal(resolveRef('./b.js', '/interface/x/a.js'), '/interface/x/b.js');
+    assert.equal(resolveRef('../core/c.js?v=1', '/src/services/a.js'), '/src/core/c.js');
+    assert.equal(resolveRef('parser.js', '/add-trade.html'), '/parser.js');
+    assert.equal(resolveRef('/abs.css', '/deep/er/p.html'), '/abs.css');
   });
 });
 
@@ -153,7 +275,7 @@ describe('asset-version: sources keep no hand-written versions', () => {
       return e.isDirectory() ? walk(f, exts) : exts.includes(path.extname(f)) ? [f] : [];
     });
   }
-  it('no ?v=<number> on local JS/CSS in src/ or public/ (the build writes the single build ID)', () => {
+  it('no ?v=<number> on local JS/CSS in src/ or public/ (the build writes content hashes)', () => {
     const bad = [];
     const files = [...walk('src', ['.astro', '.ts', '.tsx']), ...walk('public', ['.js', '.html', '.css'])].filter(
       (f) => !f.endsWith(path.join('src', 'bundle.js'))

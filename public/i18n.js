@@ -25,6 +25,14 @@
 
   var SUPPORTED_LANGS = ['en', 'tr', 'de'];
 
+  // ⭐ Sözlük adresleri tam yazılır: derleme her birine kendi içerik hash'ini yazar (scripts/asset-version.mjs),
+  //    yalnızca değişen dil dosyası deploy sonrası yeniden iner. WW_I18N_PATH verilirse klasör kısmı onunla değişir.
+  var LOCALE_URLS = {
+    en: '/i18n/locales/en.js?v=__WW_BUILD_ID__',
+    tr: '/i18n/locales/tr.js?v=__WW_BUILD_ID__',
+    de: '/i18n/locales/de.js?v=__WW_BUILD_ID__'
+  };
+
   // ⭐ SYNC FALLBACK — dil dosyası yüklenene kadar (~50ms) gösterilecek metinler
   //    Bu sözlüğü minimum tut! Sadece ilk boyamada görünecek kritik metinler.
   //    (İngilizce fallback olduğu için EN değerleri kullanılıyor)
@@ -123,7 +131,8 @@
     if (SUPPORTED_LANGS.indexOf(lang) === -1) return null;
 
     try {
-      var url = I18N_PATH + lang + '.js?v=__WW_BUILD_ID__'; // build ID derlemede yazılır (scripts/asset-version.mjs)
+      var url = LOCALE_URLS[lang];
+      if (I18N_PATH !== './i18n/locales/') url = url.replace('/i18n/locales/', I18N_PATH);
       var mod = await import(/* @vite-ignore */ url);
       var dict = (mod && mod.default) ? mod.default : mod;
 

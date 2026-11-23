@@ -1,11 +1,17 @@
 // Derleme kimliği: scripts/asset-version.mjs derlemede bu jetonu build ID ile değiştirir (geliştirmede olduğu gibi
-// kalır; o zaman cache-first devre dışı). Her deploy'da sw.js değişir → yeni SW kurulur → activate eski önbelleği siler.
+// kalır; o zaman cache-first devre dışı). Her deploy'da sw.js değişir → yeni SW kurulur → activate eski SAYFA önbelleğini siler.
 const BUILD_ID = '__WW_BUILD_ID__';
-const CACHE_VERSION = 'wawe-v53-' + BUILD_ID; // v53: sayfalar önce ağ (3 sn / çevrimdışı → önbellek); v52: sürümlü varlıklar cache-first; Storage avatarları ayrı wawe-storage-v1'de (deploy'da silinmez)
+const CACHE_VERSION = 'wawe-v54-' + BUILD_ID; // v54: sürümlü varlıklar ayrı ve deploy'da SİLİNMEYEN wawe-assets-v1'de; v53: sayfalar önce ağ (3 sn / çevrimdışı → önbellek); Storage avatarları ayrı wawe-storage-v1'de (deploy'da silinmez)
 const PRECACHE_URLS = ['/'];
 const IS_BUILD = /^[0-9]+$/.test(BUILD_ID);
-// ?v=<BUILD_ID> taşıyan bu türler içerik olarak hiç değişmez (yeni deploy = yeni adres)
+// ?v=<içerik hash'i> taşıyan bu türler içerik olarak hiç değişmez (içerik değişirse adres değişir; bkz. scripts/asset-version.mjs)
 const VERSIONED_EXT = /\.(?:m?js|css|json|woff2?|ttf|otf|svg|png|webp|ico)$/i;
+// Dosya başına içerik hash'i (sha256'nın ilk 10 hex'i). Değişmeyen dosyanın adresi deploy'lar arasında aynı kalır.
+const CONTENT_HASH = /^[0-9a-f]{10}$/;
+// Sürümlü varlık önbelleği: deploy'da SİLİNMEZ (değişmeyen dosyalar yeniden inmesin). Aynı dosyanın eski sürümü
+// yenisi yazılınca silinir; toplam en çok ASSETS_MAX kayıt (sitede artık olmayan dosyalar için tavan, en eskiler gider).
+const ASSET_CACHE = 'wawe-assets-v1';
+const ASSETS_MAX = 700;
 // Sayfa (HTML) için ağın bu süre içinde cevap vermesi beklenir; gecikirse önbellekteki kopya gösterilir
 const NAV_TIMEOUT_MS = 3000;
 
@@ -51,8 +57,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((k) => k !== CACHE_VERSION && k !== STORAGE_CACHE).map((k) => caches.delete(k))
+        keys.filter((k) => k !== CACHE_VERSION && k !== STORAGE_CACHE && k !== ASSET_CACHE).map((k) => caches.delete(k))
       ))
+      .then(() => trimAssets())
       .then(() => self.clients.claim())
   );
 });
@@ -115,9 +122,68 @@ function networkFirstPage(event, url) {
   });
 }
 
-// Bu derlemenin sürümlü yerel dosyası mı? (başka derlemenin ?v= değeri → ağdan, önbelleğe yazılmaz)
+// Sürümlü (adresi içeriğiyle değişen) yerel dosya mı? İçerik hash'i ya da (dist'te hedefi bulunamayan nadir referanslar için)
+// bu derlemenin build ID'si. Başka derlemenin build ID'si ve geliştirme jetonu → ağdan, önbelleğe yazılmaz.
 function isVersionedAsset(url) {
-  return IS_BUILD && url.searchParams.get('v') === BUILD_ID && VERSIONED_EXT.test(url.pathname);
+  if (!IS_BUILD || !VERSIONED_EXT.test(url.pathname)) return false;
+  const v = url.searchParams.get('v');
+  return !!v && (CONTENT_HASH.test(v) || v === BUILD_ID);
+}
+
+// Aynı dosyanın (aynı yol, başka ?v=) eski kopyalarını sil: önbellekte dosya başına tek sürüm kalır
+function pruneOldVersions(cache, req) {
+  const url = new URL(req.url);
+  return cache.keys(url.origin + url.pathname, { ignoreSearch: true })
+    .then((keys) => Promise.all(keys.filter((k) => k.url !== req.url).map((k) => cache.delete(k))))
+    .catch(() => {});
+}
+
+// Tavan: en eski kayıtlar (Cache API anahtarları ekleme sırasıyla döner)
+function trimAssets() {
+  return caches.open(ASSET_CACHE)
+    .then((cache) => cache.keys().then((keys) =>
+      Promise.all(keys.slice(0, Math.max(0, keys.length - ASSETS_MAX)).map((k) => cache.delete(k)))))
+    .catch(() => {});
+}
+
+// JS/CSS/JSON için gelen baytların sha256'sı ?v= ile uyuşuyor mu? Uyuşmazsa (eski sekme deploy sonrası eski hash'li adresi
+// istedi ve sunucu yeni dosyayı verdi; tarayıcı bunu o adresle "immutable" sakladı) önbelleğe YAZILMAZ ve bir kez
+// tarayıcı önbelleği atlanarak yeniden istenir. Böylece dosya ileride o eski içeriğe dönerse (revert) yanlış kopya kullanılmaz.
+const VERIFY_EXT = /\.(?:m?js|css|json)$/i;
+
+function sha10(res) {
+  return res.clone().arrayBuffer()
+    .then((buf) => self.crypto.subtle.digest('SHA-256', buf))
+    .then((d) => Array.from(new Uint8Array(d).slice(0, 5), (b) => b.toString(16).padStart(2, '0')).join(''));
+}
+
+function verified(req, res) {
+  const url = new URL(req.url);
+  const v = url.searchParams.get('v');
+  if (!CONTENT_HASH.test(v) || !VERIFY_EXT.test(url.pathname) || !(self.crypto && self.crypto.subtle)) return Promise.resolve({ res, ok: true });
+  return sha10(res).then((h) => {
+    if (h === v) return { res, ok: true };
+    return fetch(req, { cache: 'reload' }).then((fresh) =>
+      fresh && fresh.status === 200 && fresh.type === 'basic'
+        ? sha10(fresh).then((h2) => ({ res: fresh, ok: h2 === v }))
+        : { res: fresh, ok: false }
+    );
+  }).catch(() => ({ res, ok: false }));
+}
+
+function assetCacheFirst(req) {
+  return caches.open(ASSET_CACHE).then((cache) =>
+    cache.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        if (!res || res.status !== 200 || res.type !== 'basic') return res;
+        return verified(req, res).then(({ res: out, ok }) => {
+          if (ok) cache.put(req, out.clone()).then(() => pruneOldVersions(cache, req)).catch(() => {});
+          return out;
+        });
+      });
+    })
+  ).catch(() => fetch(req));
 }
 
 self.addEventListener('fetch', (event) => {
@@ -154,25 +220,13 @@ self.addEventListener('fetch', (event) => {
   // Gezinti olmayan HTML parçaları (settings panelleri, auth-spa) SW'ye girmez
   if (url.pathname.endsWith('.html')) return;
 
-  // ⭐ Sürümlü yerel JS/CSS/font/ikon (?v=<BUILD_ID>): cache-first. Adres her deploy'da değiştiği için
-  // önbellekteki kopya hiçbir zaman bayat olmaz; ağa hiç gidilmez.
+  // ⭐ Sürümlü yerel JS/CSS/font/ikon (?v=<içerik hash'i>): cache-first. İçerik değişince adres değiştiği için
+  // önbellekteki kopya hiçbir zaman bayat olmaz; ağa hiç gidilmez. Önbellek deploy'lar arasında korunur.
   if (isVersionedAsset(url)) {
-    event.respondWith(
-      caches.open(CACHE_VERSION).then((cache) =>
-        cache.match(req).then((cached) => {
-          if (cached) return cached;
-          return fetch(req).then((res) => {
-            if (res && res.status === 200 && res.type === 'basic') {
-              cache.put(req, res.clone()).catch(() => {});
-            }
-            return res;
-          });
-        })
-      ).catch(() => fetch(req))
-    );
+    event.respondWith(assetCacheFirst(req));
     return;
   }
-  // Başka derlemenin (eski/yeni deploy ya da geliştirme) ?v= değeri: ağdan, önbelleğe yazılmadan
+  // Başka derlemenin build ID'si ya da geliştirme jetonu taşıyan ?v= değeri: ağdan, önbelleğe yazılmadan
   if (url.searchParams.has('v') && VERSIONED_EXT.test(url.pathname)) return;
 
   // /interface/, /components/, /src/ ve /settings/ altındaki SÜRÜMSÜZ istekler (ör. settings panelleri)

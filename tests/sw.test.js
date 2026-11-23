@@ -5,16 +5,22 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { stampJs } from '../scripts/asset-version.mjs';
+import nodeCrypto, { webcrypto } from 'node:crypto';
 
 const ORIGIN = 'https://wawejournal.com';
 const ID = '1790000000000';
 
 function response(body, extra = {}) {
-  return { status: 200, ok: true, type: 'basic', redirected: false, body, clone() { return this; }, ...extra };
+  return {
+    status: 200, ok: true, type: 'basic', redirected: false, body,
+    clone() { return this; },
+    arrayBuffer: async () => new TextEncoder().encode(String(body)).buffer,
+    ...extra,
+  };
 }
 
-// net(url) → 'ok' (varsayılan) | 'fail' | 'hang' | 'redirect'
-function loadSw(source, { net = () => 'ok' } = {}) {
+// net(url) → 'ok' (varsayılan) | 'fail' | 'hang' | 'redirect'; body(url, opts) → yanıt gövdesi; crypto → self.crypto
+function loadSw(source, { net = () => 'ok', body = null, crypto = null } = {}) {
   const listeners = {};
   const stores = new Map(); // ad → Map(url → yanıt)
   const fetched = [];
@@ -22,10 +28,19 @@ function loadSw(source, { net = () => 'ok' } = {}) {
   const store = (name) => {
     if (!stores.has(name)) stores.set(name, new Map());
     const m = stores.get(name);
+    const keyOf = (req) => (typeof req === 'string' ? req : req.url);
     return {
-      match: async (req) => m.get(typeof req === 'string' ? req : req.url),
-      put: async (req, res) => void m.set(typeof req === 'string' ? req : req.url, res),
+      match: async (req) => m.get(keyOf(req)),
+      put: async (req, res) => { m.delete(keyOf(req)); m.set(keyOf(req), res); },
       addAll: async (urls) => urls.forEach((u) => m.set(new URL(u, ORIGIN).href, response('pre'))),
+      // Cache API: ekleme sırasıyla; ignoreSearch → sorgu hariç aynı adres
+      keys: async (req, opts = {}) => {
+        const all = [...m.keys()].map((url) => ({ url }));
+        if (!req) return all;
+        const strip = (u) => u.split('?')[0];
+        return all.filter((k) => (opts.ignoreSearch ? strip(k.url) === strip(keyOf(req)) : k.url === keyOf(req)));
+      },
+      delete: async (req) => m.delete(keyOf(req)),
     };
   };
   const caches = {
@@ -37,8 +52,9 @@ function loadSw(source, { net = () => 'ok' } = {}) {
       return undefined;
     },
   };
-  const fetch = (req) => {
-    fetched.push(req.url);
+  const fetch = (req, opts) => {
+    fetched.push(req.url + (opts && opts.cache ? ' [' + opts.cache + ']' : ''));
+    if (body) return Promise.resolve(response(body(req.url, opts)));
     const mode = net(req.url);
     if (mode === 'fail') return Promise.reject(new TypeError('Failed to fetch'));
     if (mode === 'hang') return new Promise(() => {});
@@ -54,7 +70,8 @@ function loadSw(source, { net = () => 'ok' } = {}) {
     skipWaiting: () => {},
     clients: { claim: async () => {} },
   };
-  vm.runInNewContext(source, { self, caches, fetch, URL, Promise, console, setTimeout, clearTimeout });
+  if (crypto) self.crypto = crypto;
+  vm.runInNewContext(source, { self, caches, fetch, URL, Promise, console, setTimeout, clearTimeout, Uint8Array, Array });
   const tick = () => new Promise((r) => setImmediate(r));
   return {
     stores,
@@ -91,7 +108,9 @@ function loadSw(source, { net = () => 'ok' } = {}) {
 }
 
 const built = stampJs(fs.readFileSync('public/sw.js', 'utf8'), ID);
-const cacheName = 'wawe-v53-' + ID;
+const cacheName = 'wawe-v54-' + ID;
+const ASSETS = 'wawe-assets-v1';
+const HASH = 'a1b2c3d4e5';
 
 describe('service worker', () => {
   it('the build stamps its ID into the cache name', () => {
@@ -139,8 +158,40 @@ describe('service worker', () => {
     const sw = loadSw(built);
     sw.stores.set('wawe-v51', new Map([['x', 1]]));
     sw.stores.set('wawe-v52-1780000000000', new Map([['y', 1]]));
+    sw.stores.set('wawe-v53-1780000000000', new Map([['z', 1]]));
     await sw.lifecycle();
-    assert.deepEqual([...sw.stores.keys()], [cacheName]);
+    assert.deepEqual([...sw.stores.keys()].sort(), [ASSETS, cacheName].sort());
+  });
+
+  it('content-hashed assets are cache-first and the asset cache survives a deploy (new SW activates)', async () => {
+    const sw = loadSw(built);
+    const p = '/interface/dashboard/js/dashboard.js?v=' + HASH;
+    await sw.request(p);
+    const n = sw.fetched.length;
+    // yeni deploy: farklı build ID'li SW aynı önbellek nesneleriyle kurulur
+    const next = loadSw(stampJs(fs.readFileSync('public/sw.js', 'utf8'), '1790000000999'));
+    for (const [k, v] of sw.stores) next.stores.set(k, v);
+    await next.lifecycle();
+    assert.ok(next.stores.has(ASSETS), 'asset cache kept');
+    assert.ok(!next.stores.has(cacheName), 'old page cache removed');
+    const again = await next.request(p);
+    assert.equal(again.body, 'net:' + ORIGIN + p);
+    assert.equal(next.fetched.length, 0, 'unchanged file is not downloaded again after the deploy');
+    assert.equal(sw.fetched.length, n);
+  });
+
+  it('a new version of a file replaces the old one in the asset cache', async () => {
+    const sw = loadSw(built);
+    await sw.request('/styles.css?v=' + HASH);
+    await sw.request('/styles.css?v=ffffffffff');
+    await sw.request('/cache.js?v=' + HASH);
+    const keys = [...sw.stores.get(ASSETS).keys()];
+    assert.deepEqual(keys, [ORIGIN + '/styles.css?v=ffffffffff', ORIGIN + '/cache.js?v=' + HASH]);
+  });
+
+  it('uppercase, short or non-hex ?v values are not treated as content hashes', async () => {
+    const sw = loadSw(built);
+    for (const v of ['A1B2C3D4E5', 'abc', 'zzzzzzzzzz', 'a1b2c3d4e5f']) assert.equal(await sw.request('/styles.css?v=' + v), 'network', v);
   });
 });
 
@@ -188,5 +239,44 @@ describe('service worker: pages network-first', () => {
     const sw = loadSw(built, { net: () => 'redirect' });
     await sw.request('/strategies');
     assert.ok(!sw.stores.get(cacheName)?.has(ORIGIN + '/strategies'));
+  });
+});
+
+describe('service worker: content hash verification', () => {
+  const sha10 = (text) => nodeCrypto.createHash('sha256').update(text).digest('hex').slice(0, 10);
+
+  it('a JS file whose bytes match ?v is cached', async () => {
+    const good = 'console.log(1)';
+    const sw = loadSw(built, { body: () => good, crypto: webcrypto });
+    const p = '/interface/x.js?v=' + sha10(good);
+    await sw.request(p);
+    await new Promise((r) => setTimeout(r, 10));
+    assert.ok(sw.stores.get(ASSETS).has(ORIGIN + p));
+  });
+
+  it('mismatching bytes (an old hash answered with new content) are not cached; one reload past the HTTP cache is tried', async () => {
+    const oldText = 'console.log("old")';
+    let reverted = false;
+    const sw = loadSw(built, { body: (url, opts) => (opts && opts.cache === 'reload' && reverted ? oldText : 'console.log("new")'), crypto: webcrypto });
+    const p = '/interface/x.js?v=' + sha10(oldText);
+    const res = await sw.request(p);
+    assert.equal(res.body, 'console.log("new")');
+    await new Promise((r) => setTimeout(r, 10));
+    assert.ok(!sw.stores.get(ASSETS)?.has(ORIGIN + p), 'poisoned bytes stay out of the cache');
+    assert.deepEqual(sw.fetched, [ORIGIN + p, ORIGIN + p + ' [reload]']);
+    // dosya eski içeriğe döndü (revert): yeniden doğrulanır ve doğru kopya saklanır
+    reverted = true;
+    const again = await sw.request(p);
+    assert.equal(again.body, oldText);
+    await new Promise((r) => setTimeout(r, 10));
+    assert.equal(sw.stores.get(ASSETS).get(ORIGIN + p).body, oldText);
+  });
+
+  it('fonts and images are not hashed in the worker', async () => {
+    const sw = loadSw(built, { body: () => 'FONT', crypto: webcrypto });
+    await sw.request('/fonts/pdf/DMSans-Bold.ttf?v=0123456789');
+    await new Promise((r) => setTimeout(r, 10));
+    assert.ok(sw.stores.get(ASSETS).has(ORIGIN + '/fonts/pdf/DMSans-Bold.ttf?v=0123456789'));
+    assert.equal(sw.fetched.length, 1);
   });
 });
