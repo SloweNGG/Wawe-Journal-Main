@@ -120,6 +120,24 @@ push edilmemiş commit yok. Gereken Edge Function deploy'u ve veritabanı migrat
 
 ---
 
+## Backtest çizim araçları: 9 → 18 (`5000b84`)
+
+- **Yeni araçlar:** dikey çizgi (zaman ekseninde etiket), ok, paralel kanal, trend bazlı Fibonacci uzantısı, dirgen
+  (pitchfork), elips (Shift = daire), üçgen, fırça (serbest çizim, en çok 120 nokta), açıklama balonu.
+- **TradingView tarzı seçenekler:** trend çizgisini sola/sağa/iki yöne uzatma ve bilgi etiketi (fiyat farkı, %, mum, süre);
+  dikdörtgen ve Fibonacci'de "sağa uzat"; Ctrl/Cmd+C/V ile kopyala-yapıştır; Alt+sürükle ile kopya; "Kopyasını oluştur";
+  "Varsayılan yap" (aracın yeni çizimleri bu stille başlar); "Çizim modunda kal".
+- **Düzeltilen hatalar:** mıknatıs son mumun sağındaki boş alana konan noktayı son muma çekiyordu; 0–1 dışındaki
+  Fibonacci seviyelerinden çizim tutulamıyordu; long/short kutusu hafta sonunda kısalıyordu (artık 20 mum); süre
+  etiketi bazen "60dk" yazıyordu.
+- **Veritabanı:** migration `202611230002` (araç listesi 18, nokta sınırı 1–120 / 8 KB) canlıda uygulandı. Önce tablo
+  ve şema yedeği alındı (`~/WaweJournal-Backups/20261123T094732Z-bt-drawings-more-tools/`); doğrulama 16/16 geçti,
+  mevcut 24 çizime dokunulmadı. Geri alma: `supabase/rollbacks/202611230002_backtest_drawings_more_tools.down.sql`.
+- **Testler:** 1019/1019 birim testi; yeni tarayıcı senaryoları `draw-tools` 50/50, `draw-tools-en` 46/46, eski çizim
+  senaryoları geçiyor. `layout`, `multi-pro`, `desk-pro`'daki hatalar değişiklik öncesi kodda da var.
+
+---
+
 ## Canlıya alma özeti
 
 | Ne | Durum |
@@ -127,6 +145,8 @@ push edilmemiş commit yok. Gereken Edge Function deploy'u ve veritabanı migrat
 | Site (Cloudflare, `master` push'u) | Canlı, son yayın 23.11 00:58:35 |
 | Edge Function `ai-trade-parse` | Deploy edildi (AI ile Ekle + sütun eşleme sürümü) |
 | Veritabanı migration `202611230001` | Canlıda uygulandı (yedekli), sütun doğrulandı |
+| Veritabanı migration `202611230002` | Canlıda uygulandı (yedekli), doğrulama 16/16 |
+| Çizim araçları (`5000b84`) | Canlı, Cloudflare deploy doğrulandı |
 | Diğer veritabanı yazması | Yok (yalnızca salt okunur kontroller) |
 
 **Testler:** 1012 testten 1009'u geçiyor. Bilinen 3 hata önceden de vardı, bugünkü işlerle ilgisi yok: Windows satır
