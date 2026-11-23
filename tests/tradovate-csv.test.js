@@ -170,3 +170,48 @@ describe('Tradovate helpers', () => {
     assert.equal(r.detected, 'binance');
   });
 });
+
+// Gerçek Tradovate Orders dışa aktarımının biçimi (demo hesap, MESM4; TradeZella yardım sayfasındaki örnek dosya):
+// 29 sütun, B/S / Status / Type değerlerinde baştaki boşluk, CRLF satır sonu, dolum saatine göre sırasız satırlar,
+// iptal edilen emirlerde boş dolum alanları.
+describe('Tradovate Orders: real export layout', () => {
+  const HEAD = 'orderId,Account,Order ID,B/S,Contract,Product,Product Description,avgPrice,filledQty,Fill Time,lastCommandId,Status,_priceFormat,_priceFormatType,_tickSize,spreadDefinitionId,Version ID,Timestamp,Date,Quantity,Text,Type,Limit Price,Stop Price,decimalLimit,decimalStop,Filled Qty,Avg Fill Price,decimalFillAvg';
+  const FILE = [
+    HEAD,
+    '65509915441,DEMO1520898,65509915441, Buy,MESM4,MES,Micro E-mini S&P 500,5068.5,1,04/23/2024 09:11:54,65509915452, Filled,-2,0,0.25,,65509915452,04/23/2024 09:05:23,4/23/24,1,multibracket, Stop,,5068.50,,5068.5,1,5068.50,5068.5',
+    '65509915444,DEMO1520898,65509915444, Sell,MESM4,MES,Micro E-mini S&P 500,,,,65509915478, Canceled,-2,0,0.25,,65509915478,04/23/2024 09:11:54,4/23/24,1,multibracket, Limit,5078.50,,5078.5,,,,',
+    '65509915446,DEMO1520898,65509915446, Sell,MESM4,MES,Micro E-mini S&P 500,5067.25,1,04/23/2024 09:30:21,65509915546, Filled,-2,0,0.25,,65509915546,04/23/2024 09:29:18,4/23/24,1,multibracket, Stop,,5067.25,,5067.25,1,5067.25,5067.25',
+    '65509915489,DEMO1520898,65509915489, Buy,MESM4,MES,Micro E-mini S&P 500,5068.5,3,04/23/2024 09:14:21,65509915489, Filled,-2,0,0.25,,65509915489,04/23/2024 09:14:21,4/23/24,3,multibracket, Limit,5068.50,,5068.5,,3,5068.50,5068.5',
+    '65509915498,DEMO1520898,65509915498, Sell,MESM4,MES,Micro E-mini S&P 500,,,,65509915518, Canceled,-2,0,0.25,,65509915518,04/23/2024 09:14:36,4/23/24,3,multibracket, Limit,5078.50,,5078.5,,,,',
+    '65509915500,DEMO1520898,65509915500, Sell,MESM4,MES,Micro E-mini S&P 500,5067.25,3,04/23/2024 09:30:21,65509915550, Filled,-2,0,0.25,,65509915550,04/23/2024 09:29:26,4/23/24,3,multibracket, Stop,,5067.25,,5067.25,3,5067.25,5067.25',
+    '65509915579,DEMO1520898,65509915579, Buy,MESM4,MES,Micro E-mini S&P 500,5071.75,3,04/23/2024 09:41:42,65509915579, Filled,-2,0,0.25,,65509915579,04/23/2024 09:38:41,4/23/24,3,multibracket, Stop,,5071.75,,5071.75,3,5071.75,5071.75',
+    '65509915582,DEMO1520898,65509915582, Sell,MESM4,MES,Micro E-mini S&P 500,5079.5,3,04/23/2024 09:45:29,65509915610, Filled,-2,0,0.25,,65509915610,04/23/2024 09:42:32,4/23/24,3,multibracket, Limit,5079.50,,5079.5,,3,5079.50,5079.5',
+    '65509915584,DEMO1520898,65509915584, Sell,MESM4,MES,Micro E-mini S&P 500,,,,65509915596, Canceled,-2,0,0.25,,65509915596,04/23/2024 09:41:42,4/23/24,3,multibracket, Stop,,5069.50,,5069.5,,,',
+  ].join('\r\n') + '\r\n';
+
+  it('fills grouped until flat; canceled orders and padding ignored', () => {
+    const r = P.parse(FILE, {});
+    assert.equal(r.detected, 'tradovate-orders');
+    assert.deepEqual(plain(r.errors), []);
+    assert.equal(r.openPositions.length, 0);
+    assert.equal(r.rows.length, 2);
+    const [a, b] = r.rows;
+    assert.equal(a.symbol, 'MES');
+    assert.equal(a.direction, 'LONG');
+    assert.equal(a.lot, 4);
+    assert.equal(a.entry, 5068.5);
+    assert.equal(a.exit, 5067.25);
+    assert.equal(a.pnl, -25);
+    assert.equal(a.multiplier, 5);
+    assert.equal(a.ticket, '65509915441');
+    assert.equal(ymd(a.dateOpen), '2024-4-23');
+    assert.equal(a.dateOpen.getHours(), 9);
+    assert.equal(a.dateOpen.getMinutes(), 11);
+    assert.equal(a.date.getMinutes(), 30);
+    assert.equal(b.direction, 'LONG');
+    assert.equal(b.lot, 3);
+    assert.equal(b.entry, 5071.75);
+    assert.equal(b.exit, 5079.5);
+    assert.equal(b.pnl, 116.25);
+  });
+});

@@ -140,9 +140,9 @@ sonu nedeniyle ikisi (`bundle.js` esbuild eşitliği, üst çubuk "N" kısayolu)
       Gelince fiyatlandırma kararı: ayrı ücretli ek paket mi?
 - [ ] **NinjaTrader Connect** başvurusunun cevabı bekleniyor; hazır takip mesajı var.
 - [ ] **Telefondan gerçek ekran görüntüsüyle** AI ile Ekle denemesi (iPhone galerisi, broker mobil uygulaması).
-- [ ] **Gerçek bir Tradovate dosyasıyla** CSV içe aktarma denemesi (sütun adları doğrulanmadı).
+- [x] **Tradovate CSV doğrulandı (23 Kasım):** gerçek Orders örneği (TradeZella yardım sayfasındaki demo MESM4 dosyası: baştaki boşluklar, CRLF, sırasız/iptal satırlar) doğru okundu (−$25,00 / +$116,25), kalıcı teste eklendi. Performance için internette gerçek örnek yok; 67 satırlık sentetik örnek (FundedFlow) 59 işleme birleşti, toplam K/Z birebir. Kod değişikliği gerekmedi. Kalan: bir kullanıcının gerçek Performance dosyası.
 - [ ] **Okunamayan gerçek bir broker dosyasıyla** AI sütun eşleme denemesi.
 - [ ] Tradovate tanıtım sayfasına resmi logo.
 - [ ] Çapraz paritelerde (EURJPY, GBPJPY) K/Z için kur verisi.
 - [ ] AI ile Ekle'yi ana sayfada ve entegrasyonlar sayfasında tanıtmak (öneri, karar bekliyor).
-- [ ] AI koç token azaltma: canlı loglardan gerçek sayılar ve sonraki adımlar (`22kasım.md`'den devam).
+- [x] AI koç token azaltma: tamamlandı.
