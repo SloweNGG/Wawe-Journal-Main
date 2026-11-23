@@ -40,13 +40,13 @@
     await sleep(400);
 
     // --- default groups
-    ok('default: lines and positions share a button', J(groups()) === J(['trend ray hline', 'rect', 'fib', 'long short', 'text', 'measure']), J(groups()));
-    ok('grouped buttons have a corner; single ones do not', !!gbtn('trend').querySelector('[data-more]') && !!gbtn('long').querySelector('[data-more]') && !gbtn('rect').querySelector('[data-more]'));
+    ok('default: lines and positions share a button', J(groups()) === J(['trend ray hline vline arrow', 'channel pitchfork', 'fib fibext', 'rect ellipse triangle brush', 'long short', 'text callout', 'measure']), J(groups()));
+    ok('grouped buttons have a corner; single ones do not', !!gbtn('trend').querySelector('[data-more]') && !!gbtn('long').querySelector('[data-more]') && !!gbtn('rect').querySelector('[data-more]') && !gbtn('measure').querySelector('[data-more]'));
     ok('ray, horizontal line and short have no button of their own', !q('#bt-draw-bar > [data-tool="ray"]') && !q('#bt-draw-bar > [data-tool="hline"]') && !q('#bt-draw-bar > [data-tool="short"]'));
 
     // --- the corner opens the group; picking shows that tool on the button
     await click(corner(gbtn('trend')));
-    ok('corner: menu with trend line, ray, horizontal line', J(menuTools()) === J(['trend', 'ray', 'hline']) && gbtn('trend').getAttribute('aria-expanded') === 'true', J(menuTools()));
+    ok('corner: menu with trend line, ray, horizontal line, vertical line, arrow', J(menuTools()) === J(['trend', 'ray', 'hline', 'vline', 'arrow']) && gbtn('trend').getAttribute('aria-expanded') === 'true', J(menuTools()));
     ok('corner: no tool picked by opening', T().draw().tool() === 'cursor');
     await click(mid(q('.bt-draw-fly [data-fly-tool="ray"]')));
     ok('menu: ray picked, menu closed, the button shows the ray', T().draw().tool() === 'ray' && !q('.bt-draw-fly') && shown()[0] === 'ray' && gbtn('ray').getAttribute('aria-pressed') === 'true');
@@ -58,11 +58,11 @@
     ok('key 2: horizontal line picked, the group button shows it', T().draw().tool() === 'hline' && shown()[0] === 'hline'); await press('Escape');
     await press('9'); await press('Escape');
     await press('7');
-    ok('key 7: short picked through its group', T().draw().tool() === 'short' && shown()[3] === 'short'); await press('Escape'); await press('Escape');
+    ok('key 7: short picked through its group', T().draw().tool() === 'short' && shown()[4] === 'short'); await press('Escape'); await press('Escape');
 
     // --- right click and keyboard open the menu; Esc closes it
-    await click(mid(gbtn('rect')), { button: 'right' });
-    ok('right click on a single button: its menu with the reset (disabled while default)', J(menuTools()) === J(['rect']) && q('.bt-draw-fly [data-fly-act="reset"]').disabled);
+    await click(mid(gbtn('measure')), { button: 'right' });
+    ok('right click on a single button: its menu with the reset (disabled while default)', J(menuTools()) === J(['measure']) && q('.bt-draw-fly [data-fly-act="reset"]').disabled);
     await press('Escape');
     ok('Esc closes the menu', !q('.bt-draw-fly'));
     gbtn('long').focus(); await press('ArrowRight');
@@ -74,12 +74,12 @@
 
     // --- drag and drop on the bar
     await drag(mid(gbtn('rect')), topOf(gbtn('trend')));
-    ok('drag: rectangle moved to the front', J(groups()) === J(['rect', 'trend ray hline', 'fib', 'long short', 'text', 'measure']), J(groups()));
+    ok('drag: rectangle moved to the front', J(groups()) === J(['rect ellipse triangle brush', 'trend ray hline vline arrow', 'channel pitchfork', 'fib fibext', 'long short', 'text callout', 'measure']), J(groups()));
     ok('the click that ends a drag picks nothing', T().draw().tool() === 'cursor');
     await drag(mid(gbtn('fib')), mid(gbtn('trend')));
-    ok('drag: fibonacci dropped on the lines button joins that group', J(groups()) === J(['rect', 'trend ray hline fib', 'long short', 'text', 'measure']), J(groups()));
+    ok('drag: fibonacci dropped on the lines button joins that group', J(groups()) === J(['rect ellipse triangle brush', 'trend ray hline vline arrow fib fibext', 'channel pitchfork', 'long short', 'text callout', 'measure']), J(groups()));
     await drag(mid(gbtn('measure')), bottomOf(gbtn('measure')));
-    ok('drag onto its own place: nothing changes', J(groups()).indexOf('measure') > 0 && groups().length === 5);
+    ok('drag onto its own place: nothing changes', J(groups()).indexOf('measure') > 0 && groups().length === 6);
     // Esc while dragging: no change
     var before = J(groups());
     await drag(mid(gbtn('text')), topOf(gbtn('rect')), async function () { ok('while dragging: a drop line is shown', !!q('.bt-draw-drop-line:not([hidden])')); await press('Escape'); });
@@ -87,14 +87,14 @@
 
     // --- a tool from the menu
     await click(corner(gbtn('trend')));
-    ok('the lines menu lists fibonacci now', J(menuTools()) === J(['trend', 'ray', 'hline', 'fib']), J(menuTools()));
+    ok('the lines menu lists fibonacci now', J(menuTools()) === J(['trend', 'ray', 'hline', 'vline', 'arrow', 'fib', 'fibext']), J(menuTools()));
     await drag(mid(q('.bt-draw-fly [data-fly-tool="hline"]')), topOf(q('.bt-draw-fly [data-fly-tool="trend"]')));
-    ok('menu: horizontal line moved to the top of its group (menu stays open)', J(menuTools()) === J(['hline', 'trend', 'ray', 'fib']) && groups()[1] === 'hline trend ray fib', J(menuTools()));
+    ok('menu: horizontal line moved to the top of its group (menu stays open)', J(menuTools()) === J(['hline', 'trend', 'ray', 'vline', 'arrow', 'fib', 'fibext']) && groups()[1] === 'hline trend ray vline arrow fib fibext', J(menuTools()));
     await drag(mid(q('.bt-draw-fly [data-fly-tool="fib"]')), bottomOf(gbtn('measure')));
-    ok('menu: fibonacci dragged to the end of the bar gets its own button', J(groups()) === J(['rect', 'hline trend ray', 'long short', 'text', 'measure', 'fib']), J(groups()));
+    ok('menu: fibonacci dragged to the end of the bar gets its own button', J(groups()) === J(['rect ellipse triangle brush', 'hline trend ray vline arrow fibext', 'channel pitchfork', 'long short', 'text callout', 'measure', 'fib']), J(groups()));
     await click(corner(gbtn('ray')));
     await drag(mid(q('.bt-draw-fly [data-fly-tool="ray"]')), mid(gbtn('long')));
-    ok('menu: ray dropped on the positions button joins it', J(groups()) === J(['rect', 'hline trend', 'long short ray', 'text', 'measure', 'fib']), J(groups()));
+    ok('menu: ray dropped on the positions button joins it', J(groups()) === J(['rect ellipse triangle brush', 'hline trend vline arrow fibext', 'channel pitchfork', 'long short ray', 'text callout', 'measure', 'fib']), J(groups()));
     ok('stored in the browser', J((stored() || []).map(function (g) { return g.t.join(' '); })) === J(groups()));
 
     // --- the tools still work, then reset
@@ -104,7 +104,7 @@
     await click(mid(gbtn('fib')), { button: 'right' });
     ok('reset is enabled after changes', !q('.bt-draw-fly [data-fly-act="reset"]').disabled);
     await click(mid(q('.bt-draw-fly [data-fly-act="reset"]')));
-    ok('reset: the default toolbar again', J(groups()) === J(['trend ray hline', 'rect', 'fib', 'long short', 'text', 'measure']), J(groups()));
+    ok('reset: the default toolbar again', J(groups()) === J(['trend ray hline vline arrow', 'channel pitchfork', 'fib fibext', 'rect ellipse triangle brush', 'long short', 'text callout', 'measure']), J(groups()));
     var n0 = T().draw().set.list().length;
     await click(mid(gbtn('rect'))); await drag(P(0.3, 0.5), P(0.5, 0.7));
     ok('drawing after all this: a rectangle', T().draw().set.list().length === n0 + 1);

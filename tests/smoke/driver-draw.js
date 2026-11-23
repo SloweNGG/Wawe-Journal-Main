@@ -44,8 +44,8 @@
     await sleep(150);
     var bar = $('bt-draw-bar');
     var all = [].map.call(bar.querySelectorAll('[data-tools]'), function (b) { return b.getAttribute('data-tools'); }).join(' ').split(' ');
-    ok('drawing toolbar with cursor + 6 buttons holding the 9 tools in the ' + (pro ? 'advanced' : 'simple') + ' view (the plan decides the view)',
-      $('bt-root').getAttribute('data-mode') === (pro ? 'advanced' : 'simple') && bar.querySelectorAll('[data-tool]').length === 7 && all.length === 9 && bar.getBoundingClientRect().width > 20);
+    ok('drawing toolbar with cursor + 7 buttons holding the 18 tools in the ' + (pro ? 'advanced' : 'simple') + ' view (the plan decides the view)',
+      $('bt-root').getAttribute('data-mode') === (pro ? 'advanced' : 'simple') && bar.querySelectorAll('[data-tool]').length === 8 && all.length === 18 && bar.getBoundingClientRect().width > 20);
     var tags = bar.querySelectorAll('.bt-pro').length, plan = pro ? 'premium' : 'free';
     ok(plan + ': no PRO tags on the tools (drawings are free for every plan)', tags === 0, tags);
     // a trend line by dragging

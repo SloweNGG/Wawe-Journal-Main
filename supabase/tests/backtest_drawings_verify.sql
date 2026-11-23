@@ -1,5 +1,6 @@
 -- ============================================================
--- Verification of 202610240001_backtest_drawings.sql + 202610260002_backtest_drawings_free.sql (drawings free for every plan).
+-- Verification of 202610240001_backtest_drawings.sql + 202610260002_backtest_drawings_free.sql (drawings free for every plan)
+-- + 202611230002_backtest_drawings_more_tools.sql (nine more tools, a brush stroke up to 120 points).
 -- Runs in ONE transaction and ends with ROLLBACK: it creates two
 -- throw-away users (auth.users -> handle_new_user creates their profiles), a backtest account and drawings, checks the
 -- rules as the API role `authenticated` with JWT claims, and leaves nothing behind. Safe on the live database.
@@ -57,8 +58,23 @@ SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user
   (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc')), 'chk_backtest_drawings_tool', 'unknown tool refused');
 SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user_id, backtest_account_id, tool, points, style) VALUES (%L, %L, 'text', '[{"t":1,"p":1.1}]', jsonb_build_object('text', repeat('x', 201)))$q$,
   (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc')), 'chk_backtest_drawings_style', 'text longer than 200 refused');
-SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user_id, backtest_account_id, tool, points) VALUES (%L, %L, 'trend', '[1,2,3,4]')$q$,
-  (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc')), 'chk_backtest_drawings_points', 'more than 3 points refused');
+SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user_id, backtest_account_id, tool, points) VALUES (%L, %L, 'brush', %L)$q$,
+  (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc'),
+  (SELECT jsonb_agg(jsonb_build_object('t', g, 'p', 1.1)) FROM generate_series(1, 121) g)), 'chk_backtest_drawings_points', 'more than 120 points refused');
+SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user_id, backtest_account_id, tool, points) VALUES (%L, %L, 'trend', '[]')$q$,
+  (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc')), 'chk_backtest_drawings_points', 'no points refused');
+-- the nine tools of 202611230002; a brush stroke of 120 rounded points (what the page writes at most). Removed again (the 500 limit below).
+INSERT INTO public.backtest_drawings (user_id, backtest_account_id, tool, points, style)
+SELECT (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc'), t,
+       CASE WHEN t = 'brush' THEN (SELECT jsonb_agg(jsonb_build_object('t', 1785284264 + g * 60, 'p', 1.0950855 + g / 1e5)) FROM generate_series(1, 120) g)
+            WHEN t IN ('vline') THEN '[{"t":1785284264,"p":1.1}]'::jsonb
+            WHEN t IN ('channel', 'fibext', 'pitchfork', 'triangle') THEN '[{"t":1,"p":1.1},{"t":5,"p":1.2},{"t":1,"p":1.15}]'::jsonb
+            ELSE '[{"t":1,"p":1.1},{"t":5,"p":1.2}]'::jsonb END,
+       CASE WHEN t = 'callout' THEN '{"text":"Haber","color":null,"locked":false}'::jsonb ELSE '{"color":null,"locked":false}'::jsonb END
+  FROM unnest(ARRAY['vline', 'arrow', 'channel', 'fibext', 'pitchfork', 'ellipse', 'triangle', 'brush', 'callout']) t;
+DO $$ BEGIN IF (SELECT count(DISTINCT tool) FROM public.backtest_drawings WHERE tool IN ('vline', 'arrow', 'channel', 'fibext', 'pitchfork', 'ellipse', 'triangle', 'brush', 'callout')) <> 9 THEN RAISE EXCEPTION 'FAIL new tools'; END IF;
+  RAISE NOTICE 'PASS the nine new tools are stored (brush: 120 points)'; END $$;
+DELETE FROM public.backtest_drawings WHERE tool IN ('vline', 'arrow', 'channel', 'fibext', 'pitchfork', 'ellipse', 'triangle', 'brush', 'callout');
 RESET ROLE;
 
 -- 3. user b sees nothing of user a

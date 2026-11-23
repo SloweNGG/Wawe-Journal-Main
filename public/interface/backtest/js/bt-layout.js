@@ -56,6 +56,9 @@
     { id: 'delete_drawing', keys: ['Del'] },
     { id: 'undo', keys: ['@mod', 'Z'] },
     { id: 'redo', keys: ['@mod', 'Shift', 'Z'] },
+    { id: 'copy_drawing', keys: ['@mod', 'C'] },
+    { id: 'paste_drawing', keys: ['@mod', 'V'] },
+    { id: 'clone_drag', keys: ['@alt', '@drag'] },
     { id: 'draw_shift', keys: ['Shift'] },
     { id: 'draw_settings', keys: ['@dblclick'] },
     { id: 'sheet', keys: ['?'] }
@@ -186,6 +189,8 @@
         s.keys.forEach(function (k) {
           var kb = document.createElement(k === '…' ? 'span' : 'kbd');
           kb.textContent = k === 'Space' ? t('backtest.keys.space', 'Boşluk') : k === '@mod' ? (/Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl')
+            : k === '@alt' ? (/Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌥' : 'Alt')
+            : k === '@drag' ? t('backtest.keys.drag', 'Sürükle')
             : k === '@dblclick' ? t('backtest.keys.dblclick', 'Çift tık / sağ tık') : k;
           dt.appendChild(kb);
         });

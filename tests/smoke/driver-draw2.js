@@ -295,7 +295,9 @@
     }
 
     // ---------------- timeframe, replay, full screen: same place, no ghost
-    await tool('trend'); await drag(P(0.1, 0.9), P(0.3, 0.82)); tm = lastD(); await click(P(0.02, 0.05));
+    // inside the viewport: on the free plan the page is taller than 900 px and the chart's bottom is below the fold
+    await tool('trend'); await drag(P(0.1, 0.6), P(0.3, 0.52)); tm = lastD(); await click(P(0.02, 0.05));
+    ok('trend line for the timeframe checks drawn', tm && tm.tool === 'trend' && T().draw().tool() === 'cursor' && !T().draw().busy());
     var snap = J(list().map(function (x) { return x.pts; }));
     var tr3 = T().draw().set.get(tm.id);
     setv('bt-tf', '15m');

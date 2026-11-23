@@ -99,7 +99,7 @@ export class FakeDb {
   // Off by default so the sync-library tests can keep linking accounts, which stays valid for 'ctrader' accounts.
   // migration09: emulate Migration 09 on top of 08 (data_source 'synthetic'|'ctrader', source_* columns and their CHECK, immutable source,
   // cTrader account must be connected by the same user = `ctrader.accounts`). `ctrader` also feeds the get_ctrader_status RPC.
-  // drawings: emulate 202610240001 + 202610260002 (backtest_drawings: own account, every plan writes, upsert by id); plan: 'free' | 'premium'.
+  // drawings: emulate 202610240001 + 202610260002 + 202611230002 (backtest_drawings: own account, every plan writes, upsert by id); plan: 'free' | 'premium'.
   // tradeLimit: emulate 202610240002 (monthly limit on cTrader-data accounts for the free plan, counter never decremented);
   // null = migration not applied (the RPC is missing).
   // planUsage: emulate 202610260001 (get_backtest_plan_usage); planExpires: the plan end date it returns (ISO string or null).
@@ -244,7 +244,10 @@ export class FakeDb {
     const t = this.tables.backtest_drawings, rows = Array.isArray(call.payload) ? call.payload : [call.payload];
     for (const src of rows) {
       if (!this.tables.backtest_accounts.some((a) => a.id === src.backtest_account_id && a.user_id === src.user_id)) return { data: null, error: { code: 'P0001', message: 'INVALID_BACKTEST_ACCOUNT' }, status: 400 };
-      if (!['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure'].includes(src.tool)) return { data: null, error: { code: '23514', message: 'chk_backtest_drawings_tool' }, status: 400 };
+      if (!['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure',
+        'vline', 'arrow', 'channel', 'fibext', 'pitchfork', 'ellipse', 'triangle', 'brush', 'callout'].includes(src.tool)) return { data: null, error: { code: '23514', message: 'chk_backtest_drawings_tool' }, status: 400 };
+      // 202611230002: 1-120 points, at most 8 KB
+      if (!Array.isArray(src.points) || src.points.length < 1 || src.points.length > 120 || JSON.stringify(src.points).length > 8192) return { data: null, error: { code: '23514', message: 'chk_backtest_drawings_points' }, status: 400 };
       const old = t.find((r) => r.id === src.id);
       if (old && call.op === 'insert') return { data: null, error: { code: '23505', message: 'duplicate key' }, status: 409 };
       if (old) { if (old.backtest_account_id !== src.backtest_account_id) return { data: null, error: { code: 'P0001', message: 'BACKTEST_DRAWING_IMMUTABLE' }, status: 400 }; Object.assign(old, src, { updated_at: new Date().toISOString() }); }

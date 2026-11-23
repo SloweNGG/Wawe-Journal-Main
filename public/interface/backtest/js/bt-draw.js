@@ -14,20 +14,32 @@
 (function (global) {
   'use strict';
 
-  var TOOLS = ['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure'];
+  // The first nine keep their places: the number keys 1-9 pick them (the toolbar shows the number in the tooltip)
+  var TOOLS = ['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure',
+    'vline', 'arrow', 'channel', 'fibext', 'pitchfork', 'ellipse', 'triangle', 'brush', 'callout'];
   var FREE_TOOLS = ['trend', 'hline', 'rect'];
-  var NPTS = { trend: 2, hline: 1, ray: 2, rect: 2, fib: 2, long: 3, short: 3, text: 1, measure: 2 };
+  // points of a finished drawing (the brush: 2..MAX_BRUSH, see sanitize)
+  var NPTS = { trend: 2, hline: 1, ray: 2, rect: 2, fib: 2, long: 3, short: 3, text: 1, measure: 2,
+    vline: 1, arrow: 2, channel: 3, fibext: 3, pitchfork: 3, ellipse: 2, triangle: 3, brush: 2, callout: 2 };
   var ICONS = { trend: 'trending-up', hline: 'minus', ray: 'move-up-right', rect: 'rectangle-horizontal', fib: 'align-vertical-space-around',
-    long: 'arrow-up-from-line', short: 'arrow-down-from-line', text: 'type', measure: 'ruler' };
+    long: 'arrow-up-from-line', short: 'arrow-down-from-line', text: 'type', measure: 'ruler',
+    vline: 'separator-vertical', arrow: 'arrow-up-right', channel: 'equal', fibext: 'align-vertical-space-between', pitchfork: 'git-fork',
+    ellipse: 'circle', triangle: 'triangle', brush: 'brush', callout: 'message-square-text' };
   var FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-  var COLORS = { trend: '#8b5cf6', hline: '#f59e0b', ray: '#38bdf8', rect: '#8b5cf6', fib: '#a78bfa', long: '#22c55e', short: '#ef4444', text: null, measure: '#38bdf8' };
+  var FIBEXT_LEVELS = [0, 0.618, 1, 1.272, 1.618, 2, 2.618];
+  var COLORS = { trend: '#8b5cf6', hline: '#f59e0b', ray: '#38bdf8', rect: '#8b5cf6', fib: '#a78bfa', long: '#22c55e', short: '#ef4444', text: null, measure: '#38bdf8',
+    vline: '#f59e0b', arrow: '#f472b6', channel: '#38bdf8', fibext: '#a78bfa', pitchfork: '#22c55e', ellipse: '#f59e0b', triangle: '#8b5cf6', brush: '#f472b6', callout: '#3b82f6' };
   var SWATCHES = ['#8b5cf6', '#38bdf8', '#22c55e', '#f59e0b', '#ef4444', '#f472b6', '#e8e8f0', '#64748b'];
   var DASHES = ['solid', 'dashed', 'dotted'];
   var EXTENDS = ['both', 'right', 'none'];                  // horizontal line: across the chart, a ray to the right, a segment (two ends)
-  var AREA = { rect: true, fib: true, long: true, short: true, measure: true };              // tools with a fill
-  var DEF_OPACITY = { rect: 0.14, fib: 0.1, long: 0.16, short: 0.16, measure: 0.15 };
+  var LINE_EXTENDS = ['none', 'right', 'left', 'both'];     // trend line: a segment, or extended past one end or both
+  var ZONE_EXTENDS = ['none', 'right'];                     // rectangle and Fibonacci tools: their right edge reaches the chart's right edge
+  var AREA = { rect: true, fib: true, long: true, short: true, measure: true, channel: true, fibext: true, pitchfork: true, ellipse: true, triangle: true }; // tools with a fill
+  var DEF_OPACITY = { rect: 0.14, fib: 0.1, long: 0.16, short: 0.16, measure: 0.15, channel: 0.1, fibext: 0.08, pitchfork: 0.06, ellipse: 0.14, triangle: 0.14 };
+  var TEXTUAL = { text: true, callout: true };              // tools that carry a text (and a font size instead of a line width)
   var TEXT_SIZES = [11, 13, 16, 20, 24, 32];
-  var MAX_TEXT = 200, MAX_DRAWINGS = 500, MAX_LEVELS = 12, MAX_HISTORY = 100, SEG_BARS = 20;
+  var MAX_TEXT = 200, MAX_DRAWINGS = 500, MAX_LEVELS = 12, MAX_HISTORY = 100, SEG_BARS = 20, MAX_BRUSH = 120;
+  var STYLE_DEFAULT_KEYS = ['color', 'width', 'dash', 'fill', 'opacity', 'levels', 'size', 'extend', 'stats'];   // what "set as default" keeps
   var HIT_PX = 7, HANDLE_R = 5, HANDLE_HIT = 9, TOUCH_HIT = 16;
   var RECT_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
   var CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize' };
@@ -59,9 +71,10 @@
     if (b - a <= tfSec) return a + f * (b - a);
     return f < 0.5 ? a + f / 0.5 * tfSec : a + tfSec + (f - 0.5) / 0.5 * (b - a - tfSec);
   }
-  // magnet: the closest open/high/low/close of the revealed bar under the pointer (time = that bar's time)
+  // magnet: the closest open/high/low/close of the revealed bar under the pointer (time = that bar's time). Off the candles (the
+  // empty space after the last one, or before the first) nothing snaps, so a line can still be drawn into the future.
   function magnet(bars, logical, price) {
-    if (!bars.length) return null;
+    if (!bars.length || !(logical >= -0.5 && logical <= bars.length - 0.5)) return null;
     var i = Math.max(0, Math.min(bars.length - 1, Math.round(logical))), b = bars[i], best = b.close;
     [b.open, b.high, b.low].forEach(function (v) { if (Math.abs(v - price) < Math.abs(best - price)) best = v; });
     return { t: b.time, p: best };
@@ -89,14 +102,20 @@
     if (!parts.length || parts.length > MAX_LEVELS) return null;
     return cleanLevels(parts);
   }
+  // brush points are rounded (whole seconds, 8 significant digits): a long stroke stays small in the database
+  function roundPt(x) { return { t: Math.round(x.t), p: Number(x.p.toPrecision(8)) }; }
   function sanitize(d) {
     if (!d || typeof d !== 'object' || TOOLS.indexOf(d.tool) < 0 || typeof d.id !== 'string' || !Array.isArray(d.pts)) return null;
     var seg = d.tool === 'hline' && d.extend === 'none' && d.pts.length >= 2, n = seg ? 2 : NPTS[d.tool];
+    if (d.tool === 'brush') n = Math.min(d.pts.length, MAX_BRUSH);
     var pts = d.pts.slice(0, n).map(function (x) { return { t: num(x && x.t), p: num(x && x.p) }; });
-    if (pts.length !== n || pts.some(function (x) { return !isFinite(x.t) || !isFinite(x.p); })) return null;
+    if (pts.length !== n || n < 1 || pts.some(function (x) { return !isFinite(x.t) || !isFinite(x.p); })) return null;
+    if (d.tool === 'brush') { if (n < 2) return null; pts = pts.map(roundPt); }
     if (seg) pts[1].p = pts[0].p;
+    // a channel's third point only carries the width: it is kept straight above the first point (the same time)
+    if (d.tool === 'channel') pts[2].t = pts[0].t;
     var out = { id: d.id, tool: d.tool, pts: pts, color: isColor(d.color) ? d.color.toLowerCase() : null, locked: d.locked === true };
-    if (d.tool === 'text') {
+    if (TEXTUAL[d.tool]) {
       out.text = String(d.text || '').slice(0, MAX_TEXT); if (!out.text.trim()) return null;
       var sz = Math.round(num(d.size)); if (TEXT_SIZES.indexOf(sz) >= 0 && sz !== 13) out.size = sz;
     } else {
@@ -108,16 +127,37 @@
       var op = num(d.opacity); if (op >= 0 && op <= 1) { op = Math.round(op * 100) / 100; if (op !== DEF_OPACITY[d.tool]) out.opacity = op; }
     }
     if (d.tool === 'hline' && EXTENDS.indexOf(d.extend) > 0 && (d.extend !== 'none' || seg)) out.extend = d.extend;
-    if (d.tool === 'fib' && d.levels != null) { var lv = cleanLevels(d.levels); if (lv && lv.join() !== FIB_LEVELS.join()) out.levels = lv; }
+    if (d.tool === 'trend' && LINE_EXTENDS.indexOf(d.extend) > 0) out.extend = d.extend;
+    if ((d.tool === 'rect' || d.tool === 'fib' || d.tool === 'fibext') && ZONE_EXTENDS.indexOf(d.extend) > 0) out.extend = d.extend;
+    if (d.tool === 'trend' && d.stats === true) out.stats = true;
+    if ((d.tool === 'fib' || d.tool === 'fibext') && d.levels != null) { var lv = cleanLevels(d.levels); if (lv && lv.join() !== defLevels(d.tool).join()) out.levels = lv; }
     if (typeof d.pane === 'string' && PANE_RE.test(d.pane)) out.pane = d.pane;
+    return out;
+  }
+  function defLevels(tool) { return tool === 'fibext' ? FIBEXT_LEVELS : FIB_LEVELS; }
+  // stored "set as default" styles ({ tool: { color, width, ... } }): every value goes through sanitize, anything else is dropped
+  function cleanDefaults(src) {
+    var out = {};
+    if (!src || typeof src !== 'object') return out;
+    TOOLS.forEach(function (tool) {
+      var st = src[tool]; if (!st || typeof st !== 'object') return;
+      var probe = { id: 'x', tool: tool, pts: [], text: 'x' };
+      for (var i = 0; i < Math.max(2, NPTS[tool]); i++) probe.pts.push({ t: i, p: 1 + i });
+      STYLE_DEFAULT_KEYS.forEach(function (k) { if (st[k] !== undefined) probe[k] = st[k]; });
+      if (tool === 'hline') delete probe.extend;                // the horizontal line keeps its own last-used length mode
+      var c = sanitize(probe); if (!c) return;
+      var keep = {};
+      STYLE_DEFAULT_KEYS.forEach(function (k) { if (c[k] !== undefined && c[k] !== null) keep[k] = c[k]; });
+      if (Object.keys(keep).length) out[tool] = keep;
+    });
     return out;
   }
   var PANE_RE = /^chart[2-9]$/;                            // the extra charts; the main chart is the default and is left out
   function paneOf(d) { return d.pane || 'main'; }
-  var STYLE_KEYS = ['width', 'dash', 'fill', 'opacity', 'levels', 'size', 'pane', 'extend'];
+  var STYLE_KEYS = ['width', 'dash', 'fill', 'opacity', 'levels', 'size', 'pane', 'extend', 'stats'];
   function toRow(d, userId, accountId) {
     var style = { color: d.color || null, locked: !!d.locked };
-    if (d.tool === 'text') style.text = d.text;
+    if (TEXTUAL[d.tool]) style.text = d.text;
     STYLE_KEYS.forEach(function (k) { if (d[k] !== undefined) style[k] = d[k]; });
     return { id: d.id, user_id: userId, backtest_account_id: accountId, tool: d.tool, points: d.pts.map(function (x) { return { t: x.t, p: x.p }; }), style: style };
   }
@@ -127,24 +167,50 @@
     STYLE_KEYS.forEach(function (k) { if (st[k] !== undefined) d[k] = st[k]; });
     return sanitize(d);
   }
-  function defWidth(tool) { return tool === 'fib' || tool === 'measure' ? 1 : 2; }
+  function defWidth(tool) { return tool === 'fib' || tool === 'measure' || tool === 'fibext' ? 1 : 2; }
   function widthOf(d) { return d.width || defWidth(d.tool); }
   function fillOf(d) { return AREA[d.tool] ? (d.fill === false ? 0 : (d.opacity != null ? d.opacity : DEF_OPACITY[d.tool])) : 0; }
-  // fib levels from the first point (level 1) to the second point (level 0)
   // the x range a horizontal line covers on screen (xs: its points' x, w: pane width)
   function hlineSpan(d, xs, w) {
     if (d.extend === 'right') return [xs[0], w];
     if (d.extend === 'none') return [Math.min(xs[0], xs[1]), Math.max(xs[0], xs[1])];
     return [0, w];
   }
+  // Fibonacci retracement: levels from the first point (level 1) to the second point (level 0).
+  // Trend-based extension: A, B, C; level n sits at C + n * (B - A) (1 = the A-B move repeated from C).
   function fibLevels(d) {
+    if (d.tool === 'fibext') {
+      var A = d.pts[0].p, B = d.pts[1].p, C = d.pts[2].p;
+      return (d.levels || FIBEXT_LEVELS).map(function (lv) { return { level: lv, price: C + (B - A) * lv }; });
+    }
     var a = d.pts[0].p, b = d.pts[1].p;
     return (d.levels || FIB_LEVELS).map(function (lv) { return { level: lv, price: b + (a - b) * lv }; });
   }
-  // long / short position tool: pts[0] = entry (start time, entry price), pts[1] = target (end time), pts[2] = stop (end time)
-  function newPosition(tool, t, p, unit, tfSec) {
-    var dir = tool === 'long' ? 1 : -1, end = t + 20 * tfSec;
+  // long / short position tool: pts[0] = entry (start time, entry price), pts[1] = target (end time), pts[2] = stop (end time).
+  // `end`: the end time (the chart passes 20 bars later, counted in candles so a weekend does not shorten the box)
+  function newPosition(tool, t, p, unit, tfSec, end) {
+    var dir = tool === 'long' ? 1 : -1;
+    if (!(end > t)) end = t + 20 * tfSec;
     return [{ t: t, p: p }, { t: end, p: p + dir * 2 * unit }, { t: end, p: p - dir * unit }];
+  }
+  // parallel channel: pts[0]-pts[1] is the base line, pts[2] sits straight above pts[0] at the parallel line (its price - the first
+  // point's price = the channel's width in price, so the width stays when the base line is dragged)
+  function channelOffset(d) { return d.pts[2].p - d.pts[0].p; }
+  // the price a straight screen line through (x0, p0)-(x1, p1) has at x (the chart's price scale is linear inside a pane)
+  function priceOnLine(x0, p0, x1, p1, x) { return x1 === x0 ? p0 : p0 + (x - x0) / (x1 - x0) * (p1 - p0); }
+  // a stroke of the brush in screen space, thinned (Ramer-Douglas-Peucker) until at most `max` points are left
+  function simplify(pts, eps) {
+    if (pts.length < 3) return pts.slice();
+    var a = pts[0], b = pts[pts.length - 1], far = -1, fd = -1;
+    for (var i = 1; i < pts.length - 1; i++) { var dd = distSeg(pts[i].x, pts[i].y, a.x, a.y, b.x, b.y); if (dd > fd) { fd = dd; far = i; } }
+    if (fd <= eps) return [a, b];
+    var l = simplify(pts.slice(0, far + 1), eps), r = simplify(pts.slice(far), eps);
+    return l.slice(0, -1).concat(r);
+  }
+  function thinStroke(pts, max) {
+    var out = simplify(pts, 0.75), eps = 0.75;
+    while (out.length > max && eps < 1e4) { eps *= 1.6; out = simplify(pts, eps); }
+    return out;
   }
   function positionStats(d) {
     var e = d.pts[0].p, tg = d.pts[1].p, sl = d.pts[2].p, risk = Math.abs(e - sl), reward = Math.abs(tg - e);
@@ -184,6 +250,15 @@
       else if (idx === 3) { var end = Math.max(t, P[0].t + tfSec); P[1].t = end; P[2].t = end; }
       return out;
     }
+    // channel: the base line's ends move freely and the width stays; the third handle (on the parallel line) only sets the width,
+    // `p` there is already the price the parallel line should have above the first point (the layer converts the pointer)
+    if (d.tool === 'channel') {
+      var off = channelOffset(d);
+      if (idx === 0) { P[0] = { t: t, p: p }; P[2] = { t: t, p: p + off }; }
+      else if (idx === 1) P[1] = { t: t, p: p };
+      else if (idx === 2) P[2] = { t: P[0].t, p: p };
+      return out;
+    }
     if (P[idx]) P[idx] = { t: t, p: p };
     return out;
   }
@@ -203,6 +278,41 @@
     if (dy > 0) ts.push((h - y1) / dy); else if (dy < 0) ts.push(-y1 / dy);
     var tt = Math.max(1, Math.min.apply(null, ts.filter(function (v) { return v >= 0; }).concat([1e6])));
     return { x: x1 + dx * tt, y: y1 + dy * tt };
+  }
+  // a trend line on screen with its extension: 'right' past the second point, 'left' past the first, 'both' (an extended line)
+  function extendLine(x1, y1, x2, y2, w, h, mode) {
+    var a = { x: x1, y: y1 }, b = { x: x2, y: y2 };
+    if (mode === 'right' || mode === 'both') b = rayEnd(x1, y1, x2, y2, w, h);
+    if (mode === 'left' || mode === 'both') a = rayEnd(x2, y2, x1, y1, w, h);
+    return [a.x, a.y, b.x, b.y];
+  }
+  // Andrews' pitchfork on screen: the median line from the pivot through the middle of the other two points, and two tines through
+  // those points, parallel to it; all three run to the pane edge. Returns [x1, y1, x2, y2] segments: median, upper tine, lower tine.
+  function pitchforkLines(xs, ys, w, h) {
+    var mx = (xs[1] + xs[2]) / 2, my = (ys[1] + ys[2]) / 2, dx = mx - xs[0], dy = my - ys[0];
+    if (!dx && !dy) return [];
+    function ray(x, y) { var e = rayEnd(x, y, x + dx, y + dy, w, h); return [x, y, e.x, e.y]; }
+    return [ray(xs[0], ys[0]), ray(xs[1], ys[1]), ray(xs[2], ys[2])];
+  }
+  // ellipse in the box (x1,y1)-(x2,y2): 'in' (filled area), 'edge' (on the outline within tol px) or null
+  function ellipseHit(px, py, x1, y1, x2, y2, tol) {
+    var cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, rx = Math.abs(x2 - x1) / 2, ry = Math.abs(y2 - y1) / 2;
+    if (rx < 1 || ry < 1) return distSeg(px, py, x1, y1, x2, y2) <= tol ? 'edge' : null;
+    var k = Math.sqrt((px - cx) * (px - cx) / (rx * rx) + (py - cy) * (py - cy) / (ry * ry));
+    if (Math.abs(k - 1) * Math.min(rx, ry) <= tol) return 'edge';
+    return k < 1 ? 'in' : null;
+  }
+  // point in a polygon (even-odd)
+  function inPoly(px, py, xs, ys) {
+    var inside = false;
+    for (var i = 0, j = xs.length - 1; i < xs.length; j = i++) {
+      if ((ys[i] > py) !== (ys[j] > py) && px < (xs[j] - xs[i]) * (py - ys[i]) / (ys[j] - ys[i]) + xs[i]) inside = !inside;
+    }
+    return inside;
+  }
+  function nearPath(px, py, xs, ys, closed, tol) {
+    for (var i = 0; i + 1 < xs.length; i++) if (distSeg(px, py, xs[i], ys[i], xs[i + 1], ys[i + 1]) <= tol) return true;
+    return !!closed && xs.length > 2 && distSeg(px, py, xs[xs.length - 1], ys[ys.length - 1], xs[0], ys[0]) <= tol;
   }
   function inBox(px, py, x1, y1, x2, y2, pad) {
     pad = pad || 0;
@@ -271,9 +381,15 @@
 
   // ---------------------------------------------------------------- toolbar groups (pure)
   // [{ t: [tool ids], c: the tool the button shows }]; every tool in exactly one group
-  var DEFAULT_GROUPS = [['trend', 'ray', 'hline'], ['rect'], ['fib'], ['long', 'short'], ['text'], ['measure']];
+  var DEFAULT_GROUPS = [['trend', 'ray', 'hline', 'vline', 'arrow'], ['channel', 'pitchfork'], ['fib', 'fibext'], ['rect', 'ellipse', 'triangle', 'brush'],
+    ['long', 'short'], ['text', 'callout'], ['measure']];
+  // the default before the new tools (2026-11-23): a toolbar stored like this simply becomes the new default
+  var OLD_DEFAULT_GROUPS = [['trend', 'ray', 'hline'], ['rect'], ['fib'], ['long', 'short'], ['text'], ['measure']];
+  // a tool missing from a stored (customized) toolbar joins the group of its closest relative, else gets its own button
+  var SIBLING = { vline: 'hline', arrow: 'trend', pitchfork: 'channel', fibext: 'fib', ellipse: 'rect', triangle: 'rect', brush: 'rect', callout: 'text' };
   function defaultGroups() { return DEFAULT_GROUPS.map(function (g) { return { t: g.slice(), c: g[0] }; }); }
-  // anything stored is checked: unknown and repeated tools dropped, empty groups dropped, a missing tool gets its own button at the end
+  // anything stored is checked: unknown and repeated tools dropped, empty groups dropped, a missing tool goes next to its relative
+  // (SIBLING) or gets its own button at the end
   function normalizeGroups(src) {
     if (!Array.isArray(src)) return defaultGroups();
     var seen = {}, out = [];
@@ -281,7 +397,13 @@
       var t = (g && Array.isArray(g.t) ? g.t : []).filter(function (id) { if (TOOLS.indexOf(id) < 0 || seen[id]) return false; seen[id] = true; return true; });
       if (t.length) out.push({ t: t, c: t.indexOf(g.c) >= 0 ? g.c : t[0] });
     });
-    TOOLS.forEach(function (id) { if (!seen[id]) out.push({ t: [id], c: id }); });
+    if (JSON.stringify(out.map(function (g) { return g.t; })) === JSON.stringify(OLD_DEFAULT_GROUPS)) return defaultGroups();
+    TOOLS.forEach(function (id) {
+      if (seen[id]) return;
+      var gi = SIBLING[id] ? groupOf(out, SIBLING[id]) : -1;
+      if (gi >= 0) out[gi].t.push(id); else out.push({ t: [id], c: id });
+      seen[id] = true;
+    });
     return out;
   }
   function isDefaultGroups(groups) { return JSON.stringify(groups.map(function (g) { return g.t; })) === JSON.stringify(DEFAULT_GROUPS); }
@@ -331,6 +453,17 @@
     function light() { return document.body.classList.contains('light-theme'); }
     function textColor() { return light() ? '#0f172a' : '#e8e8f0'; }
     function colorOf(d) { return d.color || COLORS[d.tool] || textColor(); }
+    // white or dark text on a colored background (the callout bubble)
+    function onColor(c) {
+      var m = /^#([0-9a-f]{6})$/i.exec(c || ''); if (!m) return '#ffffff';
+      var r = parseInt(m[1].slice(0, 2), 16), g = parseInt(m[1].slice(2, 4), 16), b = parseInt(m[1].slice(4, 6), 16);
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#0f172a' : '#ffffff';
+    }
+    // the chart's own crosshair time format (vertical line label on the time axis)
+    function timeText(t) {
+      try { var f = chart.options().localization.timeFormatter; if (typeof f === 'function') return f(t); } catch (e) { /* fall back */ }
+      return new Date(t * 1000).toISOString().slice(0, 16).replace('T', ' ');
+    }
 
     function mapper() {
       var ts = chart.timeScale(), bars = opts.bars(), tf = opts.tfSec();
@@ -351,11 +484,25 @@
 
     // --- drawing
     function line(ctx, x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+    function poly(ctx, xs, ys, close) {
+      ctx.beginPath(); ctx.moveTo(xs[0], ys[0]);
+      for (var i = 1; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
+      if (close) ctx.closePath();
+    }
+    function arrowHead(ctx, x1, y1, x2, y2, w, color) {
+      var a = Math.atan2(y2 - y1, x2 - x1), s = 7 + w * 2.5;
+      ctx.save(); ctx.setLineDash([]); ctx.fillStyle = color; ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+      ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
     // `maxX`: keep a centered label inside the pane (it would be cut by the price axis)
     function label(ctx, text, x, y, color, align, bg, maxX) {
       ctx.font = '600 11.5px "Geist", system-ui, sans-serif'; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
       var tw = ctx.measureText(text).width;
       if (align === 'center' && maxX) x = Math.max(tw / 2 + 7, Math.min(maxX - tw / 2 - 7, x));
+      if (align === 'left' && maxX && bg) x = Math.min(x, maxX - tw - 8);
       if (bg) {
         var w = tw + 10, bx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x - 5;
         ctx.fillStyle = bg; ctx.beginPath();
@@ -364,15 +511,37 @@
       }
       ctx.fillStyle = color; ctx.fillText(text, x, y);
     }
+    // the price change, percent, candles and time between two points (measure tool, trend line info label)
+    function statsText(d, m) {
+      var ms = measureStats(d, m.bars, m.tf);
+      return (ms.dp >= 0 ? '+' : '−') + opts.fmt(Math.abs(ms.dp)) + ' (' + (ms.pct >= 0 ? '+' : '') + ms.pct.toFixed(2) + '%) · ' +
+        opts.t('backtest.draw.bars', '{n} mum', { n: ms.bars }) + ' · ' + duration(ms.seconds);
+    }
+    function channelYs(d, m) {
+      var off = channelOffset(d);
+      return [m.y(d.pts[0].p + off), m.y(d.pts[1].p + off)];
+    }
+    // the levels of a Fibonacci tool on screen: [{ level, price, y }], the x range they span and the y range they cover
+    function fibGeom(d, m, x) {
+      var lvs = fibLevels(d), xl, xr;
+      if (d.tool === 'fibext') { xl = x[2]; xr = x[2] + Math.max(Math.abs(x[1] - x[0]), 40); }
+      else { xl = Math.min(x[0], x[1]); xr = Math.max(x[0], x[1]); }
+      if (d.extend === 'right') xr = Math.max(xr, m.w);
+      lvs.forEach(function (lv) { lv.y = m.y(lv.price); });
+      var ys = lvs.map(function (lv) { return lv.y; }).filter(function (v) { return !isNaN(v); });
+      return { lvs: lvs, xl: xl, xr: xr, yt: ys.length ? Math.min.apply(null, ys) : NaN, yb: ys.length ? Math.max.apply(null, ys) : NaN };
+    }
     function handlesOf(d, m) {
       var P = d.pts, xs = P.map(function (q) { return m.x(q.t); }), ys = P.map(function (q) { return m.y(q.p); });
       if (d.tool === 'hline') {
         if (d.extend === 'none') return [{ i: 0, x: xs[0], y: ys[0] }, { i: 1, x: xs[1], y: ys[0] }];
         return [{ i: 0, x: d.extend === 'right' ? xs[0] : Math.max(24, Math.min(m.w - 24, xs[0])), y: ys[0] }];
       }
-      if (d.tool === 'text') return [];
-      if (d.tool === 'rect') return rectHandles(xs[0], ys[0], xs[1], ys[1]);
+      if (d.tool === 'vline') return [{ i: 0, x: xs[0], y: Math.max(24, Math.min(m.h - 24, isNaN(ys[0]) ? m.h / 2 : ys[0])) }];
+      if (d.tool === 'text' || d.tool === 'brush') return [];
+      if (d.tool === 'rect' || d.tool === 'ellipse') return rectHandles(xs[0], ys[0], xs[1], ys[1]);
       if (d.tool === 'long' || d.tool === 'short') return [{ i: 0, x: xs[0], y: ys[0] }, { i: 1, x: xs[1], y: ys[1] }, { i: 2, x: xs[2], y: ys[2] }, { i: 3, x: xs[1], y: ys[0] }];
+      if (d.tool === 'channel') { var cy = channelYs(d, m); return [{ i: 0, x: xs[0], y: ys[0] }, { i: 1, x: xs[1], y: ys[1] }, { i: 2, x: (xs[0] + xs[1]) / 2, y: (cy[0] + cy[1]) / 2 }]; }
       return P.map(function (q, i) { return { i: i, x: xs[i], y: ys[i] }; });
     }
     function pipText(diff, price) {
@@ -383,24 +552,67 @@
       var c = colorOf(d), P = d.pts, x = P.map(function (q) { return m.x(q.t); }), y = P.map(function (q) { return m.y(q.p); });
       if (y.some(isNaN) || x.some(isNaN)) return;
       var w = widthOf(d), fa = fillOf(d), cc = c.charAt(0) === '#' ? c : '#8b5cf6';
-      ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = d.dash === 'dotted' ? 'round' : 'butt'; ctx.setLineDash(dashOf(d, w));
+      ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = d.dash === 'dotted' ? 'round' : 'butt'; ctx.lineJoin = 'round'; ctx.setLineDash(dashOf(d, w));
       var b = null;
+      // a tool with three points while its second point is being placed: the first leg only
+      if (d.tool !== 'brush' && P.length < NPTS[d.tool]) {
+        poly(ctx, x, y, false); ctx.stroke();
+        if (selected) drawHandles(ctx, P.map(function (q, i) { return { i: i, x: x[i], y: y[i] }; }), c);
+        return;
+      }
       switch (d.tool) {
-        case 'trend': line(ctx, x[0], y[0], x[1], y[1]); break;
+        case 'trend':
+          var L = extendLine(x[0], y[0], x[1], y[1], m.w, m.h, d.extend); line(ctx, L[0], L[1], L[2], L[3]);
+          if (d.stats) label(ctx, statsText(d, m), x[1] + 10, y[1] + (y[1] >= y[0] ? 14 : -14), '#fff', 'left', withAlpha(cc, 0.92), m.w);
+          break;
+        case 'arrow': line(ctx, x[0], y[0], x[1], y[1]); arrowHead(ctx, x[0], y[0], x[1], y[1], w, c); break;
         case 'ray': var e = rayEnd(x[0], y[0], x[1], y[1], m.w, m.h); line(ctx, x[0], y[0], e.x, e.y); break;
         case 'hline': var hs = hlineSpan(d, x, m.w); line(ctx, hs[0], y[0], hs[1], y[0]); break;
+        case 'vline': line(ctx, x[0], 0, x[0], m.h); break;
         case 'rect':
-          if (fa) { ctx.fillStyle = withAlpha(cc, fa); ctx.fillRect(Math.min(x[0], x[1]), Math.min(y[0], y[1]), Math.abs(x[1] - x[0]), Math.abs(y[1] - y[0])); }
-          ctx.strokeRect(Math.min(x[0], x[1]), Math.min(y[0], y[1]), Math.abs(x[1] - x[0]), Math.abs(y[1] - y[0])); break;
-        case 'fib':
-          var xl = Math.min(x[0], x[1]), xr = Math.max(x[0], x[1]), lvs = fibLevels(d), lo = Math.min.apply(null, d.levels || FIB_LEVELS), hi = Math.max.apply(null, d.levels || FIB_LEVELS);
-          lvs.forEach(function (lv, k) {
-            var yy = m.y(lv.price); if (isNaN(yy)) return;
-            if (k > 0 && fa) { var yp = m.y(lvs[k - 1].price); ctx.fillStyle = withAlpha(cc, k % 2 ? fa * 0.7 : fa * 1.2); ctx.fillRect(xl, Math.min(yy, yp), xr - xl, Math.abs(yy - yp)); }
-            ctx.lineWidth = lv.level === lo || lv.level === hi ? w + 0.5 : w; line(ctx, xl, yy, xr, yy);
-            label(ctx, lv.level + ' · ' + opts.fmt(lv.price), xl + 4, yy - 8, c, 'left');
+          var rl = Math.min(x[0], x[1]), rr = d.extend === 'right' ? Math.max(m.w, rl) : Math.max(x[0], x[1]), rt = Math.min(y[0], y[1]), rh = Math.abs(y[1] - y[0]);
+          if (fa) { ctx.fillStyle = withAlpha(cc, fa); ctx.fillRect(rl, rt, rr - rl, rh); }
+          ctx.strokeRect(rl, rt, rr - rl, rh); break;
+        case 'ellipse':
+          ctx.beginPath(); ctx.ellipse((x[0] + x[1]) / 2, (y[0] + y[1]) / 2, Math.max(0.5, Math.abs(x[1] - x[0]) / 2), Math.max(0.5, Math.abs(y[1] - y[0]) / 2), 0, 0, Math.PI * 2);
+          if (fa) { ctx.fillStyle = withAlpha(cc, fa); ctx.fill(); }
+          ctx.stroke(); break;
+        case 'triangle':
+          poly(ctx, x, y, true);
+          if (fa) { ctx.fillStyle = withAlpha(cc, fa); ctx.fill(); }
+          ctx.stroke(); break;
+        case 'brush':
+          ctx.lineCap = 'round'; poly(ctx, x, y, false); ctx.stroke();
+          if (selected) {
+            var bl = Math.min.apply(null, x) - 4, br = Math.max.apply(null, x) + 4, bt = Math.min.apply(null, y) - 4, bb = Math.max.apply(null, y) + 4;
+            ctx.save(); ctx.strokeStyle = withAlpha(cc, 0.6); ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.strokeRect(bl, bt, br - bl, bb - bt); ctx.restore();
+          }
+          break;
+        case 'channel':
+          var cy = channelYs(d, m), my0 = (y[0] + cy[0]) / 2, my1 = (y[1] + cy[1]) / 2;
+          if (fa) { poly(ctx, [x[0], x[1], x[1], x[0]], [y[0], y[1], cy[1], cy[0]], true); ctx.fillStyle = withAlpha(cc, fa); ctx.fill(); }
+          line(ctx, x[0], y[0], x[1], y[1]); line(ctx, x[0], cy[0], x[1], cy[1]);
+          ctx.save(); ctx.lineWidth = 1; ctx.setLineDash([4, 4]); line(ctx, x[0], my0, x[1], my1); ctx.restore();
+          break;
+        case 'pitchfork':
+          var pl = pitchforkLines(x, y, m.w, m.h);
+          if (pl.length) {
+            if (fa) { poly(ctx, [pl[1][0], pl[1][2], pl[2][2], pl[2][0]], [pl[1][1], pl[1][3], pl[2][3], pl[2][1]], true); ctx.fillStyle = withAlpha(cc, fa); ctx.fill(); }
+            pl.forEach(function (s) { line(ctx, s[0], s[1], s[2], s[3]); });
+          }
+          ctx.save(); ctx.lineWidth = 1; ctx.setLineDash([4, 4]); line(ctx, x[1], y[1], x[2], y[2]); ctx.restore();
+          break;
+        case 'fib': case 'fibext':
+          var fg = fibGeom(d, m, x), lo = Math.min.apply(null, d.levels || defLevels(d.tool)), hi = Math.max.apply(null, d.levels || defLevels(d.tool));
+          fg.lvs.forEach(function (lv, k) {
+            var yy = lv.y; if (isNaN(yy)) return;
+            if (k > 0 && fa) { var yp = fg.lvs[k - 1].y; ctx.fillStyle = withAlpha(cc, k % 2 ? fa * 0.7 : fa * 1.2); ctx.fillRect(fg.xl, Math.min(yy, yp), fg.xr - fg.xl, Math.abs(yy - yp)); }
+            ctx.lineWidth = lv.level === lo || lv.level === hi ? w + 0.5 : w; line(ctx, fg.xl, yy, fg.xr, yy);
+            label(ctx, lv.level + ' · ' + opts.fmt(lv.price), fg.xl + 4, yy - 8, c, 'left');
           });
-          ctx.setLineDash([4, 4]); ctx.lineWidth = 1; line(ctx, x[0], y[0], x[1], y[1]); ctx.setLineDash([]);
+          ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+          if (d.tool === 'fibext') { poly(ctx, x, y, false); ctx.stroke(); } else line(ctx, x[0], y[0], x[1], y[1]);
+          ctx.setLineDash([]);
           break;
         case 'long': case 'short':
           var up = d.tool === 'long', xa = x[0], xb = x[1], ye = y[0], yt = y[1], ys = y[2], st = positionStats(d), dir = up ? 1 : -1;
@@ -426,27 +638,48 @@
           b = { x1: x[0] - 3, y1: y[0] - fs * 0.75, x2: x[0] + tw + 3, y2: y[0] + fs * 0.75 };
           if (selected) { ctx.strokeStyle = withAlpha(cc, 0.6); ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.strokeRect(b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1); }
           break;
+        case 'callout':
+          b = drawCallout(ctx, d.text || '', d.size || 13, x[0], y[0], x[1], y[1], cc, (editor && editor.id === d.id) || !d.text);
+          break;
         case 'measure':
           var ms = measureStats(d, m.bars, m.tf), upM = ms.dp >= 0, mc = upM ? '#38bdf8' : '#f472b6';
           if (fa) { ctx.fillStyle = withAlpha(mc, fa); ctx.fillRect(Math.min(x[0], x[1]), Math.min(y[0], y[1]), Math.abs(x[1] - x[0]), Math.abs(y[1] - y[0])); }
           ctx.strokeStyle = mc; ctx.lineWidth = w; line(ctx, x[0], y[0], x[1], y[1]);
-          var txt = (ms.dp >= 0 ? '+' : '−') + opts.fmt(Math.abs(ms.dp)) + ' (' + (ms.pct >= 0 ? '+' : '') + ms.pct.toFixed(2) + '%) · ' +
-            opts.t('backtest.draw.bars', '{n} mum', { n: ms.bars }) + ' · ' + duration(ms.seconds);
-          label(ctx, txt, (x[0] + x[1]) / 2, Math.min(y[0], y[1]) - 14, '#fff', 'center', mc, m.w);
+          label(ctx, statsText(d, m), (x[0] + x[1]) / 2, Math.min(y[0], y[1]) - 14, '#fff', 'center', mc, m.w);
           break;
       }
       if (b) boxes[d.id] = b;
-      if (selected) {
-        ctx.setLineDash([]);
-        handlesOf(d, m).forEach(function (h) {
-          ctx.beginPath();
-          if (typeof h.i === 'string') ctx.rect(h.x - HANDLE_R + 0.5, h.y - HANDLE_R + 0.5, HANDLE_R * 2 - 1, HANDLE_R * 2 - 1); else ctx.arc(h.x, h.y, HANDLE_R, 0, Math.PI * 2);
-          ctx.fillStyle = light() ? '#ffffff' : '#000000'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = c; ctx.stroke();
-        });
+      if (selected) drawHandles(ctx, handlesOf(d, m), c);
+    }
+    // the callout: a bubble at (bx, by) (its left edge, vertically centered) with a wedge pointing at (ax, ay). Returns its box.
+    // `editing`: the in-place input covers the bubble; only the wedge is drawn.
+    function drawCallout(ctx, text, fs, ax, ay, bx, by, bg, editing) {
+      ctx.save(); ctx.setLineDash([]);
+      ctx.font = '600 ' + fs + 'px "Geist", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      var tw = text ? ctx.measureText(text).width : 60, padX = 9, bh = Math.round(fs * 1.25 + 12), bw = tw + padX * 2;
+      var box = { x1: bx, y1: by - bh / 2, x2: bx + bw, y2: by + bh / 2 }, cx = bx + bw / 2, cy = by;
+      // the wedge: from the bubble's middle to the anchor, as wide as a third of the bubble's shorter side
+      var dx = ax - cx, dy = ay - cy, L = Math.sqrt(dx * dx + dy * dy) || 1, half = Math.min(bw, bh) / 3, nx = -dy / L * half, ny = dx / L * half;
+      ctx.fillStyle = bg; ctx.beginPath(); ctx.moveTo(cx + nx, cy + ny); ctx.lineTo(ax, ay); ctx.lineTo(cx - nx, cy - ny); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(ax, ay, 2.5, 0, Math.PI * 2); ctx.fill();
+      if (!editing) {
+        ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(box.x1, box.y1, bw, bh, 6); else ctx.rect(box.x1, box.y1, bw, bh); ctx.fill();
+        ctx.fillStyle = onColor(bg); ctx.fillText(text, bx + padX, by + 0.5);
       }
+      ctx.restore();
+      return box;
+    }
+    function drawHandles(ctx, hs, c) {
+      ctx.setLineDash([]);
+      hs.forEach(function (h) {
+        ctx.beginPath();
+        if (typeof h.i === 'string') ctx.rect(h.x - HANDLE_R + 0.5, h.y - HANDLE_R + 0.5, HANDLE_R * 2 - 1, HANDLE_R * 2 - 1); else ctx.arc(h.x, h.y, HANDLE_R, 0, Math.PI * 2);
+        ctx.fillStyle = light() ? '#ffffff' : '#000000'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = c; ctx.stroke();
+      });
     }
     function duration(sec) {
-      var d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), mi = Math.round((sec % 3600) / 60);
+      // whole minutes first, so 59.6 minutes reads "1s 0dk" and never "60dk"
+      var tm = Math.round(sec / 60), d = Math.floor(tm / 1440), h = Math.floor((tm % 1440) / 60), mi = tm % 60;
       return (d ? opts.t('backtest.draw.days', '{n}g', { n: d }) + ' ' : '') + (h || d ? opts.t('backtest.draw.hours', '{n}s', { n: h }) + ' ' : '') + opts.t('backtest.draw.minutes', '{n}dk', { n: mi });
     }
     var renderer = {
@@ -457,6 +690,11 @@
           ctx.save();
           if (!set.hidden()) own().forEach(function (d) { drawOne(ctx, d, m, d.id === set.selected()); });
           if (create) drawOne(ctx, create.d, m, true);
+          // a new callout while its text is typed: the wedge from the anchor to the input
+          if (editor && editor.anchor && !editor.id) {
+            var ax = m.x(editor.anchor.t), ay = m.y(editor.anchor.p), bx = m.x(editor.at.t), by = m.y(editor.at.p);
+            if (![ax, ay, bx, by].some(isNaN)) drawCallout(ctx, '', 13, ax, ay, bx, by, COLORS.callout, true);
+          }
           ctx.restore();
         });
       }
@@ -471,11 +709,22 @@
           textColor: function () { return '#ffffff'; }, backColor: function () { return c; }, visible: function () { return y !== null; }, tickVisible: function () { return true; } };
       });
     }
+    // time axis labels of vertical lines
+    function timeViews() {
+      if (set.hidden()) return [];
+      var m = mapper(); if (!m) return [];
+      return own().filter(function (d) { return d.tool === 'vline'; }).map(function (d) {
+        var x = m.x(d.pts[0].t), c = colorOf(d), txt = timeText(d.pts[0].t);
+        return { coordinate: function () { return isNaN(x) ? -100 : x; }, text: function () { return txt; },
+          textColor: function () { return onColor(c); }, backColor: function () { return c; }, visible: function () { return !isNaN(x) && x >= 0 && x <= m.w; }, tickVisible: function () { return true; } };
+      });
+    }
     var primitive = {
       attached: function (p) { api = p; },
       detached: function () { api = null; },
       paneViews: function () { return [paneView]; },
       priceAxisViews: axisViews,
+      timeAxisViews: timeViews,
       // drawings never take part in the price scale's auto-scale (a line drawn at another time or price must not stretch the axis)
       autoscaleInfo: function () { return null; },
       updateAllViews: function () {}
@@ -500,23 +749,48 @@
       return null;
     }
     function hitBody(d, m, x, y, tol) {
-      var P = d.pts, xs = P.map(function (q) { return m.x(q.t); }), ys = P.map(function (q) { return m.y(q.p); });
+      var P = d.pts, xs = P.map(function (q) { return m.x(q.t); }), ys = P.map(function (q) { return m.y(q.p); }), filled = fillOf(d) > 0;
+      if (xs.some(isNaN) || ys.some(isNaN)) return false;
       switch (d.tool) {
-        case 'trend': return distSeg(x, y, xs[0], ys[0], xs[1], ys[1]) <= tol;
+        case 'trend': var L = extendLine(xs[0], ys[0], xs[1], ys[1], m.w, m.h, d.extend); return distSeg(x, y, L[0], L[1], L[2], L[3]) <= tol;
+        case 'arrow': return distSeg(x, y, xs[0], ys[0], xs[1], ys[1]) <= tol;
         case 'ray': var e = rayEnd(xs[0], ys[0], xs[1], ys[1], m.w, m.h); return distSeg(x, y, xs[0], ys[0], e.x, e.y) <= tol;
         case 'hline': var hs = hlineSpan(d, xs, m.w); return Math.abs(y - ys[0]) <= tol && x >= hs[0] - tol && x <= hs[1] + tol;
-        case 'rect': case 'fib':
+        case 'vline': return Math.abs(x - xs[0]) <= tol;
+        case 'rect':
+          var rr = d.extend === 'right' ? Math.max(m.w, xs[0], xs[1]) : Math.max(xs[0], xs[1]), rl = Math.min(xs[0], xs[1]);
           // a filled box is grabbed anywhere inside; an empty one on its outline
-          if (fillOf(d) > 0) return inBox(x, y, xs[0], ys[0], xs[1], ys[1], tol);
-          return inBox(x, y, xs[0], ys[0], xs[1], ys[1], tol) && !inBox(x, y, xs[0], ys[0], xs[1], ys[1], -tol);
+          if (filled) return inBox(x, y, rl, ys[0], rr, ys[1], tol);
+          return inBox(x, y, rl, ys[0], rr, ys[1], tol) && !inBox(x, y, rl, ys[0], rr, ys[1], -tol);
+        case 'ellipse': var eh = ellipseHit(x, y, xs[0], ys[0], xs[1], ys[1], tol); return eh === 'edge' || (eh === 'in' && filled);
+        case 'triangle': return nearPath(x, y, xs, ys, true, tol) || (filled && inPoly(x, y, xs, ys));
+        case 'brush': return nearPath(x, y, xs, ys, false, tol + widthOf(d) / 2);
+        case 'fib': case 'fibext':
+          // every level counts (also the ones past 0 and 1, e.g. 1.618), filled: anywhere between the outer levels
+          var fg = fibGeom(d, m, xs);
+          if (d.tool === 'fibext' && nearPath(x, y, xs, ys, false, tol)) return true;
+          if (isNaN(fg.yt) || x < fg.xl - tol || x > fg.xr + tol) return false;
+          if (filled && y >= fg.yt - tol && y <= fg.yb + tol) return true;
+          return fg.lvs.some(function (lv) { return !isNaN(lv.y) && Math.abs(y - lv.y) <= tol; });
+        case 'channel':
+          var cy = channelYs(d, m), cxs = [xs[0], xs[1], xs[1], xs[0]], cys = [ys[0], ys[1], cy[1], cy[0]];
+          return distSeg(x, y, xs[0], ys[0], xs[1], ys[1]) <= tol || distSeg(x, y, xs[0], cy[0], xs[1], cy[1]) <= tol || (filled && inPoly(x, y, cxs, cys));
+        case 'pitchfork':
+          var pl = pitchforkLines(xs, ys, m.w, m.h);
+          if (distSeg(x, y, xs[1], ys[1], xs[2], ys[2]) <= tol || pl.some(function (s) { return distSeg(x, y, s[0], s[1], s[2], s[3]) <= tol; })) return true;
+          return filled && pl.length === 3 && inPoly(x, y, [pl[1][0], pl[1][2], pl[2][2], pl[2][0]], [pl[1][1], pl[1][3], pl[2][3], pl[2][1]]);
         case 'measure': return inBox(x, y, xs[0], ys[0], xs[1], ys[1], tol);
         case 'long': case 'short': return inBox(x, y, xs[0], Math.min(ys[1], ys[2]), xs[1], Math.max(ys[1], ys[2]), 3);
         case 'text': var b = boxes[d.id]; return !!b && inBox(x, y, b.x1, b.y1, b.x2, b.y2, 3);
+        case 'callout':
+          var cb = boxes[d.id]; if (cb && inBox(x, y, cb.x1, cb.y1, cb.x2, cb.y2, 3)) return true;
+          return !!cb && distSeg(x, y, xs[0], ys[0], (cb.x1 + cb.x2) / 2, (cb.y1 + cb.y2) / 2) <= tol;
       }
       return false;
     }
 
-    // --- pointer interaction: create (drag, or click-move-click), select, move, resize; Esc / pointercancel undo the gesture
+    // --- pointer interaction: create (drag, or click-move-click; three-point tools take one more click), select, move, resize;
+    // Esc / pointercancel undo the gesture
     function local(e) { var r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     function inPane(pt, m) { return m && pt.x >= 0 && pt.y >= 0 && pt.x < m.w && pt.y < m.h; }
     function model(pt, m, useMagnet) {
@@ -524,20 +798,31 @@
       if (useMagnet && ctl.magnet()) { var s = magnet(m.bars, m.l(pt.x), p); if (s) return s; }
       return { t: t, p: p };
     }
-    // a point with Shift: lines lock to 0/45/90°, boxes become squares (around `anchor`, a model point)
+    // a point with Shift: lines lock to 0/45/90°, boxes become squares (ellipses circles) (around `anchor`, a model point)
     function constrained(tool, anchor, pt, m, shift) {
-      if (shift && (tool === 'trend' || tool === 'ray')) {
+      if (shift && (tool === 'trend' || tool === 'ray' || tool === 'arrow')) {
         var lk = lockAngle(m.x(anchor.t), m.y(anchor.p), pt.x, pt.y);
         if (lk.kind === 'h') return { t: m.t(lk.x), p: anchor.p };
         if (lk.kind === 'v') return { t: anchor.t, p: m.p(lk.y) };
         return { t: m.t(lk.x), p: m.p(lk.y) };
       }
       if (tool === 'hline') return { t: model(pt, m, true).t, p: anchor.p };
-      if (shift && tool === 'rect') {
+      if (shift && (tool === 'rect' || tool === 'ellipse')) {
         var sq = squareBox(m.x(anchor.t), m.y(anchor.p), pt.x, pt.y);
         return { t: m.t(sq.x), p: m.p(sq.y) };
       }
       return model(pt, m, true);
+    }
+    // the channel's width from the pointer: the price the parallel line gets above the first point
+    function channelPrice(d, pt, m) {
+      var q = model(pt, m, true), x0 = m.x(d.pts[0].t), x1 = m.x(d.pts[1].t);
+      return d.pts[0].p + (q.p - priceOnLine(x0, d.pts[0].p, x1, d.pts[1].p, pt.x));
+    }
+    // the point being placed while creating follows the pointer
+    function placeLast(pt, m, shift) {
+      var d = create.d, k = d.pts.length - 1;
+      if (d.tool === 'channel' && k === 2) d.pts[2] = { t: d.pts[0].t, p: channelPrice(d, pt, m) };
+      else d.pts[k] = constrained(d.tool, d.pts[k === 1 ? 0 : k - 1], pt, m, shift);
     }
     function setInteractive(on) {
       if (on === interactive) return;
@@ -558,7 +843,28 @@
       var c = create; create = null; refresh();
       if (!c) return;
       release(c.pid);
+      // a callout gets its text first: the input opens at the bubble's place (nothing is created when it stays empty)
+      if (c.d.tool === 'callout') { openEditor({ id: null, newId: c.d.id, at: c.d.pts[1], anchor: c.d.pts[0], text: '' }); return; }
       ctl.created(c.d);
+    }
+    // the brush stroke ends: thinned on screen, then turned into time/price points (a tap without a stroke draws nothing)
+    function finishBrush() {
+      var c = create, m = mapper(); create = null; refresh();
+      if (!c) return;
+      release(c.pid);
+      if (!m || c.raw.length < 2) return;
+      var pts = thinStroke(c.raw, MAX_BRUSH).map(function (q) { return { t: m.t(q.x), p: m.p(q.y) }; });
+      c.d.pts = pts;
+      ctl.created(c.d);
+    }
+    // the first leg of a three-point tool is done: one more point follows the pointer until the next click
+    function nextStage() {
+      var d = create.d;
+      if (d.tool === 'channel') d.pts.push({ t: d.pts[0].t, p: d.pts[0].p });
+      else d.pts.push({ t: d.pts[1].t, p: d.pts[1].p });
+      create.dragging = false; create.wait = true;
+      if (last) { var m = mapper(); if (m) placeLast(last.pt, m, last.shift); }
+      refresh();
     }
     function onDown(e) {
       if (editor && e.target === editor.input) return;
@@ -568,17 +874,28 @@
       if (!inPane(pt, m)) return;
       last = { pt: pt, shift: e.shiftKey };
       var tool = ctl.tool();
-      if (create && create.wait) { consume(e); create.d.pts[create.d.pts.length - 1] = constrained(create.d.tool, create.d.pts[0], pt, m, e.shiftKey); finishCreate(); return; }
+      if (create && create.wait) {
+        consume(e); placeLast(pt, m, e.shiftKey);
+        if (create.d.pts.length < NPTS[create.d.tool]) nextStage(); else finishCreate();
+        return;
+      }
       if (tool !== 'cursor') {
         consume(e);
         if (!ctl.allowed(tool)) { ctl.denied(tool); return; }
         var q = model(pt, m, true), id = ctl.newId();
         var ext = tool === 'hline' ? ctl.hlineMode() : null;
         if (tool === 'hline' && ext !== 'none') { create = { d: mark({ id: id, tool: tool, pts: [q], color: null, extend: ext }) }; finishCreate(); return; }
+        if (tool === 'vline') { create = { d: mark({ id: id, tool: tool, pts: [q], color: null }) }; finishCreate(); return; }
         if (tool === 'text') { openEditor({ id: null, newId: id, at: q, text: '' }); return; }
         if (tool === 'long' || tool === 'short') {
           var unit = Math.abs(m.p(0) - m.p(m.h)) * 0.06 || Math.abs(q.p) * 0.002;
-          create = { d: mark({ id: id, tool: tool, pts: newPosition(tool, q.t, q.p, unit, m.tf), color: null }) }; finishCreate(); return;
+          var end = logicalToTime(m.bars, m.tf, timeToLogical(m.bars, m.tf, q.t) + 20);
+          create = { d: mark({ id: id, tool: tool, pts: newPosition(tool, q.t, q.p, unit, m.tf, end), color: null }) }; finishCreate(); return;
+        }
+        if (tool === 'brush') {
+          var q0 = model(pt, m, false);
+          create = { d: mark({ id: id, tool: tool, pts: [q0, { t: q0.t, p: q0.p }], color: null }), raw: [pt], brush: true, dragging: true, pid: e.pointerId };
+          capture(e); refresh(); return;
         }
         create = { d: mark({ id: id, tool: tool, pts: [q, { t: q.t, p: q.p }], color: null, extend: ext || undefined }), down: pt, dragging: true, pid: e.pointerId };
         capture(e); refresh(); return;
@@ -591,7 +908,8 @@
       var d = set.get(hit.id);
       if (!d || d.locked || set.lockAll()) return;
       setInteractive(false);
-      drag = { id: hit.id, handle: hit.handle, start: pt, l0: m.l(pt.x), p0: m.p(pt.y), orig: clone(d), moved: false, pid: e.pointerId };
+      // Alt (Option) + drag: a copy is moved and the original stays (like most drawing apps)
+      drag = { id: hit.id, handle: hit.handle, start: pt, l0: m.l(pt.x), p0: m.p(pt.y), orig: clone(d), moved: false, pid: e.pointerId, clone: e.altKey && hit.handle === -1 };
       capture(e);
       setCursor(typeof hit.handle === 'string' ? CURSORS[hit.handle] : 'grabbing');
     }
@@ -601,6 +919,11 @@
       var pt = last.pt, shift = last.shift;
       if (drag) {
         if (!drag.moved && Math.abs(pt.x - drag.start.x) + Math.abs(pt.y - drag.start.y) < 3) return;
+        if (!drag.moved && drag.clone) {
+          // the copy takes the original's place in the set while it is dragged; the original is put back when the drag ends
+          var copy = clone(drag.orig); copy.id = ctl.newId(); copy.locked = false;
+          var added = set.add(copy); if (!added) { drag.clone = false; } else { drag.id = added.id; drag.orig = clone(added); set.select(added.id); }
+        }
         drag.moved = true;
         var o = drag.orig, h = drag.handle, nd;
         if (typeof h === 'string') {
@@ -610,9 +933,13 @@
             nd = resizeRect(o, h, m.t(sq.x), m.p(sq.y));
           } else { var qr = model(pt, m, true); nd = resizeRect(o, h, qr.t, qr.p); }
         } else if (h >= 0) {
-          var other = o.tool === 'trend' || o.tool === 'ray' ? o.pts[1 - h] : null;
-          var q = other ? constrained(o.tool, other, pt, m, shift) : model(pt, m, true);
-          nd = setHandle(o, h, q.t, q.p, m.tf);
+          if (o.tool === 'channel' && h === 2) nd = setHandle(o, 2, o.pts[0].t, channelPrice(o, pt, m), m.tf);
+          else if (o.tool === 'vline') nd = setHandle(o, 0, model(pt, m, true).t, o.pts[0].p, m.tf);
+          else {
+            var other = o.tool === 'trend' || o.tool === 'ray' || o.tool === 'arrow' ? o.pts[1 - h] : null;
+            var q = other ? constrained(o.tool, other, pt, m, shift) : model(pt, m, true);
+            nd = setHandle(o, h, q.t, q.p, m.tf);
+          }
         } else {
           var dl = m.l(pt.x) - drag.l0, dp = m.p(pt.y) - drag.p0;
           if (shift) { if (Math.abs(pt.x - drag.start.x) >= Math.abs(pt.y - drag.start.y)) dp = 0; else dl = 0; }
@@ -621,9 +948,17 @@
         set.put(nd, true);
         return;
       }
-      if (create && (create.dragging || create.wait)) {
-        create.d.pts[create.d.pts.length - 1] = constrained(create.d.tool, create.d.pts[0], pt, m, shift); refresh();
+      if (create && create.brush && create.dragging) {
+        var lr = create.raw[create.raw.length - 1];
+        if (Math.abs(pt.x - lr.x) + Math.abs(pt.y - lr.y) >= 2 && create.raw.length < 4000) {
+          create.raw.push(pt);
+          var qb = { t: m.t(pt.x), p: m.p(pt.y) };
+          if (create.raw.length === 2) create.d.pts[1] = qb; else create.d.pts.push(qb);
+          refresh();
+        }
+        return;
       }
+      if (create && (create.dragging || create.wait)) { placeLast(pt, m, shift); refresh(); }
     }
     function onMove(e) {
       var m = mapper(); if (!m) return;
@@ -643,18 +978,21 @@
       release(dd.pid);
       setInteractive(ctl.tool() === 'cursor');
       if (!dd.moved) { idleCursor(); return; }
+      if (dd.clone && !commit) { set.remove(dd.id); idleCursor(); return; }     // a cancelled Alt-drag leaves no copy
       if (commit) { var cur = set.get(dd.id); if (cur) set.put(cur, false); }
       else set.put(dd.orig, true);                          // back to where it was, nothing saved
       idleCursor();
     }
     function onUp(e) {
       if (drag) { consume(e); last = { pt: local(e), shift: e.shiftKey }; update(); endDrag(true); return; }
+      if (create && create.brush) { consume(e); last = { pt: local(e), shift: e.shiftKey }; update(); finishBrush(); return; }
       if (create && create.dragging) {
         consume(e);
         var pt = local(e), moved = Math.abs(pt.x - create.down.x) + Math.abs(pt.y - create.down.y) > 4;
         last = { pt: pt, shift: e.shiftKey }; update();
         create.dragging = false; release(create.pid);
-        if (moved) finishCreate(); else create.wait = true;     // click, move, click
+        if (!moved) { create.wait = true; return; }        // click, move, click
+        if (create.d.pts.length < NPTS[create.d.tool]) nextStage(); else finishCreate();
       }
     }
     // Esc or a cancelled pointer: the gesture is undone (a drawing being created disappears, a dragged one goes back)
@@ -681,30 +1019,32 @@
       var h = hitAt(e); if (!h) return;
       consume(e); set.select(h.id); ctl.openPop(h.id, e.clientX, e.clientY);
     }
-    // double click: text -> edit in place, any other drawing -> settings
+    // double click: text and callout -> edit in place, any other drawing -> settings
     function onDbl(e) {
       if (ctl.tool() !== 'cursor' || create) return;
       var h = hitAt(e); if (!h) return;
       consume(e); set.select(h.id);
       var d = set.get(h.id);
-      if (d && d.tool === 'text' && !d.locked && !set.lockAll()) editText(d.id);
+      if (d && TEXTUAL[d.tool] && !d.locked && !set.lockAll()) editText(d.id);
       else ctl.openPop(h.id, e.clientX, e.clientY);
     }
 
-    // --- text in place: an input over the chart at the text's spot (Enter keeps, Esc drops, leaving the field keeps)
+    // --- text in place: an input over the chart at the text's spot (Enter keeps, Esc drops, leaving the field keeps).
+    // o: { id (an existing text/callout) | newId, at (model point), anchor (a new callout's arrow point), text }
     function openEditor(o) {
       closeEditor(true);
       var m = mapper(); if (!m) return;
-      var d = o.id ? set.get(o.id) : null, at = d ? d.pts[0] : o.at, fs = (d && d.size) || 13;
+      var d = o.id ? set.get(o.id) : null, callout = d ? d.tool === 'callout' : !!o.anchor;
+      var at = d ? d.pts[callout ? 1 : 0] : o.at, fs = (d && d.size) || 13;
       var inp = document.createElement('input');
-      inp.type = 'text'; inp.className = 'bt-draw-edit'; inp.maxLength = MAX_TEXT; inp.value = o.text || '';
+      inp.type = 'text'; inp.className = 'bt-draw-edit' + (callout ? ' bt-draw-edit-callout' : ''); inp.maxLength = MAX_TEXT; inp.value = o.text || '';
       inp.placeholder = opts.t('backtest.draw.text_placeholder', 'Metin yaz, Enter');
       inp.setAttribute('aria-label', opts.t('backtest.draw.text_label', 'Grafiğe yazılacak metin'));
-      inp.style.left = Math.round(m.x(at.t) - 4) + 'px'; inp.style.top = Math.round(m.y(at.p) - fs * 0.75 - 4) + 'px';
-      inp.style.font = '600 ' + fs + 'px "Geist", system-ui, sans-serif'; inp.style.color = d ? colorOf(d) : textColor();
+      inp.style.left = Math.round(m.x(at.t) - (callout ? 0 : 4)) + 'px'; inp.style.top = Math.round(m.y(at.p) - fs * 0.75 - 4) + 'px';
+      inp.style.font = '600 ' + fs + 'px "Geist", system-ui, sans-serif'; inp.style.color = d && !callout ? colorOf(d) : textColor();
       if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
       el.appendChild(inp);
-      editor = { id: o.id, newId: o.newId, at: at, input: inp };
+      editor = { id: o.id, newId: o.newId, at: at, anchor: o.anchor || null, input: inp };
       setInteractive(false); refresh();
       inp.addEventListener('keydown', function (e) {
         e.stopPropagation();
@@ -722,12 +1062,15 @@
       if (ed.input.parentNode) ed.input.parentNode.removeChild(ed.input);
       setInteractive(ctl.tool() === 'cursor' && !drag);
       if (keep) {
-        if (!ed.id) { if (txt) ctl.created(mark({ id: ed.newId, tool: 'text', pts: [ed.at], text: txt, color: null })); else ctl.setTool('cursor'); }
-        else { var cur = set.get(ed.id); if (cur && txt && txt !== cur.text) { var n = clone(cur); n.text = txt; set.put(n); } else if (cur && !txt) set.remove(cur.id); }
-      } else if (!ed.id) ctl.setTool('cursor');
+        if (!ed.id) {
+          if (txt) ctl.created(mark(ed.anchor ? { id: ed.newId, tool: 'callout', pts: [ed.anchor, ed.at], text: txt, color: null }
+            : { id: ed.newId, tool: 'text', pts: [ed.at], text: txt, color: null }));
+          else if (!ctl.stay()) ctl.setTool('cursor');
+        } else { var cur = set.get(ed.id); if (cur && txt && txt !== cur.text) { var n = clone(cur); n.text = txt; set.put(n); } else if (cur && !txt) set.remove(cur.id); }
+      } else if (!ed.id && !ctl.stay()) ctl.setTool('cursor');
       refresh();
     }
-    function editText(id) { var d = set.get(id); if (d && d.tool === 'text') openEditor({ id: id, text: d.text }); }
+    function editText(id) { var d = set.get(id); if (d && TEXTUAL[d.tool]) openEditor({ id: id, text: d.text }); }
 
     el.addEventListener('pointerdown', onDown, true);
     el.addEventListener('pointermove', onMove, true);
@@ -751,9 +1094,11 @@
       editText: editText,
       // the time `n` bars after `t` on this chart (NaN without candles)
       later: function (t, n) { var m = mapper(); return m ? logicalToTime(m.bars, m.tf, timeToLogical(m.bars, m.tf, t) + n) : NaN; },
+      // a copy of a drawing moved `n` bars to the right on this chart (paste, clone); null without candles
+      shifted: function (d, n) { var m = mapper(); return m ? moveBy(d, m.bars, m.tf, n, 0) : null; },
       hasDraft: function () { return !!create; },
       destroy: function () {
-        if (drag) { var dd = drag; drag = null; set.put(dd.orig, true); }     // a chart rebuilt mid-drag leaves no half-moved drawing
+        if (drag) { var dd = drag; drag = null; if (dd.clone && dd.moved) set.remove(dd.id); else set.put(dd.orig, true); }   // a chart rebuilt mid-drag leaves no half-moved drawing
         create = null; closeEditor(false);
         if (unsub) unsub();
         el.removeEventListener('pointerdown', onDown, true); el.removeEventListener('pointermove', onMove, true);
@@ -818,11 +1163,15 @@
   function createController(opts) {
     var set = createSet(), hist = createHistory(set), layers = [], tool = 'cursor', acc = null, timers = {}, failShown = false, loadSeq = 0, pop = null;
     // hline: the length mode a new horizontal line gets (the last one chosen); groups: the toolbar buttons (see normalizeGroups)
-    var ui = { magnet: false, hidden: false, lockAll: false, hline: 'both', groups: defaultGroups() };
+    // stay: a tool stays picked after a drawing (TradingView's "stay in drawing mode"); defaults: the style a tool's new drawings
+    // start with ("set as default" in the settings), per tool
+    var ui = { magnet: false, hidden: false, lockAll: false, stay: false, hline: 'both', groups: defaultGroups(), defaults: {} };
     try {
       var u = JSON.parse((opts.local && opts.local.getItem(UI_KEY)) || '{}'); ui.magnet = u.magnet === true; ui.hidden = u.hidden === true; ui.lockAll = u.lockAll === true;
+      ui.stay = u.stay === true;
       if (EXTENDS.indexOf(u.hline) >= 0) ui.hline = u.hline;
       ui.groups = normalizeGroups(u.groups);
+      ui.defaults = cleanDefaults(u.defaults);
     } catch (e) { /* defaults */ }
     set.setHidden(ui.hidden); set.setLockAll(ui.lockAll);
     function saveUi() { try { if (opts.local) opts.local.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ignore */ } }
@@ -896,9 +1245,30 @@
     }
     function created(d) {
       if (set.list().length >= MAX_DRAWINGS) { opts.toast(opts.t('backtest.draw.too_many', 'En fazla {n} çizim olabilir.', { n: MAX_DRAWINGS }), 'warning'); setTool('cursor'); return; }
+      var def = ui.defaults[d.tool];
+      if (def) Object.keys(def).forEach(function (k) { if (d[k] === undefined || d[k] === null) d[k] = def[k]; });
       var added = set.add(d);
+      if (ui.stay) { renderBar(); return; }                // the tool stays picked for the next drawing
       setTool('cursor');
       if (added) set.select(added.id);
+    }
+    // copy and paste (Ctrl/Cmd+C, Ctrl/Cmd+V) and "clone": a copy a few bars to the right, on the chart of the original
+    var clip = null;
+    function cloneOf(d) {
+      var l = layerOf(d), n = l ? l.shifted(d, 3) : null; if (!n) return null;
+      n.id = opts.newId(); n.locked = false; return n;
+    }
+    function paste(src) {
+      if (!src) return false;
+      if (set.list().length >= MAX_DRAWINGS) { opts.toast(opts.t('backtest.draw.too_many', 'En fazla {n} çizim olabilir.', { n: MAX_DRAWINGS }), 'warning'); return true; }
+      var n = cloneOf(src); if (!n) return false;
+      var added = set.add(n); if (added) { set.select(added.id); clip = clone(added); }   // pasting again puts the next copy further right
+      return true;
+    }
+    function setDefault(d) {
+      var keep = {}; STYLE_DEFAULT_KEYS.forEach(function (k) { if (d[k] !== undefined && d[k] !== null && !(d.tool === 'hline' && k === 'extend')) keep[k] = d[k]; });
+      ui.defaults[d.tool] = keep; saveUi();
+      opts.toast(opts.t('backtest.draw.default_saved', 'Yeni {tool} çizimleri bu stille başlayacak.', { tool: opts.t('backtest.draw.tool_' + d.tool, d.tool) }), 'success');
     }
     function selected() { var id = set.selected(); return id ? set.get(id) : null; }
     function delSelected() {
@@ -917,7 +1287,8 @@
       Object.keys(attrs || {}).forEach(function (k) { b.setAttribute(k, attrs[k]); });
       return b;
     }
-    function toolName(id) { return opts.t('backtest.draw.tool_' + id, id) + ' (' + (TOOLS.indexOf(id) + 1) + ')'; }
+    function toolKey(id) { var i = TOOLS.indexOf(id); return i >= 0 && i < 9 ? String(i + 1) : ''; }
+    function toolName(id) { var k = toolKey(id); return opts.t('backtest.draw.tool_' + id, id) + (k ? ' (' + k + ')' : ''); }
     function mod() { return /Mac|iPhone|iPad/.test((global.navigator && global.navigator.platform) || '') ? '⌘' : 'Ctrl+'; }
     function renderBar() {
       var bar = opts.bar; if (!bar) return;
@@ -935,6 +1306,7 @@
       });
       bar.appendChild(sep());
       bar.appendChild(btn('', 'magnet', opts.t('backtest.draw.magnet', 'Mıknatıs') + ' (M)', { 'data-act': 'magnet', 'aria-pressed': ui.magnet ? 'true' : 'false' }));
+      bar.appendChild(btn('', 'pen-line', opts.t('backtest.draw.stay', 'Çizim modunda kal'), { 'data-act': 'stay', 'aria-pressed': ui.stay ? 'true' : 'false' }));
       bar.appendChild(btn('', ui.lockAll ? 'pin' : 'pin-off', opts.t('backtest.draw.lock_all', 'Tüm çizimleri kilitle'), { 'data-act': 'lockall', 'aria-pressed': ui.lockAll ? 'true' : 'false' }));
       bar.appendChild(btn('', ui.hidden ? 'eye-off' : 'eye', opts.t('backtest.draw.hide_all', 'Çizimleri gizle'), { 'data-act': 'hide', 'aria-pressed': ui.hidden ? 'true' : 'false' }));
       var ub = btn('', 'undo-2', opts.t('backtest.draw.undo', 'Geri al') + ' (' + mod() + 'Z)', { 'data-act': 'undo' }); ub.disabled = !hist.canUndo(); bar.appendChild(ub);
@@ -989,6 +1361,7 @@
       if (t) return setTool(tool === t && t !== 'cursor' ? 'cursor' : t);
       var a = b.getAttribute('data-act'), d = selected();
       if (a === 'magnet') { ui.magnet = !ui.magnet; saveUi(); renderBar(); }
+      else if (a === 'stay') { ui.stay = !ui.stay; saveUi(); renderBar(); }
       else if (a === 'lockall') { ui.lockAll = !ui.lockAll; saveUi(); set.setLockAll(ui.lockAll); renderBar(); }
       else if (a === 'hide') { ui.hidden = !ui.hidden; saveUi(); set.setHidden(ui.hidden); closePop(); renderBar(); }
       else if (a === 'undo') undo();
@@ -1024,7 +1397,7 @@
         var ic = document.createElement('i'); ic.setAttribute('data-lucide', ICONS[id]); ic.setAttribute('aria-hidden', 'true'); it.appendChild(ic);
         var lb = document.createElement('span'); lb.textContent = opts.t('backtest.draw.tool_' + id, id); it.appendChild(lb);
         if (!allowed(id)) { var pro = document.createElement('span'); pro.className = 'bt-pro'; pro.textContent = 'PRO'; it.appendChild(pro); }
-        var kb = document.createElement('kbd'); kb.textContent = String(TOOLS.indexOf(id) + 1); it.appendChild(kb);
+        if (toolKey(id)) { var kb = document.createElement('kbd'); kb.textContent = toolKey(id); it.appendChild(kb); }
         box.appendChild(it);
       });
       var sp = document.createElement('div'); sp.className = 'bt-draw-fly-sep'; box.appendChild(sp);
@@ -1197,6 +1570,13 @@
       });
       row.appendChild(g); return row;
     }
+    function check(key, text, on) {
+      var r = document.createElement('div'); r.className = 'bt-dset-row';
+      var l = document.createElement('label'); l.className = 'bt-dset-check';
+      var c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!on; c.setAttribute('data-k', key);
+      l.appendChild(c); l.appendChild(document.createTextNode(' ' + text)); r.appendChild(l);
+      return r;
+    }
     function renderPop() {
       if (!pop) return;
       var d = set.get(pop.id); if (!d) { closePop(); return; }
@@ -1216,7 +1596,7 @@
       });
       var ci = document.createElement('input'); ci.type = 'color'; ci.className = 'bt-draw-color'; ci.value = c; ci.setAttribute('data-k', 'color'); ci.setAttribute('aria-label', t('backtest.draw.color', 'Renk'));
       sw.appendChild(ci); row.appendChild(sw); box.appendChild(row);
-      if (d.tool !== 'text') {
+      if (!TEXTUAL[d.tool]) {
         box.appendChild(seg(t('backtest.draw.width', 'Kalınlık'), [1, 2, 3, 4].map(function (n) { return { v: String(n), label: String(n), html: '<i style="height:' + n + 'px"></i>' }; }), String(widthOf(d)), 'data-width'));
         box.appendChild(seg(t('backtest.draw.style', 'Çizgi stili'), [
           { v: 'solid', title: t('backtest.draw.solid', 'Düz'), html: '<i class="bt-dset-ln"></i>' },
@@ -1226,6 +1606,15 @@
           { v: 'both', label: t('backtest.draw.extend_both', 'Tam'), title: t('backtest.draw.extend_both_hint', 'Grafiğin bir ucundan öbürüne') },
           { v: 'right', label: t('backtest.draw.extend_right', 'Sağa'), title: t('backtest.draw.extend_right_hint', 'Başladığı yerden sağa doğru') },
           { v: 'none', label: t('backtest.draw.extend_none', 'Parça'), title: t('backtest.draw.extend_none_hint', 'İki ucu var; uçlarından sürükleyerek uzat veya kısalt') }], d.extend || 'both', 'data-extend'));
+        if (d.tool === 'trend') {
+          box.appendChild(seg(t('backtest.draw.line_extend', 'Uzat'), [
+            { v: 'none', label: t('backtest.draw.line_extend_none', 'Yok') },
+            { v: 'left', label: t('backtest.draw.line_extend_left', 'Sola') },
+            { v: 'right', label: t('backtest.draw.extend_right', 'Sağa') },
+            { v: 'both', label: t('backtest.draw.line_extend_both', 'İki yöne') }], d.extend || 'none', 'data-lext'));
+          box.appendChild(check('stats', t('backtest.draw.stats', 'Bilgi etiketi'), d.stats === true));
+        }
+        if (d.tool === 'rect' || d.tool === 'fib' || d.tool === 'fibext') box.appendChild(check('zone-extend', t('backtest.draw.zone_extend', 'Sağa uzat'), d.extend === 'right'));
       } else {
         box.appendChild(seg(t('backtest.draw.font_size', 'Yazı boyutu'), TEXT_SIZES.map(function (n) { return { v: String(n), label: String(n) }; }), String(d.size || 13), 'data-size'));
       }
@@ -1240,11 +1629,11 @@
         var ov = document.createElement('span'); ov.className = 'bt-dset-val bt-num'; ov.textContent = rg.value + '%';
         fr.appendChild(rg); fr.appendChild(ov); box.appendChild(fr);
       }
-      if (d.tool === 'fib') {
+      if (d.tool === 'fib' || d.tool === 'fibext') {
         var lr = document.createElement('div'); lr.className = 'bt-dset-row bt-dset-col';
         var ll = document.createElement('label'); ll.className = 'bt-dset-label'; ll.textContent = t('backtest.draw.levels', 'Seviyeler'); ll.htmlFor = 'bt-dset-levels'; lr.appendChild(ll);
         var li = document.createElement('input'); li.type = 'text'; li.id = 'bt-dset-levels'; li.className = 'bt-input bt-dset-levels'; li.setAttribute('data-k', 'levels');
-        li.value = (d.levels || FIB_LEVELS).join(', '); li.placeholder = FIB_LEVELS.join(', ');
+        li.value = (d.levels || defLevels(d.tool)).join(', '); li.placeholder = defLevels(d.tool).join(', ');
         var lh = document.createElement('div'); lh.className = 'bt-dset-inline';
         lh.appendChild(li);
         var rs = document.createElement('button'); rs.type = 'button'; rs.className = 'bt-dset-btn'; rs.setAttribute('data-k', 'levels-reset'); rs.textContent = t('backtest.draw.levels_reset', 'Varsayılan'); lh.appendChild(rs);
@@ -1253,9 +1642,12 @@
         box.appendChild(lr);
       }
       var foot = document.createElement('div'); foot.className = 'bt-dset-foot';
-      if (d.tool === 'text') { var eb = document.createElement('button'); eb.type = 'button'; eb.className = 'bt-dset-btn'; eb.setAttribute('data-k', 'edit-text'); eb.textContent = t('backtest.draw.edit_text', 'Metni düzenle'); foot.appendChild(eb); }
+      if (TEXTUAL[d.tool]) { var eb = document.createElement('button'); eb.type = 'button'; eb.className = 'bt-dset-btn'; eb.setAttribute('data-k', 'edit-text'); eb.textContent = t('backtest.draw.edit_text', 'Metni düzenle'); foot.appendChild(eb); }
       var lk = document.createElement('button'); lk.type = 'button'; lk.className = 'bt-dset-btn'; lk.setAttribute('data-k', 'lock'); lk.setAttribute('aria-pressed', d.locked ? 'true' : 'false');
       lk.textContent = d.locked ? t('backtest.draw.unlock', 'Kilidi aç') : t('backtest.draw.lock', 'Kilitle'); foot.appendChild(lk);
+      var cl = document.createElement('button'); cl.type = 'button'; cl.className = 'bt-dset-btn'; cl.setAttribute('data-k', 'clone'); cl.textContent = t('backtest.draw.clone', 'Kopyasını oluştur'); foot.appendChild(cl);
+      var df = document.createElement('button'); df.type = 'button'; df.className = 'bt-dset-btn'; df.setAttribute('data-k', 'default'); df.textContent = t('backtest.draw.make_default', 'Varsayılan yap');
+      df.title = t('backtest.draw.make_default_hint', 'Bu aracın yeni çizimleri bu renk ve stille başlasın'); foot.appendChild(df);
       var del = document.createElement('button'); del.type = 'button'; del.className = 'bt-dset-btn bt-dset-del'; del.setAttribute('data-k', 'delete'); del.textContent = t('backtest.draw.delete', 'Sil'); foot.appendChild(del);
       box.appendChild(foot);
       // place next to the pointer, inside the viewport
@@ -1275,6 +1667,9 @@
       if (b.hasAttribute('data-dash')) return edit(d, { dash: b.getAttribute('data-dash') });
       if (b.hasAttribute('data-size')) return edit(d, { size: +b.getAttribute('data-size') });
       if (b.hasAttribute('data-extend')) return setHlineMode(d, b.getAttribute('data-extend'));
+      if (b.hasAttribute('data-lext')) { var lx = b.getAttribute('data-lext'); return edit(d, { extend: lx === 'none' ? undefined : lx }); }
+      if (k === 'clone') { closePop(); return paste(d); }
+      if (k === 'default') return setDefault(d);
       if (k === 'levels-reset') return edit(d, { levels: undefined });
       if (k === 'lock') return edit(d, { locked: !d.locked });
       if (k === 'edit-text') { closePop(); return editTextOf(d); }
@@ -1287,10 +1682,12 @@
       pop.busy = live;                                     // a slider being dragged is not rebuilt under the pointer
       if (k === 'color') edit(d, { color: e.target.value }, live);
       else if (k === 'fill' && !live) edit(d, { fill: e.target.checked ? undefined : false });
+      else if (k === 'stats' && !live) edit(d, { stats: e.target.checked ? true : undefined });
+      else if (k === 'zone-extend' && !live) edit(d, { extend: e.target.checked ? 'right' : undefined });
       else if (k === 'opacity') { var ov = e.target.nextSibling; if (ov) ov.textContent = e.target.value + '%'; edit(d, { opacity: +e.target.value / 100 }, live); }
       else if (k === 'levels' && !live) {
         var lv = parseLevels(e.target.value);
-        if (lv) edit(d, { levels: lv }); else { e.target.setAttribute('aria-invalid', 'true'); e.target.value = (d.levels || FIB_LEVELS).join(', '); }
+        if (lv) edit(d, { levels: lv }); else { e.target.setAttribute('aria-invalid', 'true'); e.target.value = (d.levels || defLevels(d.tool)).join(', '); }
       }
       if (!live) pop.busy = false;
     }
@@ -1300,6 +1697,7 @@
     var ctl = {
       tool: function () { return tool; },
       magnet: function () { return ui.magnet; },
+      stay: function () { return ui.stay; },
       hlineMode: function () { return ui.hline; },
       allowed: allowed,
       denied: function () { opts.upgrade(); },
@@ -1332,12 +1730,19 @@
         if (k === 'Delete' || k === 'Backspace') return delSelected();
         return false;
       },
-      // Ctrl/Cmd+Z undo, Shift+Ctrl/Cmd+Z and Ctrl+Y redo: true when the key belongs to the drawings
+      // Ctrl/Cmd+Z undo, Shift+Ctrl/Cmd+Z and Ctrl+Y redo, Ctrl/Cmd+C copies the selected drawing and Ctrl/Cmd+V pastes it:
+      // true when the key belongs to the drawings (a copy only when a drawing is selected and no page text is)
       undoKey: function (e) {
         if (!(e.ctrlKey || e.metaKey) || e.altKey) return false;
         var k = (e.key || '').toLowerCase();
         if (k === 'z') { if (e.shiftKey) redo(); else undo(); return true; }
         if (k === 'y' && !e.shiftKey) { redo(); return true; }
+        if (k === 'c' && !e.shiftKey) {
+          var d = selected(), txt = global.getSelection ? String(global.getSelection()) : '';
+          if (!d || txt) return false;
+          clip = clone(d); return true;
+        }
+        if (k === 'v' && !e.shiftKey && clip) { cancelAll(); return paste(set.get(clip.id) || clip); }
         return false;
       },
       escape: function () {
@@ -1368,6 +1773,9 @@
   global.WwBtDraw = {
     TOOLS: TOOLS, FREE_TOOLS: FREE_TOOLS, NPTS: NPTS, ICONS: ICONS, FIB_LEVELS: FIB_LEVELS, COLORS: COLORS, MAX_TEXT: MAX_TEXT, MAX_DRAWINGS: MAX_DRAWINGS,
     TEXT_SIZES: TEXT_SIZES, MAX_LEVELS: MAX_LEVELS, EXTENDS: EXTENDS, SEG_BARS: SEG_BARS, hlineSpan: hlineSpan,
+    FIBEXT_LEVELS: FIBEXT_LEVELS, LINE_EXTENDS: LINE_EXTENDS, ZONE_EXTENDS: ZONE_EXTENDS, MAX_BRUSH: MAX_BRUSH, OLD_DEFAULT_GROUPS: OLD_DEFAULT_GROUPS,
+    extendLine: extendLine, pitchforkLines: pitchforkLines, ellipseHit: ellipseHit, inPoly: inPoly, nearPath: nearPath, thinStroke: thinStroke,
+    channelOffset: channelOffset, priceOnLine: priceOnLine, cleanDefaults: cleanDefaults, defLevels: defLevels,
     DEFAULT_GROUPS: DEFAULT_GROUPS, defaultGroups: defaultGroups, normalizeGroups: normalizeGroups, isDefaultGroups: isDefaultGroups, groupOf: groupOf,
     moveGroup: moveGroup, mergeGroup: mergeGroup, moveTool: moveTool,
     timeToLogical: timeToLogical, logicalToTime: logicalToTime, magnet: magnet,

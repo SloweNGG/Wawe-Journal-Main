@@ -31,7 +31,9 @@ describe('bt-draw', () => {
   it('magnet snaps to the closest OHLC of the revealed bar under the pointer, never beyond the last bar', () => {
     assert.deepEqual(D.magnet(bars, 1.2, 1.0195), { t: H, p: 1.02 });          // bar 1 high is 1.03? low 1.00, open 1.01, close 1.02
     const last = bars[bars.length - 1];
-    assert.equal(D.magnet(bars, 40, 0).t, last.time, 'future pointer -> last revealed bar');
+    assert.equal(D.magnet(bars, bars.length - 0.7, 0).t, last.time, 'on the last bar -> the last revealed bar');
+    assert.equal(D.magnet(bars, 40, 0), null, 'the empty space after the last candle: no snap (a line can be drawn into the future)');
+    assert.equal(D.magnet(bars, -3, 0), null, 'before the first candle: no snap');
     assert.equal(D.magnet([], 1, 1), null);
   });
   it('sanitize: tool, point count, numbers, colors and text are checked', () => {
@@ -92,7 +94,90 @@ describe('bt-draw', () => {
   });
   it('free tools are the trend line, the horizontal line and the rectangle', () => {
     assert.deepEqual(D.FREE_TOOLS, ['trend', 'hline', 'rect']);
-    assert.equal(D.TOOLS.length, 9); for (const t of D.TOOLS) assert.ok(D.ICONS[t] && D.NPTS[t]);
+    assert.equal(D.TOOLS.length, 18); for (const t of D.TOOLS) assert.ok(D.ICONS[t] && D.NPTS[t] && t in D.COLORS, t);
+    assert.deepEqual(D.TOOLS.slice(0, 9), ['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure'], 'the number keys 1-9 keep their tools');
+  });
+  it('new tools (2026-11-23): sanitize keeps their points, text and style options', () => {
+    const P = (n) => Array.from({ length: n }, (_, i) => ({ t: 1000 + i * H, p: 1.1 + i / 100 }));
+    for (const tool of ['vline', 'arrow', 'channel', 'fibext', 'pitchfork', 'ellipse', 'triangle']) {
+      const d = D.sanitize({ id: tool, tool, pts: P(D.NPTS[tool]) });
+      assert.ok(d && d.pts.length === D.NPTS[tool], tool);
+      assert.equal(D.sanitize({ id: tool, tool, pts: P(D.NPTS[tool] - 1 || 0) }), null, tool + ': too few points');
+    }
+    // channel: the third point is kept above the first one (same time); it only carries the width
+    const ch = D.sanitize({ id: 'c', tool: 'channel', pts: [{ t: 0, p: 1 }, { t: 10 * H, p: 2 }, { t: 5 * H, p: 1.5 }] });
+    assert.deepEqual(ch.pts[2], { t: 0, p: 1.5 }); assert.equal(D.channelOffset(ch), 0.5);
+    // callout: needs a text, keeps a font size, no line width
+    assert.equal(D.sanitize({ id: 'k', tool: 'callout', pts: P(2), text: '  ' }), null);
+    const co = D.sanitize({ id: 'k', tool: 'callout', pts: P(2), text: 'Haber', size: 16, width: 3 });
+    assert.equal(co.text, 'Haber'); assert.equal(co.size, 16); assert.equal(co.width, undefined);
+    assert.deepEqual(D.fromRow(D.toRow(co, 'u', 'a')), co, 'callout survives the database row');
+    // brush: 2..MAX_BRUSH points, rounded (whole seconds, 8 significant digits)
+    assert.equal(D.sanitize({ id: 'b', tool: 'brush', pts: P(1) }), null);
+    const br = D.sanitize({ id: 'b', tool: 'brush', pts: [{ t: 10.4, p: 1.123456789 }, { t: 20.6, p: 1.2 }, { t: 30, p: 1.3 }] });
+    assert.deepEqual(br.pts, [{ t: 10, p: 1.1234568 }, { t: 21, p: 1.2 }, { t: 30, p: 1.3 }]);
+    assert.equal(D.sanitize({ id: 'b', tool: 'brush', pts: P(D.MAX_BRUSH + 30) }).pts.length, D.MAX_BRUSH);
+    assert.ok(JSON.stringify(D.toRow(D.sanitize({ id: 'b', tool: 'brush', pts: P(D.MAX_BRUSH) }), 'u', 'a').points).length < 4096, 'a full stroke stays well under the 8 KB column limit');
+    // trend extension and info label; rectangle / Fibonacci extended to the right; other values dropped
+    const tr = D.sanitize({ id: 't', tool: 'trend', pts: P(2), extend: 'left', stats: true });
+    assert.equal(tr.extend, 'left'); assert.equal(tr.stats, true);
+    assert.equal(D.sanitize({ id: 't', tool: 'trend', pts: P(2), extend: 'none', stats: 'yes' }).extend, undefined);
+    assert.equal(D.sanitize({ id: 't', tool: 'trend', pts: P(2), stats: 'yes' }).stats, undefined);
+    assert.equal(D.sanitize({ id: 't', tool: 'arrow', pts: P(2), extend: 'both' }).extend, undefined, 'only the trend line extends');
+    for (const tool of ['rect', 'fib', 'fibext']) {
+      assert.equal(D.sanitize({ id: 'z', tool, pts: P(D.NPTS[tool]), extend: 'right' }).extend, 'right', tool);
+      assert.equal(D.sanitize({ id: 'z', tool, pts: P(D.NPTS[tool]), extend: 'left' }).extend, undefined, tool);
+    }
+    assert.deepEqual(D.fromRow(D.toRow(tr, 'u', 'a')), tr, 'extend and stats survive the database row');
+  });
+  it('trend-based Fibonacci extension: level n at C + n * (B - A); its own default levels', () => {
+    const d = { tool: 'fibext', pts: [{ t: 0, p: 100 }, { t: 1, p: 150 }, { t: 2, p: 120 }] };
+    const lv = D.fibLevels(d);
+    assert.deepEqual(lv.map((x) => x.level), D.FIBEXT_LEVELS);
+    assert.equal(lv[0].price, 120); assert.equal(lv.find((x) => x.level === 1).price, 170); assert.ok(near(lv.find((x) => x.level === 1.618).price, 120 + 1.618 * 50));
+    assert.equal(D.sanitize({ id: 'f', tool: 'fibext', pts: d.pts, levels: D.FIBEXT_LEVELS.slice() }).levels, undefined, 'its default set is not stored');
+    assert.deepEqual(D.sanitize({ id: 'f', tool: 'fibext', pts: d.pts, levels: D.FIB_LEVELS.slice() }).levels, D.FIB_LEVELS, 'the retracement set is a custom set here');
+    assert.deepEqual(D.defLevels('fib'), D.FIB_LEVELS);
+  });
+  it('channel handles: the ends move the base line and keep the width, the middle handle sets the width', () => {
+    const d = D.sanitize({ id: 'c', tool: 'channel', pts: [{ t: 0, p: 1 }, { t: 10, p: 2 }, { t: 0, p: 1.5 }] });
+    let n = D.setHandle(d, 0, 5, 3, H);
+    assert.deepEqual(n.pts, [{ t: 5, p: 3 }, { t: 10, p: 2 }, { t: 5, p: 3.5 }]);
+    n = D.setHandle(d, 1, 20, 0, H); assert.deepEqual(n.pts[1], { t: 20, p: 0 }); assert.equal(D.channelOffset(n), 0.5);
+    n = D.setHandle(d, 2, 99, 0.8, H); assert.deepEqual(n.pts[2], { t: 0, p: 0.8 }); assert.ok(near(D.channelOffset(n), -0.2));
+    assert.equal(D.priceOnLine(0, 1, 10, 2, 5), 1.5); assert.equal(D.priceOnLine(3, 1, 3, 2, 5), 1, 'a vertical base line');
+  });
+  it('geometry of the new tools: extended lines, pitchfork, ellipse, polygon, brush thinning', () => {
+    assert.deepEqual(D.extendLine(10, 10, 20, 20, 100, 100, 'none'), [10, 10, 20, 20]);
+    assert.deepEqual(D.extendLine(10, 10, 20, 20, 100, 100, 'right'), [10, 10, 100, 100]);
+    assert.deepEqual(D.extendLine(10, 10, 20, 20, 100, 100, 'left'), [0, 0, 20, 20]);
+    assert.deepEqual(D.extendLine(10, 10, 20, 20, 100, 100, 'both'), [0, 0, 100, 100]);
+    // pitchfork: pivot (0,50), upper (20,30), lower (20,70) -> median horizontal through y 50, tines through 30 and 70
+    const pl = D.pitchforkLines([0, 20, 20], [50, 30, 70], 100, 100);
+    assert.deepEqual(pl, [[0, 50, 100, 50], [20, 30, 100, 30], [20, 70, 100, 70]]);
+    assert.deepEqual(D.pitchforkLines([5, 5, 5], [5, 5, 5], 100, 100), [], 'all points on one spot: nothing');
+    assert.equal(D.ellipseHit(50, 50, 0, 0, 100, 100, 5), 'in');
+    assert.equal(D.ellipseHit(100, 50, 0, 0, 100, 100, 5), 'edge');
+    assert.equal(D.ellipseHit(98, 98, 0, 0, 100, 100, 5), null, 'the box corner is outside the ellipse');
+    assert.ok(D.inPoly(3, 3, [0, 10, 0], [0, 0, 10])); assert.ok(!D.inPoly(9, 9, [0, 10, 0], [0, 0, 10]));
+    assert.ok(D.nearPath(5, 1, [0, 10], [0, 0], false, 2)); assert.ok(!D.nearPath(5, 3, [0, 10], [0, 0], false, 2));
+    assert.ok(D.nearPath(0, 5, [0, 10, 0], [0, 0, 10], true, 1), 'closed: the last edge counts');
+    const straight = Array.from({ length: 50 }, (_, i) => ({ x: i, y: 2 * i }));
+    assert.deepEqual(D.thinStroke(straight, 120), [straight[0], straight[49]], 'a straight stroke keeps its ends');
+    const zig = Array.from({ length: 400 }, (_, i) => ({ x: i, y: i % 2 ? 0 : 30 }));
+    const th = D.thinStroke(zig, 120); assert.ok(th.length <= 120 && th.length >= 2); assert.deepEqual(th[0], zig[0]); assert.deepEqual(th[th.length - 1], zig[399]);
+  });
+  it('position tool: the end time comes from the chart (20 candles, a weekend does not shorten it)', () => {
+    const pts = D.newPosition('long', 1000, 1.1, 0.01, H, 1000 + 70 * H);
+    assert.equal(pts[1].t, 1000 + 70 * H); assert.equal(pts[2].t, 1000 + 70 * H);
+    assert.equal(D.newPosition('long', 1000, 1.1, 0.01, H, NaN)[1].t, 1000 + 20 * H, 'no candles: 20 bar lengths');
+  });
+  it('"set as default" styles are checked like drawings', () => {
+    const c = D.cleanDefaults({ trend: { color: '#FF0000', width: 3, dash: 'dashed', extend: 'right', stats: true, junk: 1 }, rect: { opacity: 0.5, extend: 'right' },
+      hline: { color: '#00ff00', extend: 'none' }, nope: { color: '#000000' }, fib: 'x', text: { size: 20, width: 4 }, ellipse: { width: 9 } });
+    assert.deepEqual(c, { trend: { color: '#ff0000', width: 3, dash: 'dashed', extend: 'right', stats: true }, rect: { opacity: 0.5, extend: 'right' },
+      hline: { color: '#00ff00' }, text: { size: 20 } });
+    assert.deepEqual(D.cleanDefaults(null), {}); assert.deepEqual(D.cleanDefaults('x'), {});
   });
   it('set: add/put/remove/select, transient drag events are not persisted', () => {
     const s = D.createSet(), ev = [];
@@ -172,17 +257,27 @@ describe('bt-draw', () => {
   });
   it('toolbar groups: lines and positions share a button by default; stored groups are checked', () => {
     const ts = (g) => g.map((x) => x.t);
-    assert.deepEqual(ts(D.defaultGroups()), [['trend', 'ray', 'hline'], ['rect'], ['fib'], ['long', 'short'], ['text'], ['measure']]);
-    assert.deepEqual(D.defaultGroups().map((x) => x.c), ['trend', 'rect', 'fib', 'long', 'text', 'measure'], 'a button shows its first tool');
+    assert.deepEqual(ts(D.defaultGroups()), [['trend', 'ray', 'hline', 'vline', 'arrow'], ['channel', 'pitchfork'], ['fib', 'fibext'], ['rect', 'ellipse', 'triangle', 'brush'],
+      ['long', 'short'], ['text', 'callout'], ['measure']]);
+    assert.deepEqual(D.defaultGroups().map((x) => x.c), ['trend', 'channel', 'fib', 'rect', 'long', 'text', 'measure'], 'a button shows its first tool');
+    assert.deepEqual(ts(D.defaultGroups()).flat().sort(), D.TOOLS.slice().sort(), 'every tool on exactly one button');
     assert.ok(D.isDefaultGroups(D.defaultGroups()));
     assert.deepEqual(D.normalizeGroups('x'), D.defaultGroups());
     const n = D.normalizeGroups([{ t: ['ray', 'nope', 'ray', 'fib'], c: 'fib' }, { t: [] }, null, { t: ['trend'], c: 'zzz' }]);
-    assert.deepEqual(ts(n), [['ray', 'fib'], ['trend'], ['hline'], ['rect'], ['long'], ['short'], ['text'], ['measure']], 'unknown and repeated dropped, missing ones at the end');
+    assert.deepEqual(ts(n), [['ray', 'fib', 'fibext'], ['trend', 'arrow'], ['hline', 'vline'], ['rect', 'ellipse', 'triangle', 'brush'], ['long'], ['short'], ['text', 'callout'], ['measure'], ['channel', 'pitchfork']],
+      'unknown and repeated dropped; a missing tool joins its relative, else its own button at the end');
     assert.deepEqual(n.map((x) => x.c).slice(0, 2), ['fib', 'trend'], 'the shown tool kept when valid, else the first');
-    assert.equal(D.groupOf(D.defaultGroups(), 'short'), 3); assert.equal(D.groupOf(D.defaultGroups(), 'x'), -1);
+    assert.equal(D.groupOf(D.defaultGroups(), 'short'), 4); assert.equal(D.groupOf(D.defaultGroups(), 'x'), -1);
+    // a toolbar saved before the new tools, untouched: it simply becomes the new default (the shown tool of a group may differ)
+    const old = D.OLD_DEFAULT_GROUPS.map((t) => ({ t: t.slice(), c: t[t.length - 1] }));
+    assert.deepEqual(ts(D.normalizeGroups(old)), ts(D.defaultGroups()));
+    // a customized old toolbar keeps its order; the new tools join their relatives
+    const custom = D.normalizeGroups([{ t: ['fib'], c: 'fib' }, { t: ['trend', 'ray', 'hline'], c: 'ray' }, { t: ['rect', 'measure'], c: 'rect' }, { t: ['long', 'short'], c: 'long' }, { t: ['text'], c: 'text' }]);
+    assert.deepEqual(ts(custom), [['fib', 'fibext'], ['trend', 'ray', 'hline', 'vline', 'arrow'], ['rect', 'measure', 'ellipse', 'triangle', 'brush'], ['long', 'short'], ['text', 'callout'], ['channel', 'pitchfork']]);
+    assert.equal(custom[1].c, 'ray');
   });
   it('toolbar drag and drop: reorder buttons, merge, a tool into another group, out to its own button, inside its group', () => {
-    const g = D.defaultGroups(), ts = (x) => x.map((y) => y.t);
+    const g = D.OLD_DEFAULT_GROUPS.map((t) => ({ t: t.slice(), c: t[0] })), ts = (x) => x.map((y) => y.t);
     assert.deepEqual(ts(D.moveGroup(g, 0, 3)), [['rect'], ['fib'], ['trend', 'ray', 'hline'], ['long', 'short'], ['text'], ['measure']], 'before the 4th button');
     assert.deepEqual(ts(D.moveGroup(g, 5, 0))[0], ['measure']);
     assert.deepEqual(ts(D.moveGroup(g, 2, 6))[5], ['fib'], 'to the end');
@@ -203,7 +298,8 @@ describe('bt-draw', () => {
     m = D.moveTool(g, 'trend', { group: 0, at: 3 });
     assert.deepEqual(m[0], { t: ['ray', 'hline', 'trend'], c: 'trend' }, 'inside its group: reordered, the shown tool stays');
     m = D.moveTool(g, 'hline', { group: 0, at: 0 }); assert.deepEqual(m[0].t, ['hline', 'trend', 'ray']);
-    assert.deepEqual(D.normalizeGroups(m), m, 'results stay valid');
+    const known = new Set(D.OLD_DEFAULT_GROUPS.flat());
+    assert.deepEqual(D.normalizeGroups(m).map((x) => x.t.filter((id) => known.has(id))).filter((t) => t.length), ts(m), 'results stay valid');
   });
   it('fib levels from text: separators, percent sign, limits', () => {
     assert.deepEqual(D.parseLevels('0, 0.5; 0.618 1'), [0, 0.5, 0.618, 1]);

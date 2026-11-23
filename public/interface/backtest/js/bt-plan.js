@@ -6,7 +6,7 @@
   'use strict';
 
   var WARN_AT = 0.8;                                  // bar turns orange from 80 % of the limit, red at the limit
-  var DRAW_TOOLS = 9;                                // = WwBtDraw.TOOLS (unit tested)
+  var DRAW_TOOLS = 18;                               // = WwBtDraw.TOOLS (unit tested)
   // `feat: null`: free for every plan (the drawing tools and saved drawings since 2026-10-26)
   var FEATURES = [
     { id: 'drawing_tools', feat: null, icon: 'pen-tool' },
