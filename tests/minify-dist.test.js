@@ -199,12 +199,13 @@ describe('minify-dist: files', () => {
 });
 
 describe('astro.config.mjs: build:done step order', () => {
-  it('minify → asset-version (content hashes are computed from the final bytes)', () => {
+  it('minify → i18n fill → asset-version (content hashes are computed from the final bytes)', () => {
     const cfg = fs.readFileSync('astro.config.mjs', 'utf8');
     const list = cfg.slice(cfg.indexOf('integrations: ['));
     const at = (name) => list.indexOf(name + '(');
-    for (const n of ['minifyDistAssets', 'assetVersionIntegration', 'localizeIntegration']) assert.ok(at(n) > 0, n + ' listede yok');
-    assert.ok(at('minifyDistAssets') < at('assetVersionIntegration'));
+    for (const n of ['minifyDistAssets', 'i18nFallbackFill', 'assetVersionIntegration', 'localizeIntegration']) assert.ok(at(n) > 0, n + ' listede yok');
+    assert.ok(at('minifyDistAssets') < at('i18nFallbackFill'));
+    assert.ok(at('i18nFallbackFill') < at('assetVersionIntegration'));
     assert.ok(at('assetVersionIntegration') < at('localizeIntegration'));
   });
 });

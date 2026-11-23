@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assetVersionIntegration } from './scripts/asset-version.mjs';
 import { minifyDistAssets } from './scripts/minify-dist.mjs';
+import { i18nFallbackFill } from './scripts/i18n-fill.mjs';
 import { sitemapIntegration } from './scripts/sitemap.mjs';
 import { localizeIntegration } from './scripts/localize.mjs';
 
@@ -57,12 +58,13 @@ export default defineConfig({
   devToolbar: { enabled: false },
   // build:done kancaları sırayla çalışır. asset-version son baytlardan içerik hash'i hesaplar, bu yüzden dist'i
   // değiştiren her adım ondan ÖNCE: minify (JS/CSS dosyaları + HTML'deki satır içi script'ler, scripts/minify-dist.mjs)
-  // → asset-version.
+  // → i18n eksik anahtar doldurma (scripts/i18n-fill.mjs) → asset-version.
   // localize (/tr/, /de/ kopyaları) damgalanmış HTML'den üretir → asset-version'dan sonra; sitemap onları da görsün → sitemap'ten önce.
   integrations: [
     react(),
     bundleAppScript(),
     minifyDistAssets(),
+    i18nFallbackFill(),
     assetVersionIntegration(BUILD_ID),
     localizeIntegration(),
     sitemapIntegration(),
