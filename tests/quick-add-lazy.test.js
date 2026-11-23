@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const PAGES = ['dashboard', 'analytics', 'calendar', 'strategies', 'trades'];
-const HEAVY = ['broker-dictionary', 'broker-detector', 'fill-pairing', 'parser-v2', 'quick-modal-i18n', 'quick-add'];
+// note-tools (not alanı çubuğu) de Hızlı Ekle ile iner; eskiden Layout her uygulama sayfasına ekliyordu
+const HEAVY = ['broker-dictionary', 'broker-detector', 'fill-pairing', 'parser-v2', 'quick-modal-i18n', 'note-tools', 'quick-add'];
 const boot = fs.readFileSync('public/interface/quick-add/js/quick-add-boot.js', 'utf8');
 const qa = fs.readFileSync('public/interface/quick-add/js/quick-add.js', 'utf8');
 
@@ -22,9 +23,19 @@ describe('quick-add lazy loading', () => {
   });
 
   it('the boot file lists every module in dependency order, all with the build token', () => {
-    const files = [...boot.matchAll(/'(\/interface\/quick-add\/js\/([a-z0-9-]+)\.js)\?v=__WW_BUILD_ID__'/g)];
+    const list = boot.slice(boot.indexOf('var FILES = ['), boot.indexOf('];', boot.indexOf('var FILES = [')));
+    const files = [...list.matchAll(/'(\/[a-z0-9/-]+\/([a-z0-9-]+)\.js)\?v=__WW_BUILD_ID__'/g)];
     assert.deepEqual(files.map((m) => m[2]), HEAVY);
+    assert.equal(files.length, (list.match(/'/g) || []).length / 2, 'every entry has the build token');
     for (const m of files) assert.ok(fs.existsSync('public' + m[1]), m[1]);
+    assert.ok(files.some((m) => m[1] === '/components/note-tools/note-tools.js'));
+  });
+
+  it('note-tools CSS is loaded with the modal (build token, once), not by the layout', () => {
+    assert.match(boot, /var NOTE_CSS = '\/components\/note-tools\/note-tools\.css\?v=__WW_BUILD_ID__';/);
+    assert.ok(fs.existsSync('public/components/note-tools/note-tools.css'));
+    const layout = fs.readFileSync('src/layouts/Layout.astro', 'utf8');
+    assert.ok(!layout.includes('/components/note-tools/'), 'Layout no longer loads note-tools on every app page');
   });
 
   it('the FAB looks exactly like the one quick-add.js used to create', () => {
@@ -43,11 +54,15 @@ describe('quick-add lazy loading', () => {
 
   it('quickAddOpen is a lazy proxy that loads once, inits, then opens; real quick-add.js replaces it', async () => {
     const loaded = [];
+    const links = [];
     let initCalls = 0, opened = 0;
     const win = {};
+    const head = { appendChild: (l) => { links.push(l); setImmediate(() => l.onload && l.onload()); } };
     const ctx = {
       window: win,
-      document: { readyState: 'complete', getElementById: () => null, createElement: () => ({}), body: { classList: { add() {}, remove() {}, toggle() {} }, style: {} }, documentElement: { style: { setProperty() {} } }, addEventListener() {} },
+      document: { readyState: 'complete', getElementById: () => null, createElement: () => ({ setAttribute(k) { this['@' + k] = true; } }), head,
+        querySelector: (s) => (s === 'link[data-ww-note-css]' ? links.find((l) => l['@data-ww-note-css']) || null : null),
+        body: { classList: { add() {}, remove() {}, toggle() {} }, style: {} }, documentElement: { style: { setProperty() {} } }, addEventListener() {} },
       localStorage: { getItem: () => null },
       setTimeout: () => 0,
       alert: () => {},
@@ -70,6 +85,9 @@ describe('quick-add lazy loading', () => {
     assert.equal(loaded.length, 1, 'one load for concurrent calls');
     assert.equal(initCalls, 1);
     assert.equal(opened, 2, 'both callers get the modal opened');
+    assert.equal(links.length, 1, 'note-tools.css added once');
+    assert.equal(links[0].rel, 'stylesheet');
+    assert.equal(links[0].href, '/components/note-tools/note-tools.css?v=__WW_BUILD_ID__');
   });
 
   it('navbar treats the lazy proxy as ready (opens Quick Add instead of going to /add-trade)', () => {

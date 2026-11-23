@@ -7,7 +7,9 @@ import vm from 'node:vm';
 
 const nav = fs.readFileSync('public/components/navbar/navbar.js', 'utf8');
 const fnSrc = nav.slice(nav.indexOf('function wwDialogVisible(el)'), nav.indexOf('function wwIsProCached()'));
+// işaretleme bileşende (sunucuda render), mantık public/components/upgrade-modal/upgrade-modal.js'te
 const upgrade = fs.readFileSync('src/components/UpgradeModal.astro', 'utf8');
+const upgradeJs = fs.readFileSync('public/components/upgrade-modal/upgrade-modal.js', 'utf8');
 
 // rendered: kutusu var mı (display:none değil); style: hesaplanmış visibility / opacity
 function el(rendered, { modern = true, visibility = 'visible', opacity = '1' } = {}) {
@@ -52,7 +54,7 @@ describe('"N" shortcut: open dialog check', () => {
 
   it('the keydown handler uses the check; the upgrade modal markup and its Esc handling are unchanged', () => {
     assert.match(nav, /if \(t && \(t\.isContentEditable[^\n]+\n\s*if \(wwOpenModalDialog\(\)\) return;\n\s*if \(!wwQuickAddReady\(\)\) return;/);
-    assert.match(upgrade, /<div id="ww-upgrade-modal-backdrop" class="ww-up-backdrop" aria-hidden="true" style="display:none;">\s*<div class="ww-up-modal" role="dialog" aria-modal="true"/);
-    assert.match(upgrade, /e\.key === 'Escape' && backdrop && backdrop\.classList\.contains\('active'\)/);
+    assert.match(upgrade, /<div id="ww-upgrade-modal-backdrop" data-ww-up class="ww-up-backdrop" aria-hidden="true" style="display:none;">\s*<div data-ww-up class="ww-up-modal" role="dialog" aria-modal="true"/);
+    assert.match(upgradeJs, /e\.key === 'Escape' && backdrop && backdrop\.classList\.contains\('active'\)/);
   });
 });

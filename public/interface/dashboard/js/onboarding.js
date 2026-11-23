@@ -4,6 +4,9 @@
 // 1. Welcome Wizard & Setup (Language, Currency, Time zone, Theme, Journal, AI coach)
 // 2. Guided Interactive Spotlight Tour
 // 3. Floating Bottom-Right Tasks Checklist
+// Sayfalara doğrudan eklenmez: Layout'taki onboarding-gate.js yalnızca gerekiyorsa (bu dosyayla birlikte
+// onboarding.css'i) yükler. initOnboarding'in "gösterilecek bir şey var mı" kararı değişirse oradaki
+// onboardingNeeded() da güncellenmeli.
 // ============================================================
 
 (function () {
@@ -2266,6 +2269,13 @@
     } catch (err) {
       wwLog.warn('Profile onboarding check note:', err);
     }
+
+    // Veritabanı "bitti" diyorsa yerelde de işaretle: onboarding-gate.js sonraki tam yüklemelerde bu dosyayı hiç
+    // indirmesin (eskiden bayraklar yalnızca sihirbaz/tur BU cihazda bitince yazılıyordu; yeni cihazda her sayfada inerdi)
+    try {
+      if (dbWizardDone && !localWizardDone) localStorage.setItem('wj_wizard_done_' + uid, 'true');
+      if (dbTourDone) localStorage.setItem('wj_tour_done_' + uid, 'true');
+    } catch (e) { }
 
     var isWizardDone = localWizardDone || dbWizardDone;
     var isTourDone = (localStorage.getItem('wj_tour_done_' + uid) === 'true') || dbTourDone;
