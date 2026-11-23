@@ -223,14 +223,139 @@ function dismissClientNotif(id) {
     var list = getDismissedClientNotifs();
     if (!list.includes(id)) {
       list.push(id);
-      localStorage.setItem('ww_dismissed_client_notifs', JSON.stringify(list));
+      // en yeni 500 anahtar yeter (eskiler artık hiç üretilmeyen günlerin overtrade anahtarları)
+      localStorage.setItem('ww_dismissed_client_notifs', JSON.stringify(list.slice(-500)));
     }
   } catch (e) {}
+  wwQueueServerRead(id);
 }
 
 function isClientNotifDismissed(id) {
+  if (id && _wwSrvReads.set[String(id)]) return true;
   return getDismissedClientNotifs().includes(id);
 }
+
+// ── Tarayıcının ürettiği bildirimlerin (ot_*, prem_*, pay_*) okundu bilgisi hesapta ──────────────
+// public.notification_reads (202611230003). Eskiden yalnızca localStorage'daydı: başka cihaz/tarayıcıda,
+// PWA'da, gizli pencerede ya da Safari site verisini silince hepsi yeniden "okunmamış" çıkıyordu.
+// Tablo yoksa (migration uygulanmamış) sessizce yalnızca localStorage ile çalışır.
+var WW_READ_KEY_RE = /^(ot|prem|pay)_[A-Za-z0-9_.:-]{1,100}$/;
+var WW_READ_KEEP_DAYS = 120;
+var _wwSrvReads = { uid: null, set: {}, loadedAt: 0, ok: false, unavailable: false, promise: null, migrated: false };
+var _wwSrvReadQueue = [];
+var _wwSrvReadTimer = null;
+
+function wwNotifSb() { return window.sb || window.supabase; }
+function wwNotifUid() {
+  var u = window.SETTINGS_STATE && window.SETTINGS_STATE.currentUser;
+  return (u && u.id) || null;
+}
+
+function wwLoadServerReads(sb, uid, force) {
+  if (!sb || !uid) return Promise.resolve(_wwSrvReads.set);
+  if (_wwSrvReads.uid !== uid) {
+    _wwSrvReads = { uid: uid, set: {}, loadedAt: 0, ok: false, unavailable: false, promise: null, migrated: false };
+  }
+  if (_wwSrvReads.unavailable) return Promise.resolve(_wwSrvReads.set);
+  if (!force && Date.now() - _wwSrvReads.loadedAt < 60000) return Promise.resolve(_wwSrvReads.set);
+  if (_wwSrvReads.promise) return _wwSrvReads.promise;
+  var state = _wwSrvReads;
+  var since = new Date(Date.now() - WW_READ_KEEP_DAYS * 864e5).toISOString();
+  state.promise = Promise.resolve(
+    sb.from('notification_reads').select('notif_key').eq('user_id', uid).gte('read_at', since).limit(1000)
+  ).then(function(res) {
+    if (res && res.error) {
+      var code = res.error.code || '';
+      // tablo yok (migration uygulanmamış): bu oturumda bir daha sorma
+      if (code === '42P01' || code === 'PGRST205' || code === 'PGRST204') state.unavailable = true;
+    } else if (res && Array.isArray(res.data)) {
+      res.data.forEach(function(r) { if (r && r.notif_key) state.set[r.notif_key] = true; });
+      state.ok = true;
+      wwMigrateLocalReads(sb, uid);
+      wwPruneServerReads(sb, uid, since);
+    }
+    return state.set;
+  }, function() { return state.set; }).then(function(set) {
+    state.loadedAt = Date.now();
+    state.promise = null;
+    return set;
+  });
+  return state.promise;
+}
+
+function wwQueueServerRead(id) {
+  var key = id == null ? '' : String(id);
+  if (!WW_READ_KEY_RE.test(key) || _wwSrvReads.set[key]) return;
+  _wwSrvReads.set[key] = true;
+  if (_wwSrvReadQueue.indexOf(key) === -1) _wwSrvReadQueue.push(key);
+  if (_wwSrvReadTimer) return;
+  _wwSrvReadTimer = setTimeout(wwFlushServerReads, 250);
+}
+
+async function wwFlushServerReads() {
+  _wwSrvReadTimer = null;
+  var keys = _wwSrvReadQueue.splice(0, 200);
+  if (!keys.length || _wwSrvReads.unavailable) return;
+  var sb = wwNotifSb();
+  var uid = wwNotifUid();
+  if (!uid && sb && sb.auth) {
+    try { var s = await sb.auth.getSession(); uid = s && s.data && s.data.session && s.data.session.user && s.data.session.user.id; } catch (e) {}
+  }
+  if (!sb || !uid) return;
+  try {
+    var res = await sb.from('notification_reads').upsert(
+      keys.map(function(k) { return { user_id: uid, notif_key: k }; }),
+      { onConflict: 'user_id,notif_key', ignoreDuplicates: true }
+    );
+    if (res && res.error) {
+      var code = res.error.code || '';
+      if (code === '42P01' || code === 'PGRST205' || code === 'PGRST204') _wwSrvReads.unavailable = true;
+      else console.warn('🔔 notification_reads yazılamadı:', res.error);
+    }
+  } catch (e) {
+    console.warn('🔔 notification_reads yazılamadı:', e);
+  }
+  if (_wwSrvReadQueue.length && !_wwSrvReadTimer) _wwSrvReadTimer = setTimeout(wwFlushServerReads, 250);
+}
+
+// Bu tarayıcıda önceden okunmuş (localStorage) anahtarları bir kez hesaba taşı; böylece diğer cihazlar da görür
+function wwMigrateLocalReads(sb, uid) {
+  if (_wwSrvReads.migrated) return;
+  _wwSrvReads.migrated = true;
+  try {
+    var flag = 'ww_notif_reads_migrated_' + uid;
+    if (localStorage.getItem(flag)) return;
+    var local = getDismissedClientNotifs();
+    var ot = [];
+    try { ot = JSON.parse(localStorage.getItem('ww_overtrade_dismissed_v2') || '[]'); } catch (e) {}
+    var cutoff = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+    local.concat(Array.isArray(ot) ? ot : []).forEach(function(k) {
+      k = String(k || '');
+      if (!WW_READ_KEY_RE.test(k)) return;
+      // overtrade anahtarlarının sonu gün: yalnızca son 14 günün anahtarları işe yarar
+      var m = /^ot_.*?(\d{4}-\d{2}-\d{2})$/.exec(k);
+      if (m && m[1] < cutoff) return;
+      wwQueueServerRead(k);
+    });
+    localStorage.setItem(flag, '1');
+  } catch (e) {}
+}
+
+// 120 günden eski anahtarlar bir işe yaramaz: oturum başına bir kez temizlenir
+function wwPruneServerReads(sb, uid, since) {
+  try {
+    var flag = 'ww_notif_reads_pruned_' + uid;
+    if (sessionStorage.getItem(flag)) return;
+    sessionStorage.setItem(flag, '1');
+    Promise.resolve(sb.from('notification_reads').delete().eq('user_id', uid).lt('read_at', since)).catch(function() {});
+  } catch (e) {}
+}
+
+// Bu sayfada okundu yapılan sunucu bildirimleri: henüz yazılmamışken gelen bir yükleme
+// (realtime, zil açılışı, overtrade güncellemesi) onları yeniden okunmamış göstermesin
+var _wwReadOverlay = {};
+var _wwMarkAllAt = 0;
+var _wwNotifLoadSeq = 0;
 
 window.wwMarkAllAsRead = async function() {
   try {
@@ -243,22 +368,13 @@ window.wwMarkAllAsRead = async function() {
       } catch (sessErr) {}
     }
 
-    if (sb && user && user.id) {
-      try {
-        var { error: rpcErr } = await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
-        if (rpcErr) {
-          await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-        }
-      } catch (eRpc) {
-        try {
-          await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-        } catch (eUpd) {}
-      }
-    }
+    // Önce ekran (iyimser), sonra sunucu: arada gelen bir yükleme bunları geri getirmesin
+    _wwMarkAllAt = Date.now();
 
     // Overtrade ve yerel bildirimleri de okundu yap
     if (Array.isArray(window._allNotifications)) {
       window._allNotifications.forEach(function(item) {
+        if (item.id && !item.is_overtrade && !/^(prem|pay)_/.test(String(item.id))) _wwReadOverlay[String(item.id)] = true;
         if (item.is_overtrade) {
           var otRaw = (item.rawId || item.id || '').toString();
           var otClean = otRaw.replace(/^ot_/, '');
@@ -284,6 +400,23 @@ window.wwMarkAllAsRead = async function() {
 
     if (typeof window.renderNotifications === 'function') {
       window.renderNotifications();
+    }
+
+    if (sb && user && user.id) {
+      var markAllErr = null;
+      try {
+        var { error: rpcErr } = await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
+        if (rpcErr) {
+          var upd = await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+          markAllErr = upd && upd.error;
+        }
+      } catch (eRpc) {
+        try {
+          var upd2 = await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+          markAllErr = upd2 && upd2.error;
+        } catch (eUpd) { markAllErr = eUpd; }
+      }
+      if (markAllErr) console.warn('🔔 Bildirimler sunucuda okundu yapılamadı:', markAllErr);
     }
 
     if (typeof showToast === 'function') {
@@ -334,6 +467,8 @@ window.wwMarkAsRead = async function(e, id) {
     } else if (strId.startsWith('prem_') || strId.startsWith('pay_')) {
       dismissClientNotif(strId);
     } else {
+      _wwReadOverlay[strId] = true;
+      if (typeof window.renderNotifications === 'function') window.renderNotifications();
       var sb = window.sb || window.supabase;
       var user = window.SETTINGS_STATE?.currentUser;
       if (!user || !user.id) {
@@ -589,6 +724,8 @@ window.renderNotifications = function() {
 };
 
 window.loadNotifications = async function() {
+  // Aynı anda birden çok yükleme olabilir (realtime, zil açılışı, overtrade, rozet): yalnızca en son başlayan listeyi yazar
+  var loadSeq = ++_wwNotifLoadSeq;
   try {
     var sb = window.sb || window.supabase;
     if (!sb) return;
@@ -644,6 +781,11 @@ window.loadNotifications = async function() {
     }
 
     var combined = [];
+
+    // Hesaptaki okundu anahtarları (ot_/prem_/pay_): başka cihazda okunanlar burada da okundu görünür
+    if (user && user.id) {
+      try { await wwLoadServerReads(sb, user.id); } catch (srErr) {}
+    }
 
     // 1. OverTrade risk uyarılarını topla
     var otWarnings = window._activeOvertradeWarnings;
@@ -807,6 +949,8 @@ window.loadNotifications = async function() {
           var desc = n.message || n.description || (n.message_key ? helperT(n.message_key, n.message_key, metaData) : '') || '';
 
           var createdTs = n.created_at ? (typeof n.created_at === 'number' ? n.created_at : new Date(n.created_at).getTime()) : Date.now();
+          // bu sayfada okundu yapıldıysa (sunucu yazımı henüz bitmemiş olabilir) okundu kalır
+          var readHere = !!_wwReadOverlay[String(n.id)] || (_wwMarkAllAt > 0 && createdTs <= _wwMarkAllAt);
 
           combined.push({
             id: n.id,
@@ -820,7 +964,7 @@ window.loadNotifications = async function() {
             title: title,
             message: desc,
             stats: null,
-            is_read: !!n.is_read,
+            is_read: !!n.is_read || readHere,
             created_at: isNaN(createdTs) ? Date.now() : createdTs,
             is_overtrade: false
           });
@@ -847,8 +991,11 @@ window.loadNotifications = async function() {
           var diffMs = expDate.getTime() - now.getTime();
           var daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
+          // Anahtar yalnızca bitiş gününe bağlı (kullanıcı zaten satırın sahibi). Eskiden kalan gün sayısı da
+          // anahtardaydı: okunan uyarı ertesi gün yeni bir bildirim gibi tekrar çıkıyordu. Yenilemede tarih değişir, yeniden çıkar.
+          var expDay = expDate.toISOString().slice(0, 10);
           if (daysLeft <= 0) {
-            var expId = 'prem_expired_' + user.id + '_' + expDate.toISOString().slice(0, 10);
+            var expId = 'prem_expired_' + expDay;
             combined.push({
               id: expId,
               rawId: expId,
@@ -864,7 +1011,7 @@ window.loadNotifications = async function() {
               is_overtrade: false
             });
           } else if (daysLeft <= 7) {
-            var expiringId = 'prem_expiring_' + user.id + '_' + daysLeft + '_' + expDate.toISOString().slice(0, 10);
+            var expiringId = 'prem_expiring_' + expDay;
             combined.push({
               id: expiringId,
               rawId: expiringId,
@@ -886,76 +1033,47 @@ window.loadNotifications = async function() {
       }
     }
 
-    // 4. Finans & Ödeme bildirimleri (payments tablosundan)
+    // 4. Tamamlanamayan ödemeler (payments tablosundan, son 14 gün)
+    // Başarılı ödeme bildirimi burada üretilmez: creem-webhook ve nowpayment-webhook onu zaten
+    // notifications tablosuna yazıyor (noti.payment_success_title). Eskiden burada bir kopyası daha üretiliyordu;
+    // okundu bilgisi yalnızca tarayıcıda olduğu için başka cihazda/girişte "Pro'ya Hoş Geldin" yeniden çıkıyordu.
     if (sb && user && user.id) {
       try {
+        var paySince = new Date(Date.now() - 14 * 864e5).toISOString();
         var { data: userPayments } = await sb
           .from('payments')
-          .select('*')
+          .select('id, payment_status, plan_type, created_at')
           .eq('user_id', user.id)
+          .in('payment_status', ['failed', 'expired'])
+          .gte('created_at', paySince)
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(3);
 
         if (Array.isArray(userPayments)) {
-          var existingRawIds = new Set(combined.map(function(c) { return c.rawId; }));
-
+          var curLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
           userPayments.forEach(function(p) {
-            if (existingRawIds.has(p.id) || (p.invoice_id && existingRawIds.has(p.invoice_id))) {
-              return;
-            }
-
             var pId = 'pay_' + p.id;
-            var isRead = isClientNotifDismissed(pId);
             var pDate = p.created_at ? new Date(p.created_at).getTime() : Date.now();
-            var isFinished = p.payment_status === 'finished' || p.payment_status === 'confirmed';
-            var isFailed = p.payment_status === 'failed' || p.payment_status === 'expired';
             var isYearly = (p.plan_type === 'yearly' || p.plan_type === 'year');
-            var curLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
-            var planLabel = isYearly 
+            var planLabel = isYearly
               ? (curLang === 'en' ? '1-year' : curLang === 'de' ? '1-jähriges' : '1 yıllık')
               : (curLang === 'en' ? '1-month' : curLang === 'de' ? '1-monatiges' : '1 aylık');
-            var pAmt = p.paid_amount || p.amount || 0;
-            var pCurr = p.paid_currency || p.currency || 'USD';
-
-            if (isFinished) {
-              combined.push({
-                id: pId,
-                rawId: p.id,
-                category: 'system',
-                type: 'premium',
-                tagClass: 'pro',
-                iconType: 'pro',
-                tagText: t('noti.tag_premium', 'PRO'),
-                iconName: 'crown',
-                title: t('noti.payment_success_title', 'Pro\'ya Hoş Geldin'),
-                message: t('noti.payment_success_desc', '{plan} Pro abonelik için teşekkürler', {
-                  plan: planLabel,
-                  amount: pAmt,
-                  curr: pCurr
-                }),
-                stats: null,
-                is_read: isRead,
-                created_at: pDate,
-                is_overtrade: false
-              });
-            } else if (isFailed) {
-              combined.push({
-                id: pId,
-                rawId: p.id,
-                category: 'system',
-                type: 'warning',
-                tagText: t('noti.tag_finance', 'FİNANS'),
-                iconName: 'alert-circle',
-                title: t('noti.payment_failed_title', 'Ödeme Tamamlanamadı'),
-                message: t('noti.payment_failed_desc', '{plan} Pro ödeme işleminiz zaman aşımına uğradı veya tamamlanamadı.', {
-                  plan: planLabel
-                }),
-                stats: null,
-                is_read: isRead,
-                created_at: pDate,
-                is_overtrade: false
-              });
-            }
+            combined.push({
+              id: pId,
+              rawId: p.id,
+              category: 'system',
+              type: 'warning',
+              tagText: t('noti.tag_finance', 'FİNANS'),
+              iconName: 'alert-circle',
+              title: t('noti.payment_failed_title', 'Ödeme Tamamlanamadı'),
+              message: t('noti.payment_failed_desc', '{plan} Pro ödeme işleminiz zaman aşımına uğradı veya tamamlanamadı.', {
+                plan: planLabel
+              }),
+              stats: null,
+              is_read: isClientNotifDismissed(pId),
+              created_at: isNaN(pDate) ? Date.now() : pDate,
+              is_overtrade: false
+            });
           });
         }
       } catch (payErr) {
@@ -970,6 +1088,8 @@ window.loadNotifications = async function() {
       return timeB - timeA;
     });
 
+    // daha yeni bir yükleme başladıysa bu (eski) sonuç yazılmaz
+    if (loadSeq !== _wwNotifLoadSeq) return;
     window._allNotifications = combined;
     window._wwNotifsLoaded = true;
     window.renderNotifications();

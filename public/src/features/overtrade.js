@@ -171,7 +171,10 @@ export function checkOvertrade(trades) {
     }
     
     if (weekCount > settings.weeklyLimit) {
-      const id = 'ot_weekly_' + today;
+      // One warning per calendar week (key = that week's Monday). Keyed by today it came back as a "new"
+      // unread warning every day of the week after it had been read.
+      const mondayKey = window.WwTime.addDays(today, -((window.WwTime.dowOfKey(today) + 6) % 7));
+      const id = 'ot_weekly_' + mondayKey;
       if (!isOvertradeWarningDismissed(id) && !isOvertradeWarningDismissed('weekly_trades')) {
         warnings.push({
           id: id,
