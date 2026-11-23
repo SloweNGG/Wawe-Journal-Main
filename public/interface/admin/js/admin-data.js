@@ -1393,6 +1393,8 @@ window.openNotificationModal = function(userId, userName) {
   document.getElementById('noti-modal-user-name').textContent = userName;
   document.getElementById('noti-modal-title').value = '';
   document.getElementById('noti-modal-desc').value = '';
+  var urlEl0 = document.getElementById('noti-modal-url'); if (urlEl0) urlEl0.value = '';
+  var ctaEl0 = document.getElementById('noti-modal-cta'); if (ctaEl0) ctaEl0.value = '';
   modal.classList.add('open');
 };
 
@@ -1420,6 +1422,20 @@ window.sendAdminNotification = async function() {
     return;
   }
 
+  // İsteğe bağlı hedef: kullanıcı bildirime tıklayınca bu site içi sayfaya gider (navbar.js wwDecorateNotif)
+  var urlEl = document.getElementById('noti-modal-url');
+  var ctaEl = document.getElementById('noti-modal-cta');
+  var url = urlEl ? urlEl.value.trim() : '';
+  var cta = ctaEl ? ctaEl.value.trim().slice(0, 40) : '';
+  if (url && /^https?:\/\/(www\.)?wawejournal\.com(?=\/|$)/i.test(url)) url = url.replace(/^https?:\/\/(www\.)?wawejournal\.com/i, '') || '/';
+  if (url && !/^\/(?!\/)[A-Za-z0-9\-._~\/?#=&%+]*$/.test(url)) {
+    if (typeof showToast === 'function') showToast('Bağlantı site içi bir yol olmalı (ör. /settings#panel-plan).', 'error');
+    return;
+  }
+  var meta = {};
+  if (url) meta.url = url;
+  if (url && cta) meta.cta = cta;
+
   try {
     btn.disabled = true;
     btn.textContent = 'Gönderiliyor...';
@@ -1429,7 +1445,7 @@ window.sendAdminNotification = async function() {
       p_type: type,
       p_title_key: title,
       p_message_key: desc,
-      p_meta_data: {}
+      p_meta_data: meta
     });
 
     if (error) throw error;

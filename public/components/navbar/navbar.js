@@ -152,6 +152,7 @@ window.wwToggleBell = function(e, btn) {
     p.classList.toggle('open', willOpen);
     if (b) b.classList.toggle('active', willOpen);
     if (willOpen) wwMarkBellSeen();
+    if (willOpen && window._wwBellView === 'prefs') wwSetBellView('list');
     if (willOpen && typeof window.loadNotifications === 'function') {
       window.loadNotifications();
     }
@@ -357,6 +358,290 @@ var _wwReadOverlay = {};
 var _wwMarkAllAt = 0;
 var _wwNotifLoadSeq = 0;
 
+// ── Bildirim kategorileri ve tercihleri ──────────────────────────────────────────────────────────
+// risk (overtrade, günlük kayıp, sunucu uyarıları) · coach_alert (AI koç canlı uyarıları: coach_settings.alerts_enabled,
+// kapatılınca sunucu üretmez) · coach (haftalık rapor, söz hatırlatmaları) · partner (başvuru, ödeme talepleri) ·
+// system (duyurular) · account (Pro süresi, ödemeler: her zaman açık).
+// Diğerleri user_profiles.notification_prefs (202611230004) içinde; yoksa bu tarayıcıda (localStorage) tutulur.
+var WW_NOTIF_PREF_CATS = ['risk', 'coach_alert', 'coach', 'partner', 'system', 'account'];
+var _wwNotifPrefs = { uid: null, prefs: {}, coachAlerts: null, loadedAt: 0, colMissing: false, promise: null };
+
+function wwNotifPrefsLocalKey(uid) { return 'ww_notif_prefs_' + uid; }
+function wwNotifPrefsReadLocal(uid) {
+  try { var v = JSON.parse(localStorage.getItem(wwNotifPrefsLocalKey(uid)) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; }
+}
+function wwNotifPrefsWriteLocal() {
+  if (!_wwNotifPrefs.uid) return;
+  try { localStorage.setItem(wwNotifPrefsLocalKey(_wwNotifPrefs.uid), JSON.stringify({ prefs: _wwNotifPrefs.prefs, coachAlerts: _wwNotifPrefs.coachAlerts })); } catch (e) {}
+}
+function wwCleanNotifPrefs(p) {
+  var out = {};
+  if (!p || typeof p !== 'object') return out;
+  ['risk', 'coach', 'partner', 'system'].forEach(function(k) { if (p[k] === false) out[k] = false; });
+  if (typeof p.ts === 'number') out.ts = p.ts;
+  return out;
+}
+
+function wwNotifPrefOn(cat) {
+  if (!cat || cat === 'account') return true;
+  if (cat === 'coach_alert') return _wwNotifPrefs.coachAlerts !== false;
+  return _wwNotifPrefs.prefs[cat] !== false;
+}
+
+function wwLoadNotifPrefs(sb, uid, force) {
+  if (!sb || !uid) return Promise.resolve();
+  if (_wwNotifPrefs.uid !== uid) {
+    var local = wwNotifPrefsReadLocal(uid) || {};
+    _wwNotifPrefs = { uid: uid, prefs: wwCleanNotifPrefs(local.prefs), coachAlerts: local.coachAlerts === false ? false : null, loadedAt: 0, colMissing: false, promise: null };
+  }
+  if (!force && Date.now() - _wwNotifPrefs.loadedAt < 60000) return Promise.resolve();
+  if (_wwNotifPrefs.promise) return _wwNotifPrefs.promise;
+  var st = _wwNotifPrefs;
+  var pProfile = Promise.resolve(sb.from('user_profiles').select('notification_prefs').eq('id', uid).maybeSingle()).then(function(r) {
+    if (r && r.error) { if (/notification_prefs/.test(r.error.message || '') || r.error.code === '42703') st.colMissing = true; return; }
+    var remote = r && r.data ? r.data.notification_prefs : null;
+    if (remote && typeof remote === 'object') {
+      var clean = wwCleanNotifPrefs(remote);
+      // bu tarayıcıda daha yeni bir değişiklik (ör. yazım başarısız olduysa) varsa o kalır
+      if (!(st.prefs.ts && clean.ts && st.prefs.ts > clean.ts)) st.prefs = clean;
+    }
+  }, function() {});
+  var pCoach = Promise.resolve(sb.from('coach_settings').select('alerts_enabled').eq('user_id', uid).maybeSingle()).then(function(r) {
+    if (r && !r.error) st.coachAlerts = (r.data && r.data.alerts_enabled === false) ? false : true;
+  }, function() {});
+  st.promise = Promise.all([pProfile, pCoach]).then(function() {
+    st.loadedAt = Date.now();
+    st.promise = null;
+    wwNotifPrefsWriteLocal();
+  });
+  return st.promise;
+}
+
+async function wwSetNotifPref(cat, on) {
+  if (WW_NOTIF_PREF_CATS.indexOf(cat) === -1 || cat === 'account') return;
+  var sb = wwNotifSb();
+  var uid = _wwNotifPrefs.uid || wwNotifUid();
+  if (!uid && sb && sb.auth) {
+    try { var s = await sb.auth.getSession(); uid = s && s.data && s.data.session && s.data.session.user && s.data.session.user.id; } catch (e) {}
+  }
+  if (!uid) return;
+  if (_wwNotifPrefs.uid !== uid) await wwLoadNotifPrefs(sb, uid);
+  var prev = cat === 'coach_alert' ? _wwNotifPrefs.coachAlerts : _wwNotifPrefs.prefs[cat];
+  if (cat === 'coach_alert') {
+    _wwNotifPrefs.coachAlerts = !!on;
+  } else {
+    var next = Object.assign({}, _wwNotifPrefs.prefs);
+    if (on) delete next[cat]; else next[cat] = false;
+    next.ts = Date.now();
+    _wwNotifPrefs.prefs = next;
+  }
+  wwNotifPrefsWriteLocal();
+  if (typeof window.renderNotifications === 'function') window.renderNotifications();
+
+  var err = null;
+  try {
+    if (cat === 'coach_alert') {
+      var r1 = await sb.from('coach_settings').upsert({ user_id: uid, alerts_enabled: !!on }, { onConflict: 'user_id' });
+      err = r1 && r1.error;
+    } else if (!_wwNotifPrefs.colMissing) {
+      var payload = Object.assign({ v: 1 }, _wwNotifPrefs.prefs);
+      var r2 = await sb.from('user_profiles').update({ notification_prefs: payload }).eq('id', uid);
+      err = r2 && r2.error;
+      if (err && (/notification_prefs/.test(err.message || '') || err.code === '42703')) { _wwNotifPrefs.colMissing = true; err = null; }
+    }
+  } catch (e) { err = e; }
+
+  if (err) {
+    console.warn('🔔 Bildirim tercihi kaydedilemedi:', err);
+    if (cat === 'coach_alert') _wwNotifPrefs.coachAlerts = prev;
+    else { var back = Object.assign({}, _wwNotifPrefs.prefs); if (prev === false) back[cat] = false; else delete back[cat]; _wwNotifPrefs.prefs = back; }
+    wwNotifPrefsWriteLocal();
+    if (typeof showToast === 'function') showToast(t('noti.prefs_save_error', 'Tercih kaydedilemedi. Birazdan tekrar dene.'), 'error');
+    if (typeof window.renderNotifications === 'function') window.renderNotifications();
+    return;
+  }
+  // kapatılan kategori listeden çıkar, açılan geri gelir
+  _wwNotifPrefs.loadedAt = Date.now();
+  if (typeof window.loadNotifications === 'function') window.loadNotifications();
+}
+window.wwSetNotifPref = wwSetNotifPref;
+
+// Kategori ve tıklama hedefi (ilk aksiyon = kartın tamamına tıklama)
+var _wwNotifActions = {};
+function wwSafeNotifUrl(u) {
+  u = typeof u === 'string' ? u.trim() : '';
+  // yalnızca site içi yollar: "/x", "//" ve şema yok
+  return /^\/(?!\/)[A-Za-z0-9\-._~\/?#=&%+]*$/.test(u) ? u : '';
+}
+function wwDecorateNotif(item) {
+  var id = String(item.id || '');
+  var tk = item.titleKey || '';
+  var meta = item.meta || {};
+  var acts = [];
+  var cat = 'system';
+  if (item.is_overtrade) {
+    cat = 'risk';
+    acts.push({ label: t('noti.act_trades', 'İşlemleri gör'), href: '/trades' });
+    acts.push({ label: t('noti.act_limits', 'Limitler'), href: '/settings#panel-overtrade' });
+  } else if (/^prem_/.test(id)) {
+    cat = 'account';
+    acts.push({ label: t('noti.act_renew', 'Planı yenile'), href: '/settings#panel-plan' });
+  } else if (/^pay_/.test(id)) {
+    cat = 'account';
+    acts.push({ label: t('noti.act_retry_payment', 'Tekrar dene'), href: '/settings#panel-plan' });
+  } else if (tk.indexOf('coach.alert.') === 0) {
+    cat = 'coach_alert';
+    acts.push({ label: t('noti.act_open_coach', 'Koçu aç'), coach: true });
+  } else if (tk.indexOf('coach.') === 0) {
+    cat = 'coach';
+    acts.push({ label: t('noti.act_open_coach', 'Koçu aç'), coach: true });
+  } else if (item.isPartner || tk.indexOf('noti.payout') === 0 || tk.indexOf('noti.partner') === 0) {
+    cat = 'partner';
+    acts.push({ label: t('noti.act_earnings', 'Kazançlarım'), href: '/my-earnings' });
+  } else if (item.srcType === 'premium' || item.srcType === 'finance' || tk.indexOf('payment') !== -1 || tk.indexOf('premium') !== -1 || /premium|pro\b/i.test(tk)) {
+    cat = 'account';
+    acts.push({ label: t('noti.act_plan', 'Planım'), href: '/settings#panel-plan' });
+  } else if (item.srcType === 'warning' || item.srcType === 'error' || item.srcType === 'danger') {
+    cat = 'risk';
+  }
+  // admin / sunucu bildirimi kendi hedefini verebilir: meta_data.url ("/..."), meta_data.cta (etiket ya da çeviri anahtarı)
+  var metaUrl = wwSafeNotifUrl(meta.url);
+  if (metaUrl) {
+    var ctaLabel = typeof meta.cta === 'string' && meta.cta ? t(meta.cta, meta.cta) : t('noti.act_open', 'Aç');
+    acts = [{ label: ctaLabel.slice(0, 40), href: metaUrl }].concat(acts.slice(0, 1));
+  }
+  item.cat = cat;
+  item.actions = acts.slice(0, 2);
+  return item;
+}
+
+function wwRunNotifAction(id, act) {
+  if (!act) return;
+  var item = (window._allNotifications || []).find(function(n) { return String(n.id) === String(id); });
+  if (item && !item.is_read && typeof window.wwMarkAsRead === 'function') window.wwMarkAsRead(null, item.id);
+  var panel = document.getElementById('bell-panel');
+  if (panel) panel.classList.remove('open');
+  var bellBtn = document.getElementById('overtrade-bell-btn');
+  if (bellBtn) { bellBtn.classList.remove('active'); bellBtn.setAttribute('aria-expanded', 'false'); }
+  if (act.coach) {
+    if (window.WwAiCoach && typeof window.WwAiCoach.open === 'function') window.WwAiCoach.open();
+    return;
+  }
+  if (act.href) {
+    if (typeof window.closeMobileMenuAndNavigate === 'function') window.closeMobileMenuAndNavigate(null, act.href);
+    else window.location.href = act.href;
+  }
+}
+
+// Zil paneli: tercihler görünümü (dişli düğmesi panelin başlığına JS ile eklenir; Navbar.astro ve getNavbarHTML aynı kalır)
+window._wwBellView = 'list';
+function wwEnsureBellPrefsBtn() {
+  var actions = document.querySelector('#bell-panel .bell-panel-header-actions');
+  if (!actions || document.getElementById('bell-prefs-btn')) return;
+  var label = t('noti.prefs_title', 'Bildirim tercihleri');
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'bell-prefs-btn';
+  btn.id = 'bell-prefs-btn';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('aria-pressed', 'false');
+  btn.innerHTML = '<i data-lucide="settings-2"></i>';
+  var closeBtn = document.getElementById('bell-panel-close');
+  if (closeBtn && closeBtn.parentNode === actions) actions.insertBefore(btn, closeBtn); else actions.appendChild(btn);
+  if (typeof lucide !== 'undefined' && lucide.createIcons) { try { lucide.createIcons(); } catch (e) {} }
+}
+
+function wwSetBellView(view) {
+  window._wwBellView = view === 'prefs' ? 'prefs' : 'list';
+  var panel = document.getElementById('bell-panel');
+  if (panel) panel.classList.toggle('is-prefs', window._wwBellView === 'prefs');
+  var btn = document.getElementById('bell-prefs-btn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', window._wwBellView === 'prefs' ? 'true' : 'false');
+    btn.classList.toggle('active', window._wwBellView === 'prefs');
+  }
+  if (window._wwBellView === 'prefs') {
+    var sb = wwNotifSb();
+    var uid = wwNotifUid();
+    if (sb && uid) wwLoadNotifPrefs(sb, uid).then(function() { if (window._wwBellView === 'prefs') window.renderNotifications(); });
+  }
+  if (typeof window.renderNotifications === 'function') window.renderNotifications();
+}
+window.wwSetBellView = wwSetBellView;
+
+function wwRenderBellPrefs(body) {
+  var rows = [
+    { cat: 'risk', icon: 'shield-alert', title: t('noti.pref_risk', 'Risk ve limit uyarıları'), desc: t('noti.pref_risk_desc', 'Overtrade, günlük kayıp limiti ve risk uyarıları.') },
+    { cat: 'coach_alert', icon: 'zap', title: t('noti.pref_coach_alert', 'AI koç canlı uyarıları'), desc: t('noti.pref_coach_alert_desc', 'İşlemlerinden sonra plan ihlali ve risk uyarıları. Kapatınca koç bu uyarıları hiç üretmez.') },
+    { cat: 'coach', icon: 'sparkles', title: t('noti.pref_coach', 'AI koç raporları'), desc: t('noti.pref_coach_desc', 'Haftalık rapor ve verdiğin sözlerin hatırlatmaları.') },
+    { cat: 'partner', icon: 'handshake', title: t('noti.pref_partner', 'Partner ve kazançlar'), desc: t('noti.pref_partner_desc', 'Partner başvurusu sonucu ve ödeme talepleri.') },
+    { cat: 'system', icon: 'megaphone', title: t('noti.pref_system', 'Duyurular ve sistem'), desc: t('noti.pref_system_desc', 'Platform duyuruları ve genel bildirimler.') },
+    { cat: 'account', icon: 'crown', title: t('noti.pref_account', 'Hesap ve ödeme'), desc: t('noti.pref_account_desc', 'Pro süresi ve ödemeler. Hesabın için önemli olduğundan her zaman açık.'), locked: true }
+  ];
+  var hidden = window._wwNotifHiddenCount || 0;
+  var html = '<div class="bell-prefs">' +
+    '<div class="bell-prefs-head">' +
+      '<button type="button" class="bell-prefs-back" data-bell-view="list"><i data-lucide="arrow-left"></i><span>' + sanitizeHTML(t('noti.prefs_back', 'Bildirimlere dön')) + '</span></button>' +
+      '<p class="bell-prefs-intro">' + sanitizeHTML(t('noti.prefs_intro', 'Zilde hangi bildirimleri görmek istediğini seç. Tercihlerin hesabına kaydedilir, her cihazda aynıdır.')) + '</p>' +
+    '</div>';
+  rows.forEach(function(r) {
+    var on = r.locked ? true : wwNotifPrefOn(r.cat);
+    html += '<div class="bell-pref-row' + (r.locked ? ' is-locked' : '') + '">' +
+      '<div class="bell-pref-icon"><i data-lucide="' + r.icon + '"></i></div>' +
+      '<div class="bell-pref-text"><div class="bell-pref-title" id="bell-pref-t-' + r.cat + '">' + sanitizeHTML(r.title) + '</div>' +
+      '<div class="bell-pref-desc">' + sanitizeHTML(r.desc) + '</div></div>' +
+      '<button type="button" class="bell-pref-switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '"' +
+        ' aria-labelledby="bell-pref-t-' + r.cat + '" data-pref-cat="' + r.cat + '"' + (r.locked ? ' disabled aria-disabled="true"' : '') + '>' +
+        '<span class="bell-pref-knob"></span></button>' +
+    '</div>';
+  });
+  if (hidden > 0) {
+    html += '<div class="bell-prefs-note"><i data-lucide="eye-off"></i><span>' +
+      sanitizeHTML(t('noti.prefs_hidden', '{n} bildirim kapattığın kategorilerde olduğu için gizli.', { n: hidden })) + '</span></div>';
+  }
+  html += '</div>';
+  body.innerHTML = html;
+  if (typeof lucide !== 'undefined' && lucide.createIcons) { try { lucide.createIcons(); } catch (e) {} }
+}
+
+// Panel içindeki tıklamalar: tercih anahtarı, görünüm değişimi, kartın hedefi / aksiyon düğmeleri
+if (!window.__wwBellDelegated) {
+  window.__wwBellDelegated = true;
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target || !target.closest) return;
+    // DOM'u bir sonraki tick'te değiştir: aynı tıklamayı dinleyen "dışarı tıklanınca kapat" işleyicisi hedefi
+    // panelin içinde görsün (yeniden çizilen düğme DOM'dan kopunca paneli kapatıyordu)
+    if (target.closest('#bell-prefs-btn')) {
+      e.preventDefault();
+      setTimeout(function() { wwSetBellView(window._wwBellView === 'prefs' ? 'list' : 'prefs'); }, 0);
+      return;
+    }
+    if (!target.closest('#bell-panel-body')) return;
+    var viewBtn = target.closest('[data-bell-view]');
+    if (viewBtn) { e.preventDefault(); var v = viewBtn.getAttribute('data-bell-view'); setTimeout(function() { wwSetBellView(v); }, 0); return; }
+    var sw = target.closest('.bell-pref-switch');
+    if (sw) {
+      e.preventDefault();
+      if (sw.disabled) return;
+      var pc = sw.getAttribute('data-pref-cat'), pOn = sw.getAttribute('aria-checked') !== 'true';
+      setTimeout(function() { wwSetNotifPref(pc, pOn); }, 0);
+      return;
+    }
+    if (target.closest('.noti-mark-read')) return;
+    var itemEl = target.closest('.noti-item');
+    if (!itemEl) return;
+    var nid = itemEl.getAttribute('data-id');
+    var acts = _wwNotifActions[nid];
+    if (!acts || !acts.length) return;
+    var chip = target.closest('.noti-action');
+    var idx = chip ? Number(chip.getAttribute('data-ai')) || 0 : 0;
+    e.preventDefault();
+    setTimeout(function() { wwRunNotifAction(nid, acts[idx]); }, 0);
+  });
+}
+
 window.wwMarkAllAsRead = async function() {
   try {
     var sb = window.sb || window.supabase;
@@ -429,6 +714,12 @@ window.wwMarkAllAsRead = async function() {
   }
 };
 
+// Bir tıklamanın içinden yeniden çizim: bir sonraki tick'te (aynı tıklamanın "dışarı tıklanınca kapat" işleyicisi,
+// DOM'dan kopmuş hedefi panelin dışı sanıp paneli kapatmasın)
+function wwRenderNotifsSoon() {
+  setTimeout(function() { if (typeof window.renderNotifications === 'function') window.renderNotifications(); }, 0);
+}
+
 window.wwMarkAsRead = async function(e, id) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   try {
@@ -468,7 +759,7 @@ window.wwMarkAsRead = async function(e, id) {
       dismissClientNotif(strId);
     } else {
       _wwReadOverlay[strId] = true;
-      if (typeof window.renderNotifications === 'function') window.renderNotifications();
+      wwRenderNotifsSoon();
       var sb = window.sb || window.supabase;
       var user = window.SETTINGS_STATE?.currentUser;
       if (!user || !user.id) {
@@ -491,9 +782,7 @@ window.wwMarkAsRead = async function(e, id) {
       }
     }
 
-    if (typeof window.renderNotifications === 'function') {
-      window.renderNotifications();
-    }
+    wwRenderNotifsSoon();
   } catch (err) {
     console.error('Mark read error:', err);
   }
@@ -598,10 +887,13 @@ window.renderNotifications = function() {
     }
   }
 
+  wwEnsureBellPrefsBtn();
   if (!body) return;
+  if (window._wwBellView === 'prefs') { wwRenderBellPrefs(body); return; }
 
   // Filtreleme
   var filtered = all;
+  _wwNotifActions = {};
   var currentTab = window.wwNotifTab || 'all';
   if (currentTab === 'unread') {
     filtered = unreadList;
@@ -689,8 +981,14 @@ window.renderNotifications = function() {
     }
 
     var markReadText = t('noti.mark_read_single', 'Okundu');
+    var acts = Array.isArray(n.actions) ? n.actions : [];
+    if (acts.length) _wwNotifActions[String(n.id)] = acts;
+    var actionsHtml = acts.length ? '<div class="noti-actions">' + acts.map(function(a, ai) {
+      return '<button type="button" class="noti-action' + (ai === 0 ? ' primary' : '') + '" data-ai="' + ai + '">' +
+        sanitizeHTML(a.label) + (ai === 0 ? '<i data-lucide="' + (a.coach ? 'sparkles' : 'arrow-right') + '"></i>' : '') + '</button>';
+    }).join('') + '</div>' : '';
     html += `
-      <div class="noti-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
+      <div class="noti-item ${n.is_read ? '' : 'unread'}${acts.length ? ' has-action' : ''}" data-id="${sanitizeHTML(String(n.id))}">
         ${!n.is_read ? '<span class="noti-unread-dot"></span>' : ''}
         <div class="noti-icon ${n.iconType || n.type}">
           <i data-lucide="${n.iconName}"></i>
@@ -713,6 +1011,7 @@ window.renderNotifications = function() {
               <i data-lucide="clock"></i>
               <span>${timeStr}</span>
             </span>
+            ${actionsHtml}
           </div>
         </div>
       </div>
@@ -763,7 +1062,7 @@ window.loadNotifications = async function() {
               console.log('🔔 [loadNotifications Realtime] Veritabanından bildirim değişikliği:', payload);
               // a new live coach alert: the coach panel shows it (toast, optional desktop notification)
               try {
-                if (payload && payload.eventType === 'INSERT' && payload.new && /^coach\.alert\./.test(payload.new.title_key || '')) {
+                if (payload && payload.eventType === 'INSERT' && payload.new && /^coach\.alert\./.test(payload.new.title_key || '') && wwNotifPrefOn('coach_alert')) {
                   window.dispatchEvent(new CustomEvent('ww:coach-alert', { detail: payload.new }));
                 }
               } catch (evErr) { /* ignore */ }
@@ -966,7 +1265,11 @@ window.loadNotifications = async function() {
             stats: null,
             is_read: !!n.is_read || readHere,
             created_at: isNaN(createdTs) ? Date.now() : createdTs,
-            is_overtrade: false
+            is_overtrade: false,
+            titleKey: n.title_key || '',
+            srcType: n.type || '',
+            meta: metaData,
+            isPartner: isPartner
           });
         });
       }
@@ -1088,8 +1391,21 @@ window.loadNotifications = async function() {
       return timeB - timeA;
     });
 
+    // Kategori + tıklama hedefi; kapatılan kategoriler zilde gösterilmez ve sayılmaz (Bildirim tercihleri)
+    if (user && user.id) {
+      try { await wwLoadNotifPrefs(sb, user.id); } catch (npErr) {}
+    }
+    var hiddenCount = 0;
+    combined = combined.filter(function(item) {
+      wwDecorateNotif(item);
+      if (wwNotifPrefOn(item.cat)) return true;
+      hiddenCount++;
+      return false;
+    });
+
     // daha yeni bir yükleme başladıysa bu (eski) sonuç yazılmaz
     if (loadSeq !== _wwNotifLoadSeq) return;
+    window._wwNotifHiddenCount = hiddenCount;
     window._allNotifications = combined;
     window._wwNotifsLoaded = true;
     window.renderNotifications();

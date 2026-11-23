@@ -307,6 +307,14 @@ import Layout from '../layouts/Layout.astro';
           <label for="noti-modal-desc">Açıklama</label>
           <textarea id="noti-modal-desc" rows="3" placeholder="Mesajınız..."></textarea>
         </div>
+        <div class="field">
+          <label for="noti-modal-url">Bağlantı (isteğe bağlı)</label>
+          <input type="text" id="noti-modal-url" placeholder="Örn: /settings#panel-plan" />
+        </div>
+        <div class="field">
+          <label for="noti-modal-cta">Düğme metni (isteğe bağlı)</label>
+          <input type="text" id="noti-modal-cta" maxlength="40" placeholder="Örn: Planı gör" />
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" onclick="if(window.closeNotificationModal) window.closeNotificationModal();">Vazgeç</button>
