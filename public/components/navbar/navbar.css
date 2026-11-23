@@ -3345,11 +3345,34 @@ body.light-theme .noti-stat-chip.limit-danger {
 }
 
 /* ============================================================
-   HESAP İŞARETİ (WwJournalMark) — yanıp sönen nokta
-   ⭐ Üst bar ve hesap listesi .nav içindedir; global ".nav * { animation: none !important }" kuralı nabzı
-      kapatıyordu. Aynı !important + daha yüksek özgüllük (.nav + 2 sınıf) ile istisna. Keyframe'ler
-      interface/shared/journal-mark.js içindeki stilde tanımlıdır.
+   HESAP İŞARETİ (WwJournalMark) — renk noktası; bağlı hesapta yanıp söner
+   ⚡ Taban stil burada, statik: interface/shared/journal-mark.js defer yüklenir. Stil o script'te kalsaydı
+      ilk karede navbar'daki nokta stilsiz (görünmez, sıfır genişlik) olur, script çalışınca hesap adı kayardı.
+      Bu dosya BaseHead'de tüm uygulama sayfalarında ilk çizimden önce yüklenir (hesaplar sayfası da kullanır).
+      journal-mark.js aynı kuralları yalnızca YEDEK olarak tutar; --ww-mark-css işaretini görürse eklemez.
+      İki kopya aynı kalmalı (tests/basehead-defer.test.js karşılaştırır).
    ============================================================ */
+:root { --ww-mark-css: 1; }
+.ww-mark {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: var(--mk-size, 10px); height: var(--mk-size, 10px); flex-shrink: 0; vertical-align: middle; line-height: 0;
+}
+.ww-mark-host { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+.ww-mark-dot {
+  width: 100%; height: 100%; border-radius: 50%; background: var(--mk, #7c6dfa);
+  box-shadow: 0 0 0 3px var(--mk-ring, rgba(124, 109, 250, .25)), 0 0 10px var(--mk-ring, rgba(124, 109, 250, .25));
+}
+/* Bağlı hesap: yanıp sönen nokta (opaklık düşer, halka büyüyüp söner) */
+.ww-mark--live .ww-mark-dot { animation: ww-mark-blink 1.7s ease-in-out infinite; }
+@keyframes ww-mark-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 3px var(--mk-ring, rgba(124, 109, 250, .25)), 0 0 10px var(--mk-ring, rgba(124, 109, 250, .25)); }
+  50% { opacity: .3; box-shadow: 0 0 0 6px transparent, 0 0 2px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ww-mark--live .ww-mark-dot { animation: none; }
+}
+/* ⭐ Üst bar ve hesap listesi .nav içindedir; global ".nav * { animation: none !important }" kuralı nabzı
+      kapatıyordu. Aynı !important + daha yüksek özgüllük (.nav + 2 sınıf) ile istisna. */
 .nav .ww-mark--live .ww-mark-dot {
   animation: ww-mark-blink 1.7s ease-in-out infinite !important;
 }

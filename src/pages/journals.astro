@@ -65,9 +65,10 @@ import Layout from '../layouts/Layout.astro';
                 var safeName = (j.name || '').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
                 var safeDesc = (j.description || '').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
                 var trades = (j.trade_count || 0) + ' işlem';
+                // journal-mark.js defer: burada henüz yoksa düz renk noktası (DOMContentLoaded'da kartlar tam işaretle yeniden çizilir)
                 return '<div class="journal-card" data-id="' + j.id + '" style="--journal-color:' + (j.color || 'var(--ac-b1)') + '">' +
                   '<div class="journal-card-top">' +
-                    '<div class="journal-icon-wrap">' + (window.WwJournalMark ? window.WwJournalMark.forJournal(j, { dotSize: 14 }) : '') + '</div>' +
+                    '<div class="journal-icon-wrap">' + (window.WwJournalMark ? window.WwJournalMark.forJournal(j, { dotSize: 14 }) : '<span class="ww-mark ww-mark--dot" style="--mk-size:14px;--mk:' + (/^#[0-9a-f]{6}$/i.test(j.color) ? j.color + ';--mk-ring:' + j.color + '40' : '#7c6dfa') + '"><span class="ww-mark-dot"></span></span>') + '</div>' +
                     '<div class="journal-card-title">' +
                       '<div class="journal-card-name" title="' + safeName + '">' + safeName + '</div>' +
                       (safeDesc ? '<div class="journal-card-desc">' + safeDesc + '</div>' : '') +

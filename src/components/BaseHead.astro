@@ -176,37 +176,51 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
     <!-- CORE CSS FOR APP -->
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/components/navbar/navbar.css" />
-    <!-- ARKA PLAN (dinamik K/Z ışığı, gradyan, düz renk, orman, dağ, günün saati; Ayarlar > Görünüm) -->
+    <!-- ARKA PLAN (dinamik K/Z ışığı, gradyan, düz renk, orman, dağ, günün saati; Ayarlar > Görünüm).
+         ambient.js aşağıda, time-settings.js'ten SONRA yüklenir. -->
     <link rel="stylesheet" href="/components/ambient/ambient.css" />
-    <script src="/components/ambient/ambient.js" is:inline defer></script>
+    <!-- ORTAK GRAFİK GÖRÜNÜMÜ (font, eksen yazıları, ızgara, tooltip; tüm grafikler aynı); script'i aşağıda -->
+    <link rel="stylesheet" href="/interface/shared/chart-theme.css" />
+
+    <!-- ⚡ ORTAK SCRIPT'LER defer: HTML okunurken paralel iner, sayfayı çizmeyi BEKLETMEZ. Ayrıştırma bitince
+         BURADAKİ SIRAYLA, sayfanın head slot'undaki defer/module script'lerden (bundle.js, sayfa JS'leri) önce ve
+         DOMContentLoaded'dan önce çalışır; aralarındaki ve sayfa script'leriyle olan sıra eskisiyle aynıdır.
+         Dikkat: ayrıştırma sırasında çalışan defer'siz script'ler (satır içi; ör. Navbar ön yüklemesi, sayfa gövdesindeki
+         önbellekten çizimler) wwCache, WwTime, WwMetrics, WwTrades, WwRealtime, WwChart, WwChartViewer, WwJournalMark,
+         WwDatePicker ve WwRangePicker'ı HENÜZ göremez: window.X kontrolüyle yedeğe düşmeli ya da DOMContentLoaded'ı
+         beklemeli. Bunlara ihtiyaç duyan yeni bir dış script de defer (veya type="module") olmalı.
+         Tam yüklemede sayfanın satır içi 'trade-saved' / 'trade-deleted' dinleyicileri cache.js'inkinden ÖNCE eklenir:
+         böyle bir dinleyici wwCache.get'i senkron çağırmasın (önbellek henüz geçersiz kılınmamış olabilir). -->
 
     <!-- CLIENT SWR CACHE ('trades' / 'trades_<sayfa>' = yalnızca canlı satır; kapsamlı listeler 'trades@all') -->
-    <script src="/cache.js" is:inline></script>
+    <script src="/cache.js" is:inline defer></script>
 
     <!-- SAAT & GÜN AYARLARI (saat dilimi, gün başlangıcı, import saati; Ayarlar > Görünüm) -->
-    <script src="/interface/shared/time-settings.js" is:inline></script>
+    <script src="/interface/shared/time-settings.js" is:inline defer></script>
+    <!-- ARKA PLAN MOTORU: WwTime'dan SONRA (açılışta "günün saati" arka planı kullanıcının saat dilimiyle seçilir) -->
+    <script src="/components/ambient/ambient.js" is:inline defer></script>
 
     <!-- ORTAK İŞLEM METRİKLERİ (PnL, win rate, kapalı işlem tanımı, gün anahtarı) -->
-    <script src="/interface/shared/trade-metrics.js" is:inline></script>
+    <script src="/interface/shared/trade-metrics.js" is:inline defer></script>
 
     <!-- İŞLEM KAYNAĞI KAPSAMI (WwTrades: canlı / backtest / tümü; canlı istatistikler backtest'i ASLA içermez) -->
-    <script src="/interface/shared/trades-source.js" is:inline></script>
+    <script src="/interface/shared/trades-source.js" is:inline defer></script>
 
     <!-- REALTIME KANALLARI (WwRealtime: yalnızca geçerli oturumla, token reddedilirse sonsuz deneme yok; navbar + payment.js) -->
-    <script src="/interface/shared/realtime-guard.js" is:inline></script>
+    <script src="/interface/shared/realtime-guard.js" is:inline defer></script>
 
-    <!-- ORTAK GRAFİK GÖRÜNÜMÜ (font, eksen yazıları, ızgara, tooltip; tüm grafikler aynı) -->
-    <link rel="stylesheet" href="/interface/shared/chart-theme.css" />
-    <script src="/interface/shared/chart-theme.js" is:inline></script>
-    <script src="/interface/shared/chart-viewer.js" is:inline></script>
+    <!-- ORTAK GRAFİK GÖRÜNÜMÜ (WwChart) + büyütülmüş grafik penceresi (WwChartViewer) -->
+    <script src="/interface/shared/chart-theme.js" is:inline defer></script>
+    <script src="/interface/shared/chart-viewer.js" is:inline defer></script>
 
-    <!-- HESAP İŞARETİ (renk noktası; prop firma / broker bağlıysa onun logosu) -->
-    <script src="/interface/shared/journal-mark.js" is:inline></script>
+    <!-- HESAP İŞARETİ (renk noktası; prop firma / broker bağlıysa yanıp söner). Stili statik: navbar.css "HESAP İŞARETİ"
+         (script defer olduğu için ilk karede nokta stilsiz kalmasın, navbar kaymasın). -->
+    <script src="/interface/shared/journal-mark.js" is:inline defer></script>
 
     <!-- TARİH SEÇİCİ (tarayıcının beyaz takvimi yerine temaya uyan takvim; WwDatePicker.attach(input)) -->
-    <script src="/interface/shared/ww-date-picker.js" is:inline></script>
+    <script src="/interface/shared/ww-date-picker.js" is:inline defer></script>
     <!-- TARİH ARALIĞI (Dashboard / Strateji / Analitik "Özel" filtresi: iki aylık aralık takvimi + hazır aralıklar) -->
-    <script src="/interface/shared/ww-range-picker.js" is:inline></script>
+    <script src="/interface/shared/ww-range-picker.js" is:inline defer></script>
     <!-- GECİKMELİ YÜKLEYİCİ (WwLazy.loadScriptOnce / whenVisible): quick-add, grafik kütüphaneleri ve SortableJS ilk ihtiyaçta iner -->
     <script src="/interface/shared/lazy-load.js" is:inline defer></script>
 

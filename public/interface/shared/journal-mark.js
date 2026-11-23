@@ -8,7 +8,9 @@
  *   WwJournalMark.html({ color, prop: <getPropFirmInfo sonucu|null>, broker: true, dotSize: 10 })
  *   WwJournalMark.forJournal(journal, { propMap, ctraderMap, dotSize })   // bağlantıları önbellekten çözer
  *
- * Stil bu dosyanın içindedir (tek yerde dursun; navbar/hesaplar sayfası/geçiş animasyonu ortak kullansın).
+ * Stil: components/navbar/navbar.css → "HESAP İŞARETİ" (statik; BaseHead'de ilk çizimden önce yüklenir, navbar /
+ * hesaplar sayfası / geçiş animasyonu ortak kullanır). Bu dosya defer yüklendiği için stil burada değil; aşağıdaki
+ * CSS yalnızca yedek (bkz. injectStyle).
  */
 (function (global) {
   'use strict';
@@ -16,6 +18,7 @@
   var DEFAULT_COLOR = '#7c6dfa';
   var CUSTOM_PROP_NAME = 'Prop';
 
+  // YEDEK stil: navbar.css'teki kuralların aynısı (tests/basehead-defer.test.js karşılaştırır; birini değiştirirseniz ikisini de)
   var CSS =
     '.ww-mark{position:relative;display:inline-flex;align-items:center;justify-content:center;' +
       'width:var(--mk-size,10px);height:var(--mk-size,10px);flex-shrink:0;vertical-align:middle;line-height:0}' +
@@ -29,11 +32,25 @@
       '50%{opacity:.3;box-shadow:0 0 0 6px transparent,0 0 2px transparent}}' +
     '@media (prefers-reduced-motion:reduce){.ww-mark--live .ww-mark-dot{animation:none}}';
 
-  // Stil <head> okunurken eklenir. data-runtime: SPA router bunu "sunucudan gelen" sanıp
-  // sayfa geçişinde silmesin (bkz. Layout.astro). Yine de silinirse bir sonraki çağrıda geri eklenir;
+  // navbar.css yüklendi mi? Oradaki :root{--ww-mark-css:1} işaretine bakılır (defer script'ler, önlerindeki
+  // stil dosyaları inmeden çalışmaz; yani burada navbar.css ya yüklenmiştir ya da yüklenemedi). Bulununca
+  // bir daha sorulmaz: navbar.css her uygulama sayfasında var, SPA geçişinde silinmez.
+  var staticCss = false;
+  function hasStaticCss() {
+    if (!staticCss) {
+      try {
+        staticCss = global.getComputedStyle(document.documentElement).getPropertyValue('--ww-mark-css').trim() === '1';
+      } catch (e) { /* yedeğe düş */ }
+    }
+    return staticCss;
+  }
+
+  // Yedek: statik stil yoksa (navbar.css yüklenemedi / navbar.css'siz sayfa) kurallar bir kez <head>'e eklenir;
+  // varsa hiçbir şey eklenmez (kurallar iki kez yazılmasın). data-runtime: SPA router bunu "sunucudan gelen"
+  // sanıp sayfa geçişinde silmesin (bkz. Layout.astro). Yine de silinirse bir sonraki çağrıda geri eklenir;
   // eskiden tek seferlik bayrak yüzünden geçişten sonra tüm hesap noktaları görünmez oluyordu.
   function injectStyle() {
-    if (typeof document === 'undefined' || document.getElementById('ww-journal-mark-style')) return;
+    if (typeof document === 'undefined' || document.getElementById('ww-journal-mark-style') || hasStaticCss()) return;
     var st = document.createElement('style');
     st.id = 'ww-journal-mark-style';
     st.setAttribute('data-runtime', '');
