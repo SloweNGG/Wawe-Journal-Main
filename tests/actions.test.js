@@ -127,7 +127,7 @@ describe('action cards: panel', () => {
   });
   it('the monthly target is written where the dashboard reads it', () => {
     assert.match(src, /localStorage\.setItem\('ww_monthly_target_' \+ jid, String\(a\.amount\)\)/);
-    const dash = fs.readFileSync(new URL('../src/pages/dashboard.astro', import.meta.url), 'utf8');
+    const dash = fs.readFileSync(new URL('../public/interface/dashboard/js/dashboard-page.js', import.meta.url), 'utf8');
     assert.match(dash, /localStorage\.getItem\('ww_monthly_target_' \+ jid\)/);
   });
   it('texts in all locales', async () => {
