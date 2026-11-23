@@ -151,8 +151,9 @@ push edilmemiş commit yok. Gereken Edge Function deploy'u ve veritabanı migrat
   çalışıyordu (artık replay de duruyor); "çizimleri gizle" açıkken çizilen çizim görünmez ama seçili oluyordu; zaman
   dilimi/hız seçtikten sonra → tuşu çalışmıyordu; dil değişince çizim çubuğu ve çekmeceler eski dilde kalıyordu;
   "Piyasa kapalı: 2g  atlandı" her dilde Türkçe birimle yazıyordu; kopyalanan çizim başka hesaba yapıştırılabiliyordu.
-- **Bilerek bırakılanlar (karar gerekir):** "tümünü kilitle" açıkken Delete hâlâ siliyor (tek tek kilitli çizim
-  silinmiyor); odaktaki bir butonda Boşluk tuşu butona değil oynat/duraklata gidiyor.
+- **Sonradan düzeltilenler (`b530a7e`):** "tümünü kilitle" artık her çizimi korur (Delete, ayarlardaki sil ve "tümünü
+  sil" uyarıyla reddedilir); Tab ile gelinen bir butonda Boşluk o butona basar, fareyle tıklandıktan sonra yine
+  oynat/duraklattır. Tek tek kilitli çizimler "tümünü sil"de (onay sorulduğu için) yine silinir.
 - **Testler:** 1037/1037 birim; yeni tarayıcı senaryoları `ind-pro` 34/34, `ind-free` 28/28, `fixes-free` 19/19,
   `fixes-pro` 17/17; toplam 68 senaryoda yalnızca bilinen eski hatalar. Canlıda `claude_demo` ile 7 indikatör eklendi,
   hata yok. Veritabanı değişikliği yok.
