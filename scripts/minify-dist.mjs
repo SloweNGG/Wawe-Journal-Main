@@ -82,7 +82,7 @@ export function minifyInlineCode(code, cache = null) {
 
 /**
  * HTML'deki satır içi klasik script'leri küçültür. Öznitelikler, sıra ve script dışındaki her bayt aynen kalır.
- * @returns {{ html: string, scripts: number, minified: number, before: number, after: number, kept: {reason: string, snippet: string}[] }}
+ * @returns {{ html: string, scripts: number, minified: number, before: number, after: number, kept: {reason: string, snippet: string, body: string}[] }}
  */
 export function minifyInlineScripts(html, cache = new Map()) {
   const stats = { scripts: 0, minified: 0, before: 0, after: 0, kept: [] };
@@ -94,7 +94,7 @@ export function minifyInlineScripts(html, cache = new Map()) {
     stats.before += Buffer.byteLength(body, 'utf8');
     if (reason) {
       stats.after += Buffer.byteLength(body, 'utf8');
-      stats.kept.push({ reason, snippet: body.trim().slice(0, 60).replace(/\s+/g, ' ') });
+      stats.kept.push({ reason, snippet: body.trim().slice(0, 60).replace(/\s+/g, ' '), body });
       return whole;
     }
     stats.after += Buffer.byteLength(code, 'utf8');
@@ -122,7 +122,7 @@ function walk(dir, list = []) {
 export function minifyDist(distDir) {
   const r = { files: 0, fileBefore: 0, fileAfter: 0, pages: 0, scripts: 0, minified: 0, inlineBefore: 0, inlineAfter: 0, warnings: [] };
   const cache = new Map();
-  const keptBy = new Map(); // "neden | kod başı" → sayfa sayısı (aynı blok her sayfada tekrar uyarı yazmasın)
+  const keptBy = new Map(); // script metni → { neden, sayfalar } (aynı blok her sayfada ayrı uyarı yazmasın)
   for (const full of walk(distDir).sort()) {
     const ext = path.extname(full).toLowerCase();
     if (ext === '.js' || ext === '.css') {
@@ -146,10 +146,8 @@ export function minifyDist(distDir) {
       r.inlineBefore += res.before;
       r.inlineAfter += res.after;
       for (const k of res.kept) {
-        const key = k.reason + ' | ' + k.snippet;
-        const prev = keptBy.get(key) || { count: 0, first: path.relative(distDir, full) };
-        prev.count++;
-        keptBy.set(key, prev);
+        if (!keptBy.has(k.body)) keptBy.set(k.body, { reason: k.reason, snippet: k.snippet, pages: [] });
+        keptBy.get(k.body).pages.push(path.relative(distDir, full));
       }
       if (res.html !== html) {
         fs.writeFileSync(full, res.html, 'utf8');
@@ -157,9 +155,9 @@ export function minifyDist(distDir) {
       }
     }
   }
-  for (const [key, { count, first }] of keptBy) {
-    const [reason, snippet] = key.split(' | ');
-    r.warnings.push(`satır içi script küçültülmedi (${reason}), ${count} sayfada, ilki ${first}: ${snippet}`);
+  for (const { reason, snippet, pages } of keptBy.values()) {
+    const where = pages.slice(0, 3).join(', ') + (pages.length > 3 ? ` (+${pages.length - 3} sayfa)` : '');
+    r.warnings.push(`satır içi script küçültülmedi (${reason}) — ${where}: ${snippet}`);
   }
   return r;
 }
