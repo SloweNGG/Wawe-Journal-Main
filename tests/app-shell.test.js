@@ -285,11 +285,15 @@ describe('page-specific helpers left the shared layout', () => {
     for (const p of fs.readdirSync('src/pages', { recursive: true })) {
       if (String(p).endsWith('.astro') && fs.readFileSync('src/pages/' + p, 'utf8').includes('PropMonteCarlo')) users.push(String(p));
     }
-    assert.deepEqual(users.sort(), ['dashboard.astro', 'tools/prop-firm-pass-probability.astro']);
+    // Dashboard'ın sayfa script'i satır içinden public/interface/dashboard/js/dashboard-page.js'e taşındı
+    const DASH_PAGE_JS = 'public/interface/dashboard/js/dashboard-page.js';
+    assert.ok(users.every((u) => ['dashboard.astro', 'tools/prop-firm-pass-probability.astro'].includes(u)), users.join());
+    assert.ok(users.includes('tools/prop-firm-pass-probability.astro'));
+    assert.ok(users.includes('dashboard.astro') || fs.readFileSync(DASH_PAGE_JS, 'utf8').includes('PropMonteCarlo'), 'the dashboard still uses it');
     for (const p of ['public/components', 'public/interface', 'public/src']) {
       for (const f of fs.readdirSync(p, { recursive: true })) {
         const file = p + '/' + f;
-        if (!file.endsWith('.js') || file.endsWith('prop-montecarlo.js') || file.endsWith('bundle.js')) continue;
+        if (!file.endsWith('.js') || file.endsWith('prop-montecarlo.js') || file.endsWith('bundle.js') || file === DASH_PAGE_JS) continue;
         assert.ok(!fs.readFileSync(file, 'utf8').includes('PropMonteCarlo'), file + ' uses PropMonteCarlo: it is only on the dashboard now');
       }
     }
