@@ -3,67 +3,19 @@ import react from '@astrojs/react';
 import esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { assetVersionIntegration } from './scripts/asset-version.mjs';
+import { minifyDistAssets } from './scripts/minify-dist.mjs';
+import { i18nFallbackFill } from './scripts/i18n-fill.mjs';
 import { sitemapIntegration } from './scripts/sitemap.mjs';
 import { localizeIntegration } from './scripts/localize.mjs';
 
 // Her derlemeye özel TEK kimlik. Kullanıldığı yerler:
 //  - SpaRouter <meta name="ww-build">: açık sekmede deploy sonrası eski/yeni script karışmasın diye tam yükleme
-//  - dist'teki her yerel JS/CSS referansının ?v= değeri (bkz. scripts/asset-version.mjs) → _headers'ta immutable önbellek
+//  - yalnızca çözülemeyen ?v=__WW_BUILD_ID__ jetonlarının yedeği; yerel JS/CSS/font referansları dosya başına içerik
+//    hash'i alır (bkz. scripts/asset-version.mjs) → _headers'ta immutable önbellek, değişmeyen dosya deploy'da yeniden inmez
 //  - sw.js önbellek adı (her deploy'da eski SW önbelleği silinir)
 // Yalnızca rakam olmalı. WW_BUILD_ID ortam değişkeni ile sabitlenebilir (ör. aynı commit'i yeniden derlerken).
 const BUILD_ID = process.env.WW_BUILD_ID || String(Date.now());
-
-function minifyDistAssets() {
-  return {
-    name: 'minify-dist-assets',
-    hooks: {
-      'astro:build:done': async ({ dir }) => {
-        const outDirPath = typeof dir === 'string' ? dir : fileURLToPath(dir);
-        let count = 0;
-        let originalBytes = 0;
-        let minifiedBytes = 0;
-
-        function processDir(currentDir) {
-          const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-          for (const entry of entries) {
-            const fullPath = path.join(currentDir, entry.name);
-            if (entry.isDirectory()) {
-              processDir(fullPath);
-            } else if (entry.isFile()) {
-              const ext = path.extname(entry.name).toLowerCase();
-              if (ext === '.js' || ext === '.css') {
-                try {
-                  const content = fs.readFileSync(fullPath, 'utf8');
-                  originalBytes += Buffer.byteLength(content, 'utf8');
-                  const result = esbuild.transformSync(content, {
-                    loader: ext === '.js' ? 'js' : 'css',
-                    minify: true,
-                    legalComments: 'none',
-                  });
-                  if (result.code) {
-                    fs.writeFileSync(fullPath, result.code, 'utf8');
-                    minifiedBytes += Buffer.byteLength(result.code, 'utf8');
-                    count++;
-                  }
-                } catch (err) {
-                  console.warn(`[minify-dist-assets] Could not minify ${fullPath}:`, err.message);
-                }
-              }
-            }
-          }
-        }
-
-        console.log('⚡ [minify-dist-assets] Minifying static JS & CSS in dist...');
-        processDir(outDirPath);
-        const savedKb = ((originalBytes - minifiedBytes) / 1024).toFixed(1);
-        const ratio = originalBytes > 0 ? (((originalBytes - minifiedBytes) / originalBytes) * 100).toFixed(1) : '0';
-        console.log(`✅ [minify-dist-assets] Minified ${count} files. Saved ${savedKb} KB (-${ratio}%).`);
-      },
-    },
-  };
-}
 
 function bundleAppScript() {
   const buildBundle = () => {
@@ -104,9 +56,19 @@ export default defineConfig({
   outDir: 'dist',
   // Geliştirme araç çubuğu localhost'ta alt paneldeki tabloların üstünü kapatıyordu
   devToolbar: { enabled: false },
-  // asset-version minify'dan SONRA çalışmalı (build:done kancaları sırayla çalışır).
+  // build:done kancaları sırayla çalışır. asset-version son baytlardan içerik hash'i hesaplar, bu yüzden dist'i
+  // değiştiren her adım ondan ÖNCE: minify (JS/CSS dosyaları + HTML'deki satır içi script'ler, scripts/minify-dist.mjs)
+  // → i18n eksik anahtar doldurma (scripts/i18n-fill.mjs) → asset-version.
   // localize (/tr/, /de/ kopyaları) damgalanmış HTML'den üretir → asset-version'dan sonra; sitemap onları da görsün → sitemap'ten önce.
-  integrations: [react(), bundleAppScript(), minifyDistAssets(), assetVersionIntegration(BUILD_ID), localizeIntegration(), sitemapIntegration()],
+  integrations: [
+    react(),
+    bundleAppScript(),
+    minifyDistAssets(),
+    i18nFallbackFill(),
+    assetVersionIntegration(BUILD_ID),
+    localizeIntegration(),
+    sitemapIntegration(),
+  ],
   vite: {
     build: {
       // Astro derleme hedefini "esnext" yapıyor; bu durumda CSS küçültücü (lightningcss) tarayıcı hedefi olmadan

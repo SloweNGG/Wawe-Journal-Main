@@ -1,8 +1,12 @@
 // ============================================================
 // WAWE JOURNAL – i18n.js (CORE + LAZY LOADER)
 // ⭐ PERFORMANS: Dil dosyaları ayrı ve lazy yükleniyor.
-//    - Sadece aktif dil + İngilizce fallback çekilir
-//    - ~%60 daha az JS parse süresi, ~%80 daha az transfer
+//    - YALNIZCA aktif dil çekilir. İngilizce (en.js, ~50 KB gz) artık tr/de için yedek olarak yüklenmez:
+//      tr.js ve de.js en.js'teki her anahtarı içerir. Biri en.js'e anahtar ekleyip tr/de'yi unutursa derleme
+//      eksikleri İngilizce değerleriyle dist'teki tr.js/de.js'e ekler ve uyarı yazar (scripts/i18n-fill.mjs).
+//    - t() sırası değişmedi: aktif sözlük → en (yüklüyse: aktif dil en ya da sonradan setLanguage/loadLanguage
+//      ile yüklendiyse) → kritik sync sözlük → anahtarın kendisi
+//    - Aktif dil dosyası inemezse (ağ hatası) son çare olarak en.js denenir: ekranda ham anahtar kalmasın
 //    - Kritik anahtarlar için sync fallback dict (FOUC önleme)
 //
 // ⭐ FIX: setLanguage() artık Promise<boolean> döner.
@@ -35,7 +39,7 @@
 
   // ⭐ SYNC FALLBACK — dil dosyası yüklenene kadar (~50ms) gösterilecek metinler
   //    Bu sözlüğü minimum tut! Sadece ilk boyamada görünecek kritik metinler.
-  //    (İngilizce fallback olduğu için EN değerleri kullanılıyor)
+  //    (Dile özel sözlük yoksa EN değerleri kullanılıyor)
   var CRITICAL_FALLBACK_BY_LANG = {
     tr: {
       'app_name': 'Journal',
@@ -158,17 +162,14 @@
 
     this._readyPromise = (async function () {
       var active = self.currentLang;
-      var promises = [];
 
-      // Her zaman İngilizce (fallback için)
-      promises.push(self.loadLanguage('en'));
+      // Yalnızca aktif dil (en.js tr/de için hiçbir metin sağlamıyordu; bkz. dosya başı)
+      var dict = await self.loadLanguage(active);
 
-      // Aktif dil İngilizce değilse onu da yükle
-      if (active !== 'en') {
-        promises.push(self.loadLanguage(active));
+      // Aktif dil inemediyse İngilizce yedek (eskiden en zaten yüklü olduğu için metinler İngilizce görünürdü)
+      if (!dict && active !== 'en') {
+        await self.loadLanguage('en');
       }
-
-      await Promise.all(promises);
       self._isReady = true;
 
       // İlk apply (DOM'daki tüm [data-i18n] elemanları çevrilir)
