@@ -2,7 +2,7 @@
 // HIZLI EKLE ÖN YÜKLEYİCİ (quick-add-boot.js) — perf parça 2a
 // ============================================================
 // Sayfa açılışında yalnızca bu küçük dosya yüklenir. Asıl Hızlı Ekle (~210 KB: broker-dictionary,
-// broker-detector, fill-pairing, parser-v2, quick-modal-i18n, quick-add) ilk ihtiyaçta iner:
+// broker-detector, fill-pairing, parser-v2, quick-modal-i18n, note-tools, quick-add) ilk ihtiyaçta iner:
 //   - sağ alttaki + (FAB) butonu buradan, eskisiyle aynı anda ve aynı görünümde oluşturulur
 //   - window.quickAddOpen bir vekildir: ilk çağrıda dosyaları yükler, modalı kurar, sonra açar
 //     (navbar +, "N" kısayolu, boş liste butonları, onboarding görevi hepsi bunu çağırır).
@@ -63,15 +63,20 @@
   if (global.__wwQuickAddBoot) return;
   global.__wwQuickAddBoot = true;
 
-  // Sıra önemli (her biri bir öncekini kullanır). ?v= derlemede build ID olur.
+  // Sıra önemli (her biri bir öncekini kullanır). ?v= derlemede dosyanın içerik hash'i olur.
+  // note-tools.js (not alanının altındaki duygu çipleri + dikte) bağımsızdır; eskiden Layout her uygulama sayfasında
+  // yüklüyordu, artık yalnızca Hızlı Ekle ile (ve add-trade sayfasında) iner. quick-add.js'ten önce: modal kurulunca
+  // (#price-notes) sayfa gözlemcisi çubuğu ekler.
   var FILES = [
     '/interface/quick-add/js/broker-dictionary.js?v=__WW_BUILD_ID__',
     '/interface/quick-add/js/broker-detector.js?v=__WW_BUILD_ID__',
     '/interface/quick-add/js/fill-pairing.js?v=__WW_BUILD_ID__',
     '/interface/quick-add/js/parser-v2.js?v=__WW_BUILD_ID__',
     '/interface/quick-add/js/quick-modal-i18n.js?v=__WW_BUILD_ID__',
+    '/components/note-tools/note-tools.js?v=__WW_BUILD_ID__',
     '/interface/quick-add/js/quick-add.js?v=__WW_BUILD_ID__'
   ];
+  var NOTE_CSS = '/components/note-tools/note-tools.css?v=__WW_BUILD_ID__';
 
   // quick-add.js'teki ICONS.plus ile aynı
   var PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -82,11 +87,28 @@
     return typeof global.quickAddOpen === 'function' && !global.quickAddOpen.__wwLazy;
   }
 
+  // note-tools.css: head'e çalışma anında eklenir (data-ssr yok: SPA geçişinde silinmez). add-trade'in kendi
+  // (sunucudan gelen) bağlantısına güvenilmez, o sayfadan çıkınca SPA onu kaldırır. Açılış CSS'i bekler (çubuk stilsiz
+  // görünmesin); yüklenemezse de (onerror) engellemez.
+  function loadNoteCss() {
+    if (document.querySelector('link[data-ww-note-css]')) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = NOTE_CSS;
+      l.setAttribute('data-ww-note-css', '');
+      l.onload = l.onerror = function () { resolve(); };
+      document.head.appendChild(l);
+    });
+  }
+
   function load() {
     if (isReal() && document.getElementById('quick-add-overlay')) return Promise.resolve();
     if (!loading) {
+      var css = loadNoteCss();
       loading = global.WwLazy.loadScriptsInOrder(FILES).then(function () {
         if (typeof global.quickAddInit === 'function') global.quickAddInit();
+        return css;
       });
       loading.catch(function () { loading = null; });
     }

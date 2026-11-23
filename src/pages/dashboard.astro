@@ -451,6 +451,8 @@ import Layout from '../layouts/Layout.astro';
     <!-- HIZLI EKLE: yalnızca ön yükleyici (FAB + tema); asıl modül ilk açılışta iner (perf 2a) -->
     <script src="/interface/quick-add/js/quick-add-boot.js" is:inline defer></script>
 
+    {/* Prop kartındaki geçme olasılığı (window.PropMonteCarlo); yalnızca bu sayfa kullanıyor (eskiden Layout'taydı) */}
+    <script src="/src/utils/prop-montecarlo.js" is:inline defer></script>
     <script src="/interface/dashboard/js/prop-card-v2.js" is:inline defer></script>
     <script src="/interface/dashboard/js/dashboard.js" is:inline defer data-page-script></script>
   </Fragment>

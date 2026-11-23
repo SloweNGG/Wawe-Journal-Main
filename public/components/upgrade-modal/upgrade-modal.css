@@ -1,0 +1,409 @@
+/* ============================================================
+   YÜKSELTME PENCERESİ STİLLERİ (src/components/UpgradeModal.astro + upgrade-modal.js)
+   ============================================================
+   Eskiden bileşenin kapsamlı <style> bloğuydu; Astro onu /_astro/Layout.*.css olarak Layout kullanan TÜM
+   sayfalara (landing, fiyatlar, giriş, blog...) render-blocking bağlıyordu (bileşen render edilmese bile).
+   Artık yalnızca uygulama sayfalarında, Layout.astro'daki isAppPage head bloğunun SON stil dosyası olarak yüklenir
+   (eskiden de head'deki son stil dosyasıydı; ardından yalnızca bazı sayfaların kendi kapsamlı /_astro/ CSS'i gelir,
+   onlar bu pencerenin elemanlarına eşleşmez: kaskad sonucu aynı).
+   Kapsam: Astro'nun data-astro-cid-* özniteliği yerine sabit [data-ww-up] (UpgradeModal.astro'da ww-up-* sınıflı
+   elemanlarda). Her bileşik seçiciye eklenir, body ile başlayanlara eklenmez: özgüllük eskisiyle aynı ((0,2,0) ...),
+   buttons.css ve styles.css'teki .ww-up-* kuralları eskisi gibi kaybeder/kazanır.
+   Not: eski [data-theme="light"] dalları hiç eşleşmiyordu (Astro onları [cid][data-theme] yapıyordu, data-theme'i
+   kimse koymuyor); görünüm değişmesin diye taşınmadı. Açık tema body.light-theme ile çalışır.
+   ============================================================ */
+
+/* ============================================================
+   UPGRADE / PAYWALL MODAL STYLING
+   Pixel-perfect dark luxury trading SaaS aesthetic
+   ============================================================ */
+
+.ww-up-backdrop[data-ww-up] {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--modal-backdrop);
+  -webkit-backdrop-filter: blur(var(--modal-blur));
+  backdrop-filter: blur(var(--modal-blur));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.24s ease;
+}
+
+.ww-up-backdrop.active[data-ww-up] {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ww-up-modal[data-ww-up] {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
+  padding: 20px 22px 24px;
+  box-shadow: 
+    0 32px 80px -16px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 45px -10px rgba(var(--ac-rgb), 0.12);
+  color: #f1f2f6;
+  /* --font styles.css'ten gelir (uygulama sayfalarında hep yüklü); yedek eskiden landing'de render edildiği içindi, zararsız */
+  font-family: var(--font, 'Geist', system-ui, sans-serif);
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.ww-up-backdrop.active[data-ww-up] .ww-up-modal[data-ww-up] {
+  transform: scale(1) translateY(0);
+}
+
+.ww-up-modal[data-ww-up]::-webkit-scrollbar {
+  width: 5px;
+}
+.ww-up-modal[data-ww-up]::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+}
+
+/* Top Bar */
+.ww-up-topbar[data-ww-up] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.ww-up-logo[data-ww-up] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+}
+
+.ww-up-logo-img[data-ww-up] {
+  width: 40px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(var(--ac-rgb), 0.45));
+}
+
+.ww-up-close-btn[data-ww-up] {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #8b8e9f;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.ww-up-close-btn[data-ww-up]:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Hero Dashboard Preview */
+.ww-up-preview-card[data-ww-up] {
+  position: relative;
+  background: #090a10;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0;
+  margin-bottom: 18px;
+  overflow: hidden;
+  height: 175px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.ww-up-preview-img[data-ww-up] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Bottom fade vignette */
+.ww-up-preview-fade[data-ww-up] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50px;
+  background: linear-gradient(180deg, transparent 0%, rgba(11, 12, 16, 0.98) 100%);
+  pointer-events: none;
+}
+
+/* Plan Name & Price */
+.ww-up-plan-header[data-ww-up] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ww-up-plan-name[data-ww-up] {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.ww-up-plan-price-wrap[data-ww-up] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.ww-up-plan-price[data-ww-up] {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.ww-up-price-period[data-ww-up] {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #8b8e9f;
+}
+
+.ww-up-price-subnote[data-ww-up] {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #8b8e9f;
+  letter-spacing: -0.01em;
+}
+
+/* Features Grid */
+.ww-up-features-grid[data-ww-up] {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+  margin-bottom: 18px;
+}
+
+/* items are created by updateModalUI, so they carry no data-ww-up attribute: plain class inside the scoped grid */
+.ww-up-features-grid[data-ww-up] .ww-up-feat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11.5px;
+  color: #9ea1b5;
+  line-height: 1.35;
+}
+
+.ww-up-features-grid[data-ww-up] .ww-up-check-svg {
+  color: #717488;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Segmented Pill Switchers: black buttons with a purple outline like the shared buttons (buttons.css) */
+.ww-up-pill-group[data-ww-up] {
+  display: flex;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.ww-up-pill-group.is-disabled[data-ww-up] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ww-up-pill-btn[data-ww-up] {
+  flex: 1;
+  background: #000;
+  border: 1px solid rgba(var(--ac-d1-rgb), 0.35);
+  color: #8b8e9f;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  text-align: center;
+}
+
+.ww-up-pill-btn[data-ww-up]:hover {
+  color: #e4e4ec;
+  border-color: rgba(var(--ac-d1-rgb), 0.7);
+}
+
+.ww-up-pill-btn.active[data-ww-up] {
+  color: #ffffff;
+  border-color: var(--ac-d1);
+  box-shadow: 0 0 0 1px var(--ac-d1) inset, 0 0 14px rgba(var(--ac-d1-rgb), 0.35);
+}
+
+/* Notice Box */
+.ww-up-notice-card[data-ww-up] {
+  text-align: center;
+  margin: 22px 0 20px;
+  padding: 0 10px;
+}
+
+.ww-up-notice-title[data-ww-up] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px 0;
+}
+
+.ww-up-notice-desc[data-ww-up] {
+  font-size: 12.5px;
+  color: #8b8e9f;
+  line-height: 1.48;
+  margin: 0 0 10px 0;
+}
+
+.ww-up-notice-sub[data-ww-up] {
+  font-size: 12px;
+  color: #717488;
+  line-height: 1.48;
+  margin: 0;
+}
+
+/* Action Buttons */
+.ww-up-action-row[data-ww-up] {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ww-up-btn-primary[data-ww-up] {
+  flex: 1;
+  height: 44px;
+  background: #ffffff;
+  color: #0b0c10;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ww-up-btn-primary[data-ww-up]:hover {
+  background: #eaeaf2;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.18);
+}
+
+.ww-up-btn-secondary[data-ww-up] {
+  flex: 1;
+  height: 44px;
+  background: #14151c;
+  color: #dfe1ee;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.ww-up-btn-secondary[data-ww-up]:hover {
+  background: #1c1d27;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+@media (max-width: 480px) {
+  .ww-up-modal[data-ww-up] {
+    padding: 16px 16px 20px;
+    border-radius: 20px;
+  }
+  .ww-up-features-grid[data-ww-up] {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .ww-up-action-row[data-ww-up] {
+    flex-direction: column;
+  }
+  .ww-up-btn-primary[data-ww-up],
+  .ww-up-btn-secondary[data-ww-up] {
+    width: 100%;
+  }
+}
+
+/* Light Theme Support */
+body.light-theme .ww-up-modal[data-ww-up] {
+  color: #0f172a;
+}
+body.light-theme .ww-up-plan-name[data-ww-up],
+body.light-theme .ww-up-plan-price[data-ww-up],
+body.light-theme .ww-up-notice-title[data-ww-up] {
+  color: #0f172a;
+}
+body.light-theme .ww-up-pill-btn[data-ww-up] {
+  background: #fff;
+  color: #64748b;
+  border-color: rgba(var(--ac-d1-rgb), 0.35);
+}
+body.light-theme .ww-up-pill-btn.active[data-ww-up] {
+  background: #f5f0ff;
+  color: #1a1033;
+  border-color: var(--ac-d1);
+  box-shadow: 0 0 0 1px var(--ac-d1) inset;
+}
+body.light-theme .ww-up-btn-primary[data-ww-up] {
+  background: var(--ac-d1);
+  color: var(--ac-on, #fff);
+}
+body.light-theme .ww-up-btn-primary[data-ww-up]:hover {
+  background: var(--ac-d2);
+  box-shadow: 0 6px 18px rgba(var(--ac-d1-rgb), 0.3);
+}
+body.light-theme .ww-up-btn-secondary[data-ww-up] {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+body.light-theme .ww-up-btn-secondary[data-ww-up]:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+body.light-theme .ww-up-preview-card[data-ww-up] {
+  border-color: #e2e8f0;
+}
+

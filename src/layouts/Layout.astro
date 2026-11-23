@@ -47,14 +47,17 @@ const {
   {alternates.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
   <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} isAppPage={isAppPage} />
   <slot name="head" />
+  {/* Uygulama kabuğu. Burada OLMAYANLAR (ihtiyaç olunca yüklenir):
+      - onboarding.css/.js → onboarding-gate.js (body sonu) gerekiyorsa yükler
+      - note-tools.css/.js → add-trade.astro head'i ve quick-add-boot.js (Hızlı Ekle açılınca)
+      - prop-montecarlo.js → yalnızca dashboard.astro
+      upgrade-modal.css head'deki SON stil dosyası kalmalı (eskiden /_astro/Layout.*.css oradaydı; kaskad sırası) */}
   {isAppPage && (
-    <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css" />
     <link rel="stylesheet" href="/components/ai-coach/ai-coach.css" />
     <link rel="stylesheet" href="/components/econ-calendar/econ-calendar.css" />
-    <link rel="stylesheet" href="/components/note-tools/note-tools.css" />
+    <link rel="stylesheet" href="/components/upgrade-modal/upgrade-modal.css" />
     <script src="/src/core/prop-templates.js" is:inline defer></script>
     <script src="/src/utils/prop-calculator.js" is:inline defer></script>
-    <script src="/src/utils/prop-montecarlo.js" is:inline defer></script>
     <script src="/src/services/prop-service.js" is:inline defer></script>
   )}
   {spa && <SpaRouter />}
@@ -84,12 +87,13 @@ const {
     <slot />
   </div>
 
-  <UpgradeModal />
+  {/* Yükseltme penceresi yalnızca uygulama sayfalarında: herkese açık sayfalarda çağıran yok (eskiden her sayfada ~25 KB
+      işaretleme + satır içi script; /support'taki analiz ekran görüntüsü linki de yanlışlıkla pencereyi açıyordu) */}
+  {isAppPage && <UpgradeModal />}
 
   {isAppPage && (
-    <script src="/interface/dashboard/js/onboarding.js" is:inline defer></script>
+    <script src="/interface/dashboard/js/onboarding-gate.js" is:inline defer></script>
     <script src="/components/ai-coach/ai-coach.js" is:inline defer></script>
-    <script src="/components/note-tools/note-tools.js" is:inline defer></script>
   )}
   {showNavbar && (
     <script src="/interface/shared/ctrader-sync.js" is:inline defer></script>
