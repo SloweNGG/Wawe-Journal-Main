@@ -1276,9 +1276,15 @@
       opts.toast(opts.t('backtest.draw.default_saved', 'Yeni {tool} çizimleri bu stille başlayacak.', { tool: opts.t('backtest.draw.tool_' + d.tool, d.tool) }), 'success');
     }
     function selected() { var id = set.selected(); return id ? set.get(id) : null; }
+    // "lock all" protects every drawing like its own lock does: no moving, no deleting, no clearing (it used to stop moving only)
+    function lockedMsg(d) {
+      if (d && d.locked) { opts.toast(opts.t('backtest.draw.locked_hint', 'Kilitli çizim değiştirilemez; önce kilidi aç.'), 'info'); return true; }
+      if (set.lockAll()) { opts.toast(opts.t('backtest.draw.locked_all_hint', 'Tüm çizimler kilitli; silmek için önce kilidi aç.'), 'info'); return true; }
+      return false;
+    }
     function delSelected() {
       var d = selected(); if (!d) return false;
-      if (d.locked) { opts.toast(opts.t('backtest.draw.locked_hint', 'Kilitli çizim değiştirilemez; önce kilidi aç.'), 'info'); return true; }
+      if (lockedMsg(d)) return true;
       set.remove(d.id); return true;
     }
     function edit(d, patch, transient) { var n = clone(d); Object.keys(patch).forEach(function (k) { if (patch[k] === undefined) delete n[k]; else n[k] = patch[k]; }); return set.put(n, transient); }
@@ -1374,7 +1380,7 @@
       else if (a === 'lock' && d) edit(d, { locked: !d.locked });
       else if (a === 'delete') delSelected();
       else if (a === 'settings' && d) { var r = b.getBoundingClientRect(); openPop(d.id, r.right + 8, r.top); }
-      else if (a === 'clear') opts.confirm(opts.t('backtest.draw.clear_confirm', 'Bu hesaptaki tüm çizimler silinsin mi?')).then(function (ok) { if (ok) set.clear(); });
+      else if (a === 'clear') { if (!lockedMsg(null)) opts.confirm(opts.t('backtest.draw.clear_confirm', 'Bu hesaptaki tüm çizimler silinsin mi?')).then(function (ok) { if (ok) set.clear(); }); }
     }
     if (opts.bar) opts.bar.addEventListener('click', onBarClick);
 
@@ -1678,7 +1684,7 @@
       if (k === 'levels-reset') return edit(d, { levels: undefined });
       if (k === 'lock') return edit(d, { locked: !d.locked });
       if (k === 'edit-text') { closePop(); return editTextOf(d); }
-      if (k === 'delete') { if (d.locked) return opts.toast(opts.t('backtest.draw.locked_hint', 'Kilitli çizim değiştirilemez; önce kilidi aç.'), 'info'); set.remove(d.id); closePop(); }
+      if (k === 'delete') { if (lockedMsg(d)) return; set.remove(d.id); closePop(); }
     }
     function onPopInput(e) {
       if (!pop || !pop.el.contains(e.target)) return;

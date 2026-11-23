@@ -197,7 +197,7 @@
       charts: function () { return shownLayout(); }, setCharts: setChartsFromDesk, upgrade: function () { openUpgrade('backtest_multichart'); }, toast: toast,
       onChange: onDeskChange, icons: icons, placed: function (kind) { placeDrawBar(kind); if (FSEDIT) FSEDIT.apply(); },
       fsShown: function (id) { return !!FSEDIT && FSEDIT.shownWin(id); } });
-    bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
+    bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupFocusOrigin(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive) return;
     if (!ok) { setPageState('list'); return; }                 // the list's error banner and retry button
@@ -2771,6 +2771,8 @@
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       // a held key repeats only the step (→); held Shift+B opened a position per repeat, held Space flickered play / pause
       if (e.repeat && e.key !== 'ArrowRight') { if (e.key === ' ') e.preventDefault(); return; }
+      // Space presses a button reached with the keyboard (Tab: :focus-visible); after a mouse click it stays play / pause
+      if (e.key === ' ' && keyboardFocusedControl(e.target)) return;
       if (e.key === ' ') { e.preventDefault(); if (R.playing) pause(); else play(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) stepMinute(); else stepCandle(); }
       else if (e.key === '?') { e.preventDefault(); openKeys(null); }
@@ -2781,6 +2783,17 @@
       else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); centerAll(); }
       else if (handleToolKey(e)) e.preventDefault();
     });
+  }
+  // How the focus came: right after a pointer press it is "mouse", otherwise keyboard (Tab, or Esc returning it to an opener).
+  // :focus-visible cannot tell: pressing Space itself makes the focused button :focus-visible.
+  var lastPointerAt = 0, kbFocused = null;
+  function keyboardFocusedControl(t) {
+    var c = t && t.closest ? t.closest('button, a[href], summary, [role="button"], [role="menuitem"], [role="tab"]') : null;
+    return !!c && c === kbFocused;
+  }
+  function setupFocusOrigin() {
+    PAGE.on(document, 'pointerdown', function () { lastPointerAt = Date.now(); kbFocused = null; }, true);
+    PAGE.on(document, 'focusin', function (e) { kbFocused = Date.now() - lastPointerAt > 600 ? e.target : null; }, true);
   }
   // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
   function escapeChain() {

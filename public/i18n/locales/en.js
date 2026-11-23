@@ -2441,6 +2441,7 @@ export default {
   "backtest.draw.save_failed": "The drawing could not be saved. It stays visible in this session.",
   "backtest.draw.too_many": "At most {n} drawings are allowed.",
   "backtest.draw.locked_hint": "A locked drawing cannot be changed; unlock it first.",
+  "backtest.draw.locked_all_hint": "All drawings are locked; unlock them first to delete.",
   "backtest.draw.target": "Target",
   "backtest.draw.stop": "Stop",
   "backtest.draw.bars": "{n} bars",

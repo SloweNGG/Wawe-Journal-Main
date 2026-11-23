@@ -2386,6 +2386,7 @@ export default {
   "backtest.draw.save_failed": "Çizim kaydedilemedi. Bu oturumda görünmeye devam eder.",
   "backtest.draw.too_many": "En fazla {n} çizim olabilir.",
   "backtest.draw.locked_hint": "Kilitli çizim değiştirilemez; önce kilidi aç.",
+  "backtest.draw.locked_all_hint": "Tüm çizimler kilitli; silmek için önce kilidi aç.",
   "backtest.draw.target": "Hedef",
   "backtest.draw.stop": "Stop",
   "backtest.draw.bars": "{n} mum",

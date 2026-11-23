@@ -2407,6 +2407,7 @@ export default {
   "backtest.draw.save_failed": "Die Zeichnung konnte nicht gespeichert werden. Sie bleibt in dieser Sitzung sichtbar.",
   "backtest.draw.too_many": "Höchstens {n} Zeichnungen sind möglich.",
   "backtest.draw.locked_hint": "Eine gesperrte Zeichnung kann nicht geändert werden; zuerst entsperren.",
+  "backtest.draw.locked_all_hint": "Alle Zeichnungen sind gesperrt; zum Löschen zuerst entsperren.",
   "backtest.draw.target": "Ziel",
   "backtest.draw.stop": "Stop",
   "backtest.draw.bars": "{n} Kerzen",

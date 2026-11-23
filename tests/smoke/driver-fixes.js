@@ -15,6 +15,7 @@
   function D() { return T().draw(); }
   function J(x) { return JSON.stringify(x); }
   async function press(k) { await pp({ op: 'key', key: k }); await sleep(80); }
+  async function chordUndo() { await pp({ op: 'key', key: 'Meta', type: 'down' }); await press('z'); await pp({ op: 'key', key: 'Meta', type: 'up' }); await sleep(150); }
   async function clickEl(e) { var r = e.getBoundingClientRect(); await pp({ op: 'click', x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }); await sleep(150); }
   function P(fx, fy) { var e = $('bt-chart'), r = e.getBoundingClientRect(); return { x: Math.round(r.left + r.width * fx), y: Math.round(r.top + r.height * fy) }; }
   async function newAccount(name) {
@@ -94,6 +95,33 @@
     ok('→ steps right after the timeframe change', R().k > k1 && R().tfId === '15m', R().k - k1);
     $('bt-speed').focus(); setv('bt-speed', '5'); await sleep(100);
     ok('the speed select is not focused after the change', document.activeElement !== $('bt-speed'));
+
+    // ---------------- "lock all" protects every drawing: Delete and "delete all" refuse with a message
+    var lockLine = D().set.list()[D().set.list().length - 1], nDraw = D().set.list().length, t0 = (window.__toasts || []).length;
+    await clickEl(document.querySelector('#bt-draw-bar [data-act="lockall"]'));
+    ok('lock all on', D().set.lockAll() === true);
+    D().set.select(lockLine.id); await sleep(80);
+    await press('Delete');
+    ok('lock all: Delete keeps the drawing and says why', D().set.list().length === nDraw && (window.__toasts || []).length > t0, D().set.list().length - nDraw);
+    await clickEl(document.querySelector('#bt-draw-bar [data-act="clear"]')); await sleep(200);
+    ok('lock all: "delete all" asks nothing and keeps the drawings', D().set.list().length === nDraw && !document.querySelector('.bt-modal.active'));
+    await clickEl(document.querySelector('#bt-draw-bar [data-act="lockall"]'));
+    D().set.select(lockLine.id); await sleep(80);
+    await press('Delete');
+    ok('unlocked: Delete removes it', D().set.list().length === nDraw - 1);
+    await chordUndo();
+
+    // ---------------- Space: a button reached with Tab is pressed; after a mouse click Space stays play / pause
+    if (R().playing) { $('bt-play-btn').click(); await sleep(100); }
+    var kk = R().k;
+    await press('Tab'); $('bt-step-btn').focus(); await sleep(50);
+    await press(' '); await sleep(300);
+    ok('Space on a keyboard-focused button presses it (one step, no play)', R().k > kk && R().playing === false, (R().k - kk) + ' playing=' + R().playing);
+    document.activeElement.blur();                 // (clicking the button that already has the keyboard focus keeps it "keyboard")
+    await clickEl($('bt-step-btn'));
+    await press(' '); await sleep(200);
+    ok('after a mouse click Space still plays', R().playing === true);
+    $('bt-play-btn').click(); await sleep(150);
 
     // ---------------- language change re-labels the drawing toolbar
     if (window.i18n && typeof window.i18n.setLanguage === 'function') {
