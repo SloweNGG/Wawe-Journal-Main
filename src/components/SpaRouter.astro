@@ -57,6 +57,7 @@ const buildId = __WW_BUILD_ID__;
   // Not: Astro 5+ bu script'i yalnızca bileşenin render edildiği (spa={true}) sayfalara ekler
   // (Astro 4 Layout'u kullanan TÜM sayfalara ekliyordu). Astro'nun router'ı import edildiği anda
   // popstate vb. dinlemeye başladığı için onu yine de meta etiketi varsa dinamik yüklüyoruz.
+  import { lowDataMode, pageScriptsToWarm } from '../scripts/spa-warm.js';
 
   type Phase = 'loading' | 'interactive';
   type QueuedListener = { target: EventTarget; type: string; fn: EventListenerOrEventListenerObject };
@@ -549,9 +550,16 @@ const buildId = __WW_BUILD_ID__;
     // Navbar'daki sayfaların HTML'i ve yerel stil dosyaları boşta önceden çekilir: üzerine gelince başlayan
     // çekme çoğu zaman tıklamaya yetişmiyordu (SW sayfaları önce ağdan alıyor) ve geçiş, preloadStyles'ta
     // sayfanın CSS'ini ağdan bekliyordu. Stiller SW'nin sürümlü önbelleğine düşer.
+    // Sayfa script'leri (data-page-script) de çekilir: büyük satır içi sayfa script'leri ayrı dosyalara taşındı
+    // (ör. journals-page.js); çekilmezse SPA ile ilk girişte script tıklama anında iner. Seçim kuralları ve
+    // Save-Data / 2g koruması: src/scripts/spa-warm.js. Boşta yalnızca taşınan *-page.js dosyaları; link üzerine gelince
+    // (wwSpa.prefetch → warmPage(href, true)) sayfanın tüm data-page-script'leri. Navbar dışındaki SPA sayfaları
+    // (journals, my-earnings, report-bug, add-trade, settings) yalnızca üzerine gelince ısınır.
     const warmedEntries = new WeakSet<object>();
+    const warmedEntriesAll = new WeakSet<object>();
     const warmedStyles = new Set<string>();
-    function warmStyles(html: string | null) {
+    const warmedScripts = new Set<string>();
+    function warmAssets(html: string | null, allScripts = false) {
       if (!html) return;
       const doc = new DOMParser().parseFromString(html, 'text/html');
       for (const el of Array.from(doc.querySelectorAll('head link[rel=stylesheet]'))) {
@@ -562,18 +570,33 @@ const buildId = __WW_BUILD_ID__;
         warmedStyles.add(href);
         fetch(href, { credentials: 'same-origin' }).catch(() => {});
       }
+      const srcs = Array.from(doc.querySelectorAll('script[src][data-page-script]'), (s) => s.getAttribute('src'));
+      const loaded = new Set(Array.from(document.scripts, (s) => s.src).filter(Boolean));
+      const opts = { base: location.href, loaded, warmed: warmedScripts, lowData: lowDataMode(navigator), onlyPageBlocks: !allScripts };
+      for (const href of pageScriptsToWarm(srcs, opts)) {
+        warmedScripts.add(href);
+        // Düşük öncelik: o an sayfanın kendi istekleriyle yarışmasın (desteklemeyen tarayıcı yok sayar)
+        fetch(href, { credentials: 'same-origin', priority: 'low' } as RequestInit).catch(() => {});
+      }
+    }
+    // Sayfanın HTML'i + CSS'i + sayfa script'leri (önbellekte varsa her kip için yalnızca bir kez).
+    // allScripts: kullanıcı niyet gösterdi (link üzerine geldi) → tüm sayfa script'leri; değilse yalnızca *-page.js
+    function warmPage(href: string, allScripts = false) {
+      prefetch(href);
+      const url = toUrl(href);
+      const entry = url ? htmlCache.get(cacheKey(url)) : undefined;
+      const seen = allScripts ? warmedEntriesAll : warmedEntries;
+      if (entry && !seen.has(entry)) {
+        seen.add(entry);
+        entry.html.then((html) => warmAssets(html, allScripts));
+      }
     }
     function warmNavLinks() {
       const here = pathKey(new URL(location.href));
       for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>('.nav-links a[href]'))) {
         const url = toUrl(a.href);
         if (!url || pathKey(url) === here) continue;
-        prefetch(a.href);
-        const entry = htmlCache.get(cacheKey(url));
-        if (entry && !warmedEntries.has(entry)) {
-          warmedEntries.add(entry);
-          entry.html.then(warmStyles);
-        }
+        warmPage(a.href, false);
       }
     }
     function warmWhenIdle() {
@@ -586,7 +609,8 @@ const buildId = __WW_BUILD_ID__;
 
     w.wwSpa = {
       canHandle,
-      prefetch,
+      // page-transition.js link üzerine gelince çağırır: HTML ile birlikte CSS ve sayfa script'leri de ısınır
+      prefetch: (href: string) => warmPage(href, true),
       navigate: (href: string) => {
         const url = toUrl(href);
         if (!url) return;
