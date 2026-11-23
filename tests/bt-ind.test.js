@@ -198,6 +198,15 @@ describe('bt-ind: oscillator bands', () => {
       if (vol) assert.ok(1 - m.vol.bottom <= 1 - m.area + 1e-12 && near(m.vol.bottom, m.area), 'volume sits right above the bands');
     }
   });
+  it('axis tags: never overlap, stay in the band, move as little as needed', () => {
+    const t = I.layoutTags([{ y: 50 }, { y: 45 }, { y: 200 }], 10, 100, 18);
+    assert.deepEqual(t.map((x) => x.y), [45, 63, 100]);
+    const crowded = I.layoutTags([{ y: 95 }, { y: 96 }, { y: 99 }], 10, 100, 18);
+    assert.deepEqual(crowded.map((x) => x.y), [64, 82, 100]);
+    const top = I.layoutTags([{ y: 0 }, { y: 1 }], 10, 100, 18);
+    assert.deepEqual(top.map((x) => x.y), [10, 28]);
+    assert.deepEqual(I.layoutTags([], 0, 1, 1), []);
+  });
   it('colors: alpha and readable text', () => {
     assert.equal(I.withAlpha('#ff0000', 0.5), 'rgba(255,0,0,0.5)');
     assert.equal(I.onColor('#f59e0b'), '#111111'); assert.equal(I.onColor('#3b82f6'), '#ffffff');

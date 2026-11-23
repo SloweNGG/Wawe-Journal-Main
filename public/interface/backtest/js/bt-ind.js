@@ -385,19 +385,25 @@
             var y0 = band.y0 * H, y1 = band.y1 * H, lines = T.lines.filter(function (l) { return !l.colorOnly; }), s0 = it.series[lines[0].k];
             ctx.strokeStyle = withAlpha(f.text, 0.28); ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(0, Math.round(y0) + 0.5); ctx.lineTo(W, Math.round(y0) + 0.5); ctx.stroke();
-            ctx.fillStyle = withAlpha(f.text, 0.7);
-            (T.levels || []).forEach(function (lv) {
-              var y = s0 ? s0.priceToCoordinate(lv) : null; if (y === null || y < y0 + 6 || y > y1 - 6) return;
-              ctx.fillText(T.decimals != null ? String(lv) : fmtVal(it.inst, lv), 8, y);
-            });
-            var i = at(it);
+            // value tags of the lines, pushed apart so two close values never cover each other (as on TradingView)
+            var i = at(it), tags = [];
             lines.forEach(function (l) {
               if (l.hist || !it.series[l.k]) return;
               var v = it.st.out[l.k] ? it.st.out[l.k][i] : null; if (v == null) return;
               var y = it.series[l.k].priceToCoordinate(v); if (y === null) return;
-              y = Math.max(y0 + 8, Math.min(y1 - 8, y));
-              ctx.fillStyle = it.inst.colors[l.k]; ctx.fillRect(0, y - 9, W, 18);
-              ctx.fillStyle = onColor(it.inst.colors[l.k]); ctx.fillText(fmtVal(it.inst, v), 8, y);
+              tags.push({ y: y, text: fmtVal(it.inst, v), color: it.inst.colors[l.k] });
+            });
+            layoutTags(tags, y0 + 9, y1 - 9, 18);
+            // the levels, unless a value tag sits on them
+            ctx.fillStyle = withAlpha(f.text, 0.7);
+            (T.levels || []).forEach(function (lv) {
+              var y = s0 ? s0.priceToCoordinate(lv) : null; if (y === null || y < y0 + 6 || y > y1 - 6) return;
+              if (tags.some(function (g) { return Math.abs(g.y - y) < 15; })) return;
+              ctx.fillText(T.decimals != null ? String(lv) : fmtVal(it.inst, lv), 8, y);
+            });
+            tags.forEach(function (g) {
+              ctx.fillStyle = g.color; ctx.fillRect(0, g.y - 9, W, 18);
+              ctx.fillStyle = onColor(g.color); ctx.fillText(g.text, 8, g.y);
             });
           });
           ctx.restore();
@@ -446,6 +452,16 @@
     };
   }
 
+  // Axis tags { y } kept inside [lo, hi] and at least `gap` apart, each as close to its own value as possible (sorted by y; pushed
+  // down from the top, then back up from the bottom). Changes the tags in place.
+  function layoutTags(tags, lo, hi, gap) {
+    if (!tags.length) return tags;
+    tags.sort(function (a, b) { return a.y - b.y; });
+    var i;
+    for (i = 0; i < tags.length; i++) tags[i].y = Math.max(tags[i].y, lo, i ? tags[i - 1].y + gap : lo);
+    for (i = tags.length - 1; i >= 0; i--) tags[i].y = Math.min(tags[i].y, i < tags.length - 1 ? tags[i + 1].y - gap : hi);
+    return tags;
+  }
   // '#22c55e' + 0.4 -> 'rgba(34,197,94,0.4)'
   function withAlpha(c, a) {
     var mm = /^#([0-9a-f]{6})$/i.exec(String(c || '').trim());
@@ -573,6 +589,6 @@
   global.WwBtInd = {
     KEY: KEY, MAX: MAX, TYPES: TYPES, TYPE_IDS: TYPE_IDS, SOURCES: SOURCES, SHORT: SHORT,
     cleanInst: cleanInst, create: create, normalize: normalize, load: load, save: save, label: label, calcKey: calcKey,
-    srcVal: srcVal, compute: compute, margins: margins, attach: attach, withAlpha: withAlpha, onColor: onColor, mountDrawer: mountDrawer
+    srcVal: srcVal, compute: compute, margins: margins, layoutTags: layoutTags, attach: attach, withAlpha: withAlpha, onColor: onColor, mountDrawer: mountDrawer
   };
 })(typeof window !== 'undefined' ? window : globalThis);
