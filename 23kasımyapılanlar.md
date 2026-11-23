@@ -138,6 +138,27 @@ push edilmemiş commit yok. Gereken Edge Function deploy'u ve veritabanı migrat
 
 ---
 
+## Backtest indikatörleri ve grafik araçları düzeltmeleri (`8d9780d`, `da025a9`)
+
+- **7 indikatör (her planda ücretsiz):** SMA, EMA, Bollinger Bantları, RSI, MACD, Stokastik, ATR. Formüller TradingView ile
+  aynı (SMA ile başlayan EMA, RSI/ATR'de Wilder ortalaması, popülasyon standart sapması). En fazla 10 tane, her birinin
+  kendi ayarı ve rengi; bu tarayıcıda saklanır, tüm grafiklerde görünür. Üst çubukta yeni "İndikatörler" butonu.
+- Osilatörler grafiğin altında kendi bölgelerinde; fiyat ekseninde o bölgelerde seviyeler ve anlık değerler (TradingView
+  paneli gibi). Adlar ve değerler grafiğin üstüne çizilir (tam ekranda ve çoklu grafikte de). VWAP bilerek yok: veri
+  kaynakları gerçek hacim vermiyor.
+- **Araç taramasında bulunan ve düzeltilen hatalar:** "tarihe git" hedefin 1 dakika sonrasına düşüyordu (piyasa kapalı
+  saate gitmek değişmedi); basılı tutulan Shift+B birden fazla pozisyon açıyordu; yükseltme penceresi açıkken kısayollar
+  çalışıyordu (artık replay de duruyor); "çizimleri gizle" açıkken çizilen çizim görünmez ama seçili oluyordu; zaman
+  dilimi/hız seçtikten sonra → tuşu çalışmıyordu; dil değişince çizim çubuğu ve çekmeceler eski dilde kalıyordu;
+  "Piyasa kapalı: 2g  atlandı" her dilde Türkçe birimle yazıyordu; kopyalanan çizim başka hesaba yapıştırılabiliyordu.
+- **Bilerek bırakılanlar (karar gerekir):** "tümünü kilitle" açıkken Delete hâlâ siliyor (tek tek kilitli çizim
+  silinmiyor); odaktaki bir butonda Boşluk tuşu butona değil oynat/duraklata gidiyor.
+- **Testler:** 1037/1037 birim; yeni tarayıcı senaryoları `ind-pro` 34/34, `ind-free` 28/28, `fixes-free` 19/19,
+  `fixes-pro` 17/17; toplam 68 senaryoda yalnızca bilinen eski hatalar. Canlıda `claude_demo` ile 7 indikatör eklendi,
+  hata yok. Veritabanı değişikliği yok.
+
+---
+
 ## Canlıya alma özeti
 
 | Ne | Durum |
@@ -147,6 +168,7 @@ push edilmemiş commit yok. Gereken Edge Function deploy'u ve veritabanı migrat
 | Veritabanı migration `202611230001` | Canlıda uygulandı (yedekli), sütun doğrulandı |
 | Veritabanı migration `202611230002` | Canlıda uygulandı (yedekli), doğrulama 16/16 |
 | Çizim araçları (`5000b84`) | Canlı, Cloudflare deploy doğrulandı |
+| İndikatörler + araç düzeltmeleri (`8d9780d`, `da025a9`) | Canlı, deploy doğrulandı, demo hesapla denendi |
 | Diğer veritabanı yazması | Yok (yalnızca salt okunur kontroller) |
 
 **Testler:** 1012 testten 1009'u geçiyor. Bilinen 3 hata önceden de vardı, bugünkü işlerle ilgisi yok: Windows satır
