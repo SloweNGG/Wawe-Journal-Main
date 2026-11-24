@@ -818,6 +818,19 @@ async function updateAvatar(url) {
   }
 
   wwLog.log('✅ Avatar güncellendi!');
+  // Ortak profil önbelleği (bundle.js getUserProfileCached: window.__wwUserProfile + 3 dk sessionStorage) navbar avatarını
+  // besliyor; güncellenmezse sonraki sayfada eski avatar görünür
+  try {
+    if (window.__wwUserProfile && window.__wwUserProfile.id === user.id) window.__wwUserProfile.avatar_url = url || null;
+    var cachedProf = sessionStorage.getItem('ww_cached_profile');
+    if (cachedProf) {
+      var prof = JSON.parse(cachedProf);
+      if (prof && prof.id === user.id) {
+        prof.avatar_url = url || null;
+        sessionStorage.setItem('ww_cached_profile', JSON.stringify(prof));
+      }
+    }
+  } catch (e) { /* önbellek yoksa sorun değil */ }
   return true;
 }
 

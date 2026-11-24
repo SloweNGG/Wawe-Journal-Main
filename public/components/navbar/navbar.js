@@ -1342,7 +1342,9 @@ window.loadNotifications = async function() {
     // okundu bilgisi yalnızca tarayıcıda olduğu için başka cihazda/girişte "Pro'ya Hoş Geldin" yeniden çıkıyordu.
     if (sb && user && user.id) {
       try {
-        var paySince = new Date(Date.now() - 14 * 864e5).toISOString();
+        // Dakikaya yuvarlanır: loadNotifications açılışta aynı anda birkaç kez çağrılıyor (navbar, overtrade); adres
+        // birebir aynı olunca Supabase isteği tek istekte paylaşılır (config.js → wwDedupFetch)
+        var paySince = new Date(Math.floor((Date.now() - 14 * 864e5) / 60000) * 60000).toISOString();
         var { data: userPayments } = await sb
           .from('payments')
           .select('id, payment_status, plan_type, created_at')
@@ -2023,7 +2025,10 @@ async function loadNavbarAvatar() {
     if (window.__wwUserProfile && window.__wwUserProfile.id === user.id) {
       avatarUrl = window.__wwUserProfile.avatar_url || null;
     } else {
-      var { data: profile } = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
+      // Açılışta requireAuth aynı anda tam profili çekiyor: onun sorgusunu paylaş (bundle.js → wwGetUserProfile)
+      var profile = typeof window.wwGetUserProfile === 'function'
+        ? await window.wwGetUserProfile(user.id)
+        : (await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single()).data;
       avatarUrl = profile?.avatar_url || null;
     }
 
@@ -2171,7 +2176,10 @@ async function updateNavbarBadge() {
     var user = sessionRes?.data?.session?.user;
     if (!user) { updateNavbarBadgeSync(); return; }
 
-    var { data: profile } = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
+    // Açılışta requireAuth aynı anda tam profili çekiyor: onun sorgusunu paylaş (ödeme akışı bu önbelleği temizler)
+    var profile = typeof window.wwGetUserProfile === 'function'
+      ? await window.wwGetUserProfile(user.id)
+      : (await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single()).data;
     var isPro = profile?.plan === 'premium';
     var expiresAt = profile?.plan_expires_at || null;
 

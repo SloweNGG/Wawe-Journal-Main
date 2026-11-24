@@ -184,3 +184,38 @@ describe('READ_RPC stays read-only', () => {
     }
   });
 });
+
+describe('fewer duplicate profile / payment queries on page load', () => {
+  const navbar = fs.readFileSync('public/components/navbar/navbar.js', 'utf8');
+  it('the bundle exposes the shared profile loader', () => {
+    const script = fs.readFileSync('public/src/script.js', 'utf8');
+    assert.match(script, /getUserProfileCached\s*\n\} from '\.\/core\/supabase\.js';/);
+    assert.match(script, /window\.wwGetUserProfile = getUserProfileCached;/);
+  });
+  it('navbar avatar and plan badge reuse it, with their own query only as a fallback', () => {
+    for (const cols of ['avatar_url', 'plan, plan_expires_at']) {
+      const re = new RegExp("typeof window\\.wwGetUserProfile === 'function'\\s*\\?\\s*await window\\.wwGetUserProfile\\(user\\.id\\)\\s*:\\s*\\(await sb\\.from\\('user_profiles'\\)\\.select\\('" + cols + "'\\)");
+      assert.match(navbar, re, cols);
+    }
+  });
+  it('getUserPlan / getUserPlanSilent fall back to the shared profile loader, not a query of their own', () => {
+    const user = fs.readFileSync('public/src/services/user.js', 'utf8');
+    assert.match(user, /import \{ sb, requireAuth, getUserProfileCached \} from '\.\.\/core\/supabase\.js';/);
+    for (const name of ['getUserPlan', 'getUserPlanSilent']) {
+      const start = user.indexOf('export async function ' + name + '()');
+      const body = user.slice(start, user.indexOf('\nexport ', start + 10));
+      assert.match(body, /const data = await getUserProfileCached\(session\.user\.id\);/, name);
+      assert.ok(!body.includes("from('user_profiles')"), name + ': no direct profile query');
+    }
+  });
+  it('the failed-payments cutoff is rounded to the minute, so concurrent loads send the same URL', () => {
+    assert.match(navbar, /var paySince = new Date\(Math\.floor\(\(Date\.now\(\) - 14 \* 864e5\) \/ 60000\) \* 60000\)\.toISOString\(\);/);
+  });
+  it('settings keeps the shared profile cache in step when the avatar changes', () => {
+    const settings = fs.readFileSync('public/settings/js/settings.js', 'utf8');
+    const fn = settings.slice(settings.indexOf('async function updateAvatar(url)'), settings.indexOf('async function loadAvatar()'));
+    assert.match(fn, /window\.__wwUserProfile\.avatar_url = url \|\| null;/);
+    assert.match(fn, /sessionStorage\.setItem\('ww_cached_profile', JSON\.stringify\(prof\)\);/);
+    assert.ok(fn.indexOf('result.error') < fn.indexOf('__wwUserProfile'), 'only after a successful update');
+  });
+});

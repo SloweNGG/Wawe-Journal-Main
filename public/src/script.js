@@ -78,7 +78,8 @@ import {
   requireAuthSilent, 
   requireAdmin, 
   isAdmin, 
-  throttledUpdateLastActive 
+  throttledUpdateLastActive,
+  getUserProfileCached
 } from './core/supabase.js';
 
 // Services - user
@@ -194,6 +195,9 @@ window.isValidEmail = isValidEmail;
 // Services - auth (requireAuth BURADA!)
 window.requireAuth = requireAuth;
 window.requireAuthSilent = requireAuthSilent;
+// Ortak profil (id, is_active, plan, plan_expires_at, avatar_url): uçuştaki sorguyu ve 3 dk'lık önbelleği paylaşır.
+// Navbar avatar/rozet bunu kullanır; yoksa (bundle henüz çalışmadıysa) kendi sorgusunu atar.
+window.wwGetUserProfile = getUserProfileCached;
 window.requireAdmin = requireAdmin;
 window.isAdmin = isAdmin;
 window.throttledUpdateLastActive = throttledUpdateLastActive;

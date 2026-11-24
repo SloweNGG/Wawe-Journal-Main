@@ -2,7 +2,7 @@
 // WAWE JOURNAL - USER SERVICE
 // ============================================================
 
-import { sb, requireAuth } from '../core/supabase.js';
+import { sb, requireAuth, getUserProfileCached } from '../core/supabase.js';
 import { FEATURES, STRATEGIES_CACHE_TTL, INSTRUMENT_MULTIPLIERS } from '../core/config.js';
 import { safeLocalStorageGet } from '../core/storage.js';
 import { calcPnL } from '../utils/helpers.js';
@@ -39,11 +39,10 @@ export async function getUserPlan() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return { plan: 'free', features: FEATURES.free };
     
-    const { data, error } = await sb
-      .from('user_profiles')
-      .select('plan, plan_expires_at')
-      .eq('id', session.user.id)
-      .single();
+    // Ortak profil yükleyicisi: açılışta requireAuth'un sürmekte olan sorgusunu paylaşır (ayrı sorgu atmaz).
+    // Hata ya da satır yoksa null döner → aşağıda 'free' (eskiden de error → free idi).
+    const data = await getUserProfileCached(session.user.id);
+    const error = null;
     
     if (error || !data || data.plan === 'free') {
       try {
@@ -104,11 +103,10 @@ export async function getUserPlanSilent() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return { plan: 'free', features: FEATURES.free };
     
-    const { data, error } = await sb
-      .from('user_profiles')
-      .select('plan, plan_expires_at')
-      .eq('id', session.user.id)
-      .single();
+    // Ortak profil yükleyicisi: açılışta requireAuth'un sürmekte olan sorgusunu paylaşır (ayrı sorgu atmaz).
+    // Hata ya da satır yoksa null döner → aşağıda 'free' (eskiden de error → free idi).
+    const data = await getUserProfileCached(session.user.id);
+    const error = null;
     
     if (error || !data || data.plan === 'free') {
       return { plan: 'free', features: FEATURES.free };
