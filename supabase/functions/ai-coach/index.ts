@@ -90,6 +90,12 @@ const MAX_TRADES = 3000;
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LANGS: Record<string, string> = { tr: 'Turkish', en: 'English', de: 'German' };
+// Form of address, matching the app's own texts (the coach panel says "sen" / "du"). Without this rule the models answered
+// Turkish with the formal "siz" (seen 2026-11-24 in the live end-to-end test).
+const ADDRESS: Record<string, string> = {
+  tr: '- Address the trader informally, in the second person singular ("sen": "yaptın", "senin", "sana", "dikkat et"), like the app\'s own texts; never the formal or plural "siz" ("yaptınız", "sizin", "size", "dikkat edin").',
+  de: '- Address the trader informally with "du" ("du hast", "dein", "achte auf"), like the app\'s coach texts; never the formal "Sie".',
+};
 
 const TRADE_COLS = 'id, journal_id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source, commission, swap, gross_pnl';
 const MAX_BT_TRADES = 5000;
@@ -185,12 +191,14 @@ function fail(code: string, message: string, status: number, cors: Record<string
 // from one message to the next of a chat: the current time and the other per-request values are in the [App context]
 // line of the latest message, so the system prompt can be reused from the cache.
 export function systemInstruction(lang: string, data: string, detail: AnswerLength = 'normal', coach: Coach = resolveCoach(null, null), currency = '$'): string {
+  const lng = LANGS[lang] ? lang : 'tr';
   return [
     ...coachIntro(coach),
     'You help ONE trader improve by analysing THEIR OWN journal data, given below as JSON, and chart screenshots they share.',
     '',
     'Rules:',
-    `- Always answer in ${LANGS[lang] || 'Turkish'}, whatever language the data is in.`,
+    `- Always answer in ${LANGS[lng]}, whatever language the data is in.`,
+    ...(ADDRESS[lng] ? [ADDRESS[lng]] : []),
     '- Write only the final answer the trader reads. Think silently: never write your reasoning, analysis of the request, rule checklists, drafts or word counts.',
     '- Base every claim about the trader on the JSON. Quote the concrete numbers and say when a sample is too small to conclude anything.',
     '- Never invent trades, numbers or strategies that are not in the data. If the data cannot answer the question, say so and say what the trader could record to make it answerable.',

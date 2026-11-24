@@ -58,6 +58,17 @@ describe('system instruction opening', () => {
     assert.match(src, /resolveCoach\(body, loaded\.coach\)/);
     assert.doesNotMatch(src, /You are (Kai|Anna)/);
   });
+  it('every coach says "sen" in Turkish and "du" in German, like the panel; the panel copy itself never says "siz"', () => {
+    const src = fs.readFileSync('supabase/functions/ai-coach/index.ts', 'utf8');
+    const fn = src.slice(src.indexOf('export function systemInstruction'), src.indexOf('export function buildHistory'));
+    assert.match(fn, /const lng = LANGS\[lang\] \? lang : 'tr';/);              // unknown language -> Turkish rules
+    assert.match(fn, /\.\.\.\(ADDRESS\[lng\] \? \[ADDRESS\[lng\]\] : \[\]\),/);
+    assert.match(src, /tr: '- Address the trader informally, in the second person singular \("sen"[^\n]*never the formal or plural "siz"/);
+    assert.match(src, /de: '- Address the trader informally with "du"[^\n]*never the formal "Sie"/);
+    const tr = fs.readFileSync('public/i18n/locales/tr.js', 'utf8').split('\n').filter((l) => /^\s*"(aiCoach|coach)\./.test(l));
+    assert.ok(tr.length > 20);
+    assert.deepEqual(tr.filter((l) => /\b(siz|sizin|size|sizi)\b|[ıiuü]n[ıiuü]z\b/.test(l)), []);
+  });
 });
 
 describe('"pick for me" suggestion', () => {
