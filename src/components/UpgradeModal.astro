@@ -25,8 +25,12 @@
     <!-- Hero Visual: Real Analiz Screenshot Preview -->
     <div data-ww-up class="ww-up-preview-card">
       <!-- the Pro view of the feature that opened the modal (PREVIEW_BY_FEATURE) -->
+      {/* srcset: pencere en fazla ~450 px geniş; 1800 px'lik asıl görsel (79 KB) yerine ekrana uygun boyut iner (14-38 KB).
+           Görsel değişince upgrade-modal.js srcset'i de değiştirir (PREVIEW_SRCSET). */}
       <img
         src="/images/landing/screen-analytics.webp"
+        srcset="/images/landing/screen-analytics-600w.webp 600w, /images/landing/screen-analytics-900w.webp 900w, /images/landing/screen-analytics-1200w.webp 1200w, /images/landing/screen-analytics.webp 1800w"
+        sizes="(max-width: 520px) 92vw, 450px"
         alt="Wawe Journal Pro"
         data-ww-up class="ww-up-preview-img"
         id="ww-up-preview-img"

@@ -242,6 +242,12 @@
     backtest_trades: '/images/landing/screen-backtest.webp'
   };
   var PREVIEW_DEFAULT = '/images/landing/screen-analytics.webp';
+  // Küçük boyutları olan görseller (ana sayfadaki 600/900/1200 px kopyalar). srcset src'nin önüne geçtiği için
+  // boyutu olmayan bir görsele geçerken srcset kaldırılır.
+  var PREVIEW_SRCSET = {
+    '/images/landing/screen-analytics.webp': '/images/landing/screen-analytics-600w.webp 600w, /images/landing/screen-analytics-900w.webp 900w, /images/landing/screen-analytics-1200w.webp 1200w, /images/landing/screen-analytics.webp 1800w',
+    '/images/landing/screen-backtest.webp': '/images/landing/screen-backtest-600w.webp 600w, /images/landing/screen-backtest-900w.webp 900w, /images/landing/screen-backtest-1200w.webp 1200w, /images/landing/screen-backtest.webp 1800w'
+  };
 
   function updateModalUI() {
     var pricingMatrix = getPricingData();
@@ -278,7 +284,11 @@
 
     var previewEl = document.getElementById('ww-up-preview-img');
     var previewSrc = PREVIEW_BY_FEATURE[modalState.feature] || PREVIEW_DEFAULT;
-    if (previewEl && previewEl.getAttribute('src') !== previewSrc) previewEl.setAttribute('src', previewSrc);
+    if (previewEl && previewEl.getAttribute('src') !== previewSrc) {
+      var previewSet = PREVIEW_SRCSET[previewSrc];
+      if (previewSet) previewEl.setAttribute('srcset', previewSet); else previewEl.removeAttribute('srcset');
+      previewEl.setAttribute('src', previewSrc);
+    }
 
     // Feature items of the selected tier
     var featBox = document.getElementById('ww-up-features');
