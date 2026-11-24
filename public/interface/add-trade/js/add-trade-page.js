@@ -938,6 +938,11 @@
     // ============================================================
     // INIT
     // ============================================================
+    // requireAuth / isAdmin bundle.js'ten (defer modül), window.journal ve WwTime defer script'lerden gelir. Bu dosya
+    // engelleyici yüklendiği için tam yüklemede (yenileme, doğrudan link) onlardan ÖNCE çalışır: requireAuth tanımsızdı,
+    // hata aşağıdaki catch'te yutuluyordu ve currentUser boş kaldığı için kaydet "currentUser.id" ile bozuluyordu.
+    // DOMContentLoaded'da defer/modül script'ler bitmiş olur; SPA girişinde router bu dinleyiciyi biriktirip tetikler.
+    function initAddTradePage() {
     (async function() {
       try {
         currentUser = await requireAuth();
@@ -960,8 +965,13 @@
         }
 
         await loadStrategyGrid();
-      } catch(e) {}
+      } catch(e) {
+        console.error('[add-trade] başlatılamadı:', e);
+      }
     })();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAddTradePage);
+    else initAddTradePage();
 
     // ============================================================
     // DECIMAL FIX

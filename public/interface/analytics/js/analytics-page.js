@@ -452,8 +452,14 @@
     PRO_BANNER_PAGE.on(window, 'trade-deleted', function() {
       setTimeout(refreshProPropBanner, 300);
     });
-    if (window.i18n && typeof window.i18n.onChange === 'function') {
-      PRO_BANNER_PAGE.onI18nChange(function() {
-        refreshProPropBanner();
-      });
+    // i18n.js defer: tam yüklemede bu dosya ondan önce çalışır (window.i18n henüz yok) ve dinleyici hiç kurulmuyordu.
+    // DOMContentLoaded'da i18n hazırdır; SPA girişinde router dinleyiciyi biriktirip tetikler.
+    function bindProBannerI18n() {
+      if (window.i18n && typeof window.i18n.onChange === 'function') {
+        PRO_BANNER_PAGE.onI18nChange(function() {
+          refreshProPropBanner();
+        });
+      }
     }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindProBannerI18n);
+    else bindProBannerI18n();

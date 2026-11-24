@@ -69,6 +69,28 @@ describe('page scripts moved out of the HTML', () => {
     }
   });
 
+  it('full load: code that needs bundle.js / i18n.js (both defer) waits for DOMContentLoaded', () => {
+    // Bu dosyalar engelleyici: tam yüklemede defer/modül script'lerden ÖNCE çalışırlar. requireAuth (bundle.js) ve
+    // window.i18n (i18n.js) o an yok; üst seviyede kullanılırsa sessizce atlanır (add-trade'de kaydet bozuluyordu).
+    const reg = (fn) => new RegExp("if \\(document\\.readyState === 'loading'\\) document\\.addEventListener\\('DOMContentLoaded', " + fn + "\\);\\s*else " + fn + "\\(\\);");
+    const inFn = (code, fn, needle) => {
+      const start = code.indexOf('function ' + fn + '() {');
+      assert.ok(start >= 0, fn);
+      const at = code.indexOf(needle);
+      assert.ok(at > start && at < code.search(reg(fn)), needle + ' runs inside ' + fn);
+      assert.equal(code.split(needle).length - 1, 1, needle + ' appears once');
+    };
+    const add = read('public/interface/add-trade/js/add-trade-page.js');
+    assert.match(add, reg('initAddTradePage'));
+    inFn(add, 'initAddTradePage', 'currentUser = await requireAuth();');
+    const dash = read('public/interface/dashboard/js/dashboard-page.js');
+    assert.match(dash, reg('bindDashboardI18n'));
+    inFn(dash, 'bindDashboardI18n', 'DASH_PAGE.onI18nChange(');
+    const an = read('public/interface/analytics/js/analytics-page.js');
+    assert.match(an, reg('bindProBannerI18n'));
+    inFn(an, 'bindProBannerI18n', 'PRO_BANNER_PAGE.onI18nChange(');
+  });
+
   it('the small pre-paint scripts stay inline', () => {
     const journals = read('src/pages/journals.astro');
     assert.match(journals, /<script is:inline>[\s\S]{0,4000}?<\/script>/, 'journals skeleton block');

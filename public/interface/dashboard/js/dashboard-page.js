@@ -972,11 +972,18 @@
     DASH_PAGE.on(window, 'dashboard-refreshed', function() {
       refreshDashboardPropBanner();
     });
-    if (window.i18n && typeof window.i18n.onChange === 'function') {
-      DASH_PAGE.onI18nChange(function() {
-        refreshDashboardPropBanner();
-        if (typeof window._updateDonutSlider === 'function') {
-          window._updateDonutSlider(0);
-        }
-      });
+    // i18n.js defer: tam yüklemede bu dosya ondan önce çalışır (window.i18n henüz yok) ve dinleyici hiç kurulmuyordu
+    // (ör. karşılama sihirbazında dil seçilince banner eski dilde kalıyordu). DOMContentLoaded'da i18n hazırdır;
+    // SPA girişinde router dinleyiciyi biriktirip tetikler.
+    function bindDashboardI18n() {
+      if (window.i18n && typeof window.i18n.onChange === 'function') {
+        DASH_PAGE.onI18nChange(function() {
+          refreshDashboardPropBanner();
+          if (typeof window._updateDonutSlider === 'function') {
+            window._updateDonutSlider(0);
+          }
+        });
+      }
     }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindDashboardI18n);
+    else bindDashboardI18n();
