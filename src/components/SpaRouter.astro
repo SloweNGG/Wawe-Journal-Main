@@ -57,7 +57,7 @@ const buildId = __WW_BUILD_ID__;
   // Not: Astro 5+ bu script'i yalnızca bileşenin render edildiği (spa={true}) sayfalara ekler
   // (Astro 4 Layout'u kullanan TÜM sayfalara ekliyordu). Astro'nun router'ı import edildiği anda
   // popstate vb. dinlemeye başladığı için onu yine de meta etiketi varsa dinamik yüklüyoruz.
-  import { lowDataMode, pageScriptsToWarm } from '../scripts/spa-warm.js';
+  import { isPageBlockScript, lowDataMode, pageScriptsToWarm } from '../scripts/spa-warm.js';
 
   type Phase = 'loading' | 'interactive';
   type QueuedListener = { target: EventTarget; type: string; fn: EventListenerOrEventListenerObject };
@@ -381,7 +381,11 @@ const buildId = __WW_BUILD_ID__;
       return true;
     }
 
-    function execute(old: HTMLScriptElement): Promise<void> {
+    function execute(old: HTMLScriptElement, signal?: AbortSignal): Promise<void> {
+      const src = old.getAttribute('src');
+      if (src && signal && old.type !== 'module' && old.hasAttribute('data-page-script') && isPageBlockScript(src)) {
+        return executePageBlock(old, src, signal);
+      }
       const s = document.createElement('script');
       for (const attr of Array.from(old.attributes)) s.setAttribute(attr.name, attr.value);
       s.textContent = old.textContent;
@@ -398,13 +402,40 @@ const buildId = __WW_BUILD_ID__;
       return done;
     }
 
+    // Satır içinden taşınan sayfa blokları (*-page.js) eskiden HTML'in içindeydi ve eklendiği anda çalışıyordu.
+    // <script src> olarak eklenirlerse, dosya inerken kullanıcı başka sayfaya geçtiğinde script yine de (DOM'dan
+    // kaldırılmış olsa bile) YENİ sayfada çalışır: ör. journals-page.js strategies'te window.loadTrades'i ezer.
+    // Bu yüzden SPA geçişinde metin geçişin iptal sinyaliyle çekilir ve yalnızca geçiş sürüyorsa eskisi gibi satır
+    // içi çalıştırılır. Çekme önbellekten gelir (SW sürümlü önbelleği / boşta ısıtma); başarısızsa src ile eklenir.
+    async function executePageBlock(old: HTMLScriptElement, src: string, signal: AbortSignal): Promise<void> {
+      let text: string | null = null;
+      try {
+        const res = await fetch(src, { credentials: 'same-origin', signal });
+        if (res.ok) text = await res.text();
+      } catch {
+        /* iptal ya da ağ hatası: aşağıda karar verilir */
+      }
+      if (signal.aborted || !old.isConnected) return;
+      if (text === null) return execute(old);
+      const s = document.createElement('script');
+      for (const attr of Array.from(old.attributes)) {
+        if (attr.name !== 'src' && attr.name !== 'defer' && attr.name !== 'async') s.setAttribute(attr.name, attr.value);
+      }
+      s.setAttribute('data-src', src);
+      s.textContent = text + '\n//# sourceURL=' + new URL(src, location.href).href;
+      s.dataset.astroExec = '';
+      markActive(new URL(src, location.href).href);
+      old.replaceWith(s);
+    }
+
     async function runPageScripts(scripts: HTMLScriptElement[]) {
       const toRun = scripts.filter(shouldRun);
       const isDeferred = (s: HTMLScriptElement) => s.type === 'module' || (!!s.src && s.defer);
       const isAsync = (s: HTMLScriptElement) => !!s.src && s.async && s.type !== 'module';
       const blocking = toRun.filter((s) => !isDeferred(s) && !isAsync(s));
       const deferred = toRun.filter((s) => isDeferred(s) && !isAsync(s));
-      toRun.filter(isAsync).forEach(execute);
+      const ctrl = new AbortController();
+      toRun.filter(isAsync).forEach((s) => execute(s, ctrl.signal));
 
       // Gerçek sayfa yüklemesini taklit et: script'lerin eklediği DOMContentLoaded/load
       // dinleyicileri biriktirilir ve tüm script'ler bitince sırayla tetiklenir
@@ -439,6 +470,7 @@ const buildId = __WW_BUILD_ID__;
       const abortSignal = new Promise<void>((resolve) => (wake = resolve));
       abortRun = () => {
         aborted = true;
+        ctrl.abort();
         restore();
         wake();
       };
@@ -462,12 +494,12 @@ const buildId = __WW_BUILD_ID__;
         setPhase('loading');
         for (const s of blocking) {
           if (aborted) return;
-          await Promise.race([execute(s), abortSignal]);
+          await Promise.race([execute(s, ctrl.signal), abortSignal]);
         }
         setPhase('interactive');
         for (const s of deferred) {
           if (aborted) return;
-          await Promise.race([execute(s), abortSignal]);
+          await Promise.race([execute(s, ctrl.signal), abortSignal]);
         }
         fire('DOMContentLoaded');
       } finally {

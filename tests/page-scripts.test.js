@@ -136,12 +136,29 @@ describe('spa-warm: which page scripts are fetched ahead of time', () => {
   });
 
   it('SpaRouter warms page scripts on idle (navbar pages) and on hover (wwSpa.prefetch)', () => {
-    assert.match(router, /import \{ lowDataMode, pageScriptsToWarm \} from '\.\.\/scripts\/spa-warm\.js';/);
+    assert.match(router, /import \{ isPageBlockScript, lowDataMode, pageScriptsToWarm \} from '\.\.\/scripts\/spa-warm\.js';/);
     assert.match(router, /querySelectorAll\('script\[src\]\[data-page-script\]'\)/);
     assert.match(router, /onlyPageBlocks: !allScripts/);
     assert.match(router, /function warmNavLinks\(\) \{[\s\S]*?warmPage\(a\.href, false\);[\s\S]*?\n {4}\}/);
     assert.match(router, /prefetch: \(href: string\) => warmPage\(href, true\),/);
     // Geçişteki asıl yükleme kuralı değişmedi: data-page-script her girişte çalışır
     assert.match(router, /if \(s\.src\) return s\.hasAttribute\('data-page-script'\) \|\| !isActive\(s\.src\);/);
+  });
+
+  it('SPA entry: a moved *-page.js runs inline and only if the navigation was not left while it downloaded', () => {
+    // Eskiden satır içi blok eklendiği anda çalışırdı. <script src> DOM'dan kaldırılsa da inince çalışır; kullanıcı
+    // o arada başka sayfaya geçerse kod yeni sayfada çalışırdı (ör. journals-page.js window.loadTrades'i ezerdi).
+    assert.match(router, /if \(src && signal && old\.type !== 'module' && old\.hasAttribute\('data-page-script'\) && isPageBlockScript\(src\)\) \{\s*return executePageBlock\(old, src, signal\);/);
+    const fn = router.match(/async function executePageBlock\([\s\S]*?\n {4}\}\n/)[0];
+    assert.match(fn, /await fetch\(src, \{ credentials: 'same-origin', signal \}\)/);
+    assert.match(fn, /if \(signal\.aborted \|\| !old\.isConnected\) return;/);
+    assert.ok(fn.indexOf('signal.aborted') < fn.indexOf('old.replaceWith(s)'), 'abort check before insert');
+    assert.match(fn, /if \(text === null\) return execute\(old\);/, 'fetch failed: falls back to <script src>');
+    assert.match(fn, /s\.textContent = text \+ '\\n\/\/# sourceURL=' \+/);
+    // Geçiş iptal edilince çekme de iptal; her iki döngü ve async script'ler sinyali taşır
+    assert.match(router, /abortRun = \(\) => \{\s*aborted = true;\s*ctrl\.abort\(\);/);
+    assert.equal((router.match(/await Promise\.race\(\[execute\(s, ctrl\.signal\), abortSignal\]\);/g) || []).length, 2);
+    assert.match(router, /toRun\.filter\(isAsync\)\.forEach\(\(s\) => execute\(s, ctrl\.signal\)\);/);
+    assert.ok(!/\.forEach\(execute\)/.test(router), 'forEach would pass the index as the signal');
   });
 });
