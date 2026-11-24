@@ -3235,6 +3235,7 @@ export default {
   "econ.alert_body": "{t} · in {n} Min. ({time})",
   "econ.alert_tip": "Achte vor neuen Positionen auf Spreads und Slippage.",
   "econ.ask": "Coach fragen",
+  "econ.ask_named": "{coach} fragen",
   "econ.ask_event": "Wie wirkt sich {ccy} {title} ({when}) auf {pairs}aus? Wie sollte ich mich um diese Zeit verhalten?",
   "econ.ask_event_pairs": "meine Paare {list} ",
   "econ.ask_event_mine": "meine Trades ",

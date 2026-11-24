@@ -1580,6 +1580,6 @@
     R.input.value = text; send();
     return true;
   }
-  global.WwAiCoach = { open: function () { if (S.mounted) setOpen(true); }, close: function () { if (S.mounted) setOpen(false); }, ask: askFromOutside, coachName: coachName, setCoach: function (id) { setCoach(id); }, _md: md, _joinDictation: joinDictation };
+  global.WwAiCoach = { open: function () { if (S.mounted) setOpen(true); }, close: function () { if (S.mounted) setOpen(false); }, ask: askFromOutside, coachName: coachName, coachId: function () { return coach().id; }, coachAv: function (px) { return coachAv(coach().def, px); }, setCoach: function (id) { setCoach(id); }, _md: md, _joinDictation: joinDictation };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { start(0); }); else start(0);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -3269,6 +3269,7 @@ export default {
   "econ.alert_body": "{t} · in {n} min ({time})",
   "econ.alert_tip": "Watch spreads and slippage before opening new positions.",
   "econ.ask": "Ask the coach",
+  "econ.ask_named": "Ask {coach}",
   "econ.ask_event": "How does {ccy} {title} ({when}) affect {pairs}? How should I act around that time?",
   "econ.ask_event_pairs": "my {list} pairs",
   "econ.ask_event_mine": "my trades",
