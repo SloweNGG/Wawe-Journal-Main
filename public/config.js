@@ -29,8 +29,54 @@ window.APP_URL = APP_URL;
 window.APP_NAME = APP_NAME;
 window.TURNSTILE_SITE_KEY = TURNSTILE_SITE_KEY;
 
+// ── Supabase: aynı anda giden birebir aynı OKUMA isteklerini tek istekte birleştir ──
+// Dashboard tam yüklemede birden çok modül aynı sorguyu aynı anda soruyordu (2026-11-24 ölçümü: get_ctrader_status,
+// get_mt5_status, /auth/v1/user ve aynı prop_accounts sorgusu 4'er kez; ~36 sorgu + her biri için CORS ön kontrolü).
+// Yalnızca UÇUŞTAKİ (cevabı henüz gelmemiş) birebir aynı istek paylaşılır, cevap gelince kayıt silinir: zamanlı önbellek
+// YOK, bayat veri olmaz. Her çağıran cevabın kendi kopyasını (clone) alır.
+//   - Paylaşılır: GET/HEAD ve yan etkisiz RPC'ler (READ_RPC; gövdeleri migration'larda yalnızca SELECT). Anahtar: yöntem +
+//     adres + gövde + yanıtı etkileyen başlıklar (Authorization dahil: farklı oturum/token birleşmez).
+//   - signal taşıyan istek paylaşılmaz (biri iptal edince diğerleri etkilenmesin).
+//   - Başka her istek (yazma: POST/PATCH/PUT/DELETE, auth, edge function) uçuştaki kayıtları unutturur: yazmadan SONRA
+//     başlayan okuma, yazmadan ÖNCE başlamış okumanın cevabını almaz. İstisna NEUTRAL: yalnızca okuyan edge function'lar.
+// Testler: tests/sb-dedup.test.js
+function wwDedupFetch(baseFetch) {
+  var inflight = new Map();
+  var READ_RPC = /\/rest\/v1\/rpc\/(get_ctrader_status|get_mt5_status|list_journals|get_prices|get_platform_stats)(\?|$)/;
+  var NEUTRAL = /\/functions\/v1\/econ-calendar(\?|$)/;
+  var KEY_HEADERS = ['authorization', 'apikey', 'accept', 'accept-profile', 'content-profile', 'prefer', 'range', 'content-type'];
+  var fn = function (input, init) {
+    init = init || {};
+    var url = typeof input === 'string' ? input : '';
+    var method = String(init.method || 'GET').toUpperCase();
+    var body = init.body == null ? '' : init.body;
+    var shareable = !!url && !init.signal && typeof body === 'string' &&
+      (method === 'GET' || method === 'HEAD' || (method === 'POST' && READ_RPC.test(url)));
+    if (!shareable) {
+      if (!(url && NEUTRAL.test(url))) inflight.clear();
+      return baseFetch(input, init);
+    }
+    var h = new Headers(init.headers || undefined);
+    var key = method + ' ' + url + '\n' + body + '\n' + KEY_HEADERS.map(function (k) { return k + ':' + (h.get(k) || ''); }).join('\n');
+    var shared = inflight.get(key);
+    if (shared) {
+      fn.saved++;
+      return shared.then(function (res) { return res.clone(); });
+    }
+    var p = baseFetch(input, init);
+    inflight.set(key, p);
+    var forget = function () { if (inflight.get(key) === p) inflight.delete(key); };
+    p.then(forget, forget);
+    return p.then(function (res) { return res.clone(); });
+  };
+  fn.saved = 0;   // birleştirilen istek sayısı (konsoldan: window.wwSbDedup.saved)
+  return fn;
+}
+window.wwDedupFetch = wwDedupFetch;
+
 if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-  window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.wwSbDedup = typeof fetch === 'function' ? wwDedupFetch(function (i, o) { return fetch(i, o); }) : undefined;
+  window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, window.wwSbDedup ? { global: { fetch: window.wwSbDedup } } : undefined);
   wwLog.log('✅ Supabase client oluşturuldu (window.supabase ile)');
 } else {
   wwLog.warn('⚠️ window.supabase bulunamadı, supabase-js yüklenmemiş olabilir.');
