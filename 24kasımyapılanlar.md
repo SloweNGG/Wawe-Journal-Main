@@ -47,6 +47,17 @@ demo hesapla kontrol edildi (sayfalar, SPA geçişleri, dosya hash'leri).
 | Analytics | 41 | 16 |
 | Strategies | 47 | 20 |
 
+## Gerçek hız ölçümü ve takvim düzeltmesi (`07bc7d6` ve öncesi)
+- Lighthouse'un dashboard için verdiği "ana içerik 4 sn" kendi simülasyon tahmini çıktı. Gerçek tarayıcıda (yavaş 4G +
+  4x CPU, mobil, önbellek/SW açık) ilk ziyaret: dashboard 1,44 sn, trades 1,28 sn; tekrar ziyaret ~0,3 sn (14-16 KB).
+- Test tuzakları: Chrome'un "service worker'ı atla" ayarı (puppeteer `setBypassServiceWorker`) yavaş ağda head'deki
+  CSS'leri iki kez indirtiyor; gerçek kullanıcıda yok. Gerçekçi ölçüm için bypass ve `setCacheEnabled(false)` kullanma.
+- **Takvim:** renk açıklaması iskeletle birlikte gizleniyordu, veri gelince belirip LCP oluyordu. Artık baştan görünür:
+  ilk ziyaret LCP 3,4-4,2 sn → 0,8-1,1 sn (CLS aynı).
+- **Pro penceresi görseli:** 1800 px yerine ekrana uygun kopya (srcset): 79 KB → 14-26 KB. Analytics'te LCP değişmedi:
+  pencere plan kontrolünden sonra açılıyor (ücretsiz kullanıcı).
+- Kalan geç LCP'ler: backtest (~4,6 sn, tamamen JS ile kurulan uygulama), strategies mobil (~3,8 sn, veriye bağlı metin).
+
 ## Temizlik
 - Kullanılmayan React entegrasyonu ve `.tsx` dosyaları silindi (`ca2b87d`). Build çıktısı birebir aynı;
   yalnızca hiçbir sayfanın kullanmadığı 141 KB'lık React dosyası artık üretilmiyor.
