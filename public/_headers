@@ -89,12 +89,14 @@
 /icons/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Service worker: tarayıcı önbelleğinde tutulmasın. Varsayılan "max-age=0, must-revalidate"i Cloudflare'in
-# "Browser Cache TTL" ayarı canlıda max-age=14400'e (4 saat) çeviriyordu (2026-11-24 ölçüldü; robots.txt'de de aynı).
-# no-cache açıkça "her seferinde sor" der. Modern tarayıcılar SW betiğini zaten önbelleği atlayarak kontrol eder
-# (BaseHead: updateViaCache 'none'); bu kural eski tarayıcılar ve ara önbellekler için. ASLA immutable yapmayın.
+# Service worker: tarayıcı önbelleğinde tutulmasın. ASLA immutable yapmayın.
+# 2026-11-24 ölçümü: Cloudflare'in "Browser Cache TTL" ayarı (4 saat) edge'de önbelleklenen uzantılarda (.js, .txt)
+# başlığı ezip max-age=14400 yazıyor: varsayılan "max-age=0, must-revalidate" da, açık "no-cache" da ezildi
+# (edge'de önbelleklenmeyen sitemap.xml'e dokunmuyor). no-store yanıtı edge önbelleğinden çıkarır. Asıl koruma
+# BaseHead'deki register(..., { updateViaCache: 'none' }): tarayıcı SW güncellemesini HTTP önbelleğine bakmadan kontrol eder.
+# Kalıcı çözüm Cloudflare paneli → Caching → Browser Cache TTL → "Respect Existing Headers".
 /sw.js
-  Cache-Control: no-cache
+  Cache-Control: no-store
 
 # Kökteki JS/CSS — tek tek (kök için "/*" yazılamaz; sw.js yukarıda, immutable DEĞİL).
 # Köke yeni bir .js/.css eklerseniz buraya da ekleyin (eklemezseniz yalnızca

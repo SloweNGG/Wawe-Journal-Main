@@ -66,10 +66,10 @@ describe('_headers cache rules', () => {
     const root = publicFiles.filter((p) => /^\/[^/]+\.(js|css)$/.test(p));
     assert.ok(root.length > 5);
     for (const p of root) {
-      // Varsayılan revalidation'ı Cloudflare'in Browser Cache TTL'i canlıda 4 saate çeviriyordu: açık no-cache, asla immutable
+      // Cloudflare'in Browser Cache TTL'i canlıda varsayılanı da no-cache'i de 4 saate çeviriyor (bkz. _headers): no-store, asla immutable
       if (p === '/sw.js') {
         const hits = rules.filter((r) => r.headers['cache-control'] && matches(r.pattern, p));
-        assert.deepEqual(hits.map((r) => [r.pattern, r.headers['cache-control']]), [['/sw.js', 'no-cache']], '/sw.js: exactly one no-cache rule');
+        assert.deepEqual(hits.map((r) => [r.pattern, r.headers['cache-control']]), [['/sw.js', 'no-store']], '/sw.js: exactly one no-store rule');
       }
       else assert.ok(immutableFor(p), p + ' needs an immutable rule in public/_headers');
     }
