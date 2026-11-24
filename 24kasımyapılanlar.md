@@ -1,5 +1,8 @@
 # 24 Kasım 2026: yapılanlar
 
+> **Güncel ve tam hali: `24 kasım 17.21.md`.** Bu dosya gün içindeki ara nottur; sonradan sağlık kontrolü
+> kaldırıldı, koç "sen" diyecek şekilde düzeltildi (ai-coach v21).
+
 23 Kasım akşamından sonra yapılanlar. Bir önceki özet: `23kasımyapılanlar.md`. Önce/sonra raporu (görsel):
 https://claude.ai/artifact/GNrPVbEqZXQSh4rSGKgbWF
 
