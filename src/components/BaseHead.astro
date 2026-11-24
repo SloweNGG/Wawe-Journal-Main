@@ -375,7 +375,8 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
 <script is:inline>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/sw.js').then(function(registration) {
+      // updateViaCache 'none': SW betiği (ve ileride importScripts) güncelleme kontrolünde HTTP önbelleğinden okunmaz
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(registration) {
         registration.update();
       }).catch(function(error) {
         console.error('SW Registration failed:', error);

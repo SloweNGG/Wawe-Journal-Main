@@ -104,6 +104,9 @@
     var p;
     try { p = sb.auth.getSession(); } catch (e) { load(); return; }
     Promise.resolve(p).then(function (res) {
+      // Oturum kesin yok (hatasız cevap, session: null): sayfa zaten girişe yönlendiriyor (requireAuth); onboarding'in
+      // gösterecek bir şeyi yok, ~24 KB (gz) inmesin. Girişten sonra login/register tam yüklemeyle döner, kapı yeniden karar verir.
+      if (res && !res.error && res.data && res.data.session === null) return;
       var user = res && res.data && res.data.session ? res.data.session.user : null;
       if (onboardingNeeded(user, readLocal, readSession)) load();
     }, function () { load(); });

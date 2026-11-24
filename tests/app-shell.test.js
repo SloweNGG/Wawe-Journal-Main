@@ -19,13 +19,15 @@ const tick = () => new Promise((r) => setImmediate(r));
 // ---------------------------------------------------------------- onboarding kapısı
 // opts: user (oturumdaki kullanıcı), local / session (depolama), sb: false → window.sb hiç yok,
 // sbLate → sb N. denemede gelir, reject → getSession hata verir
-function runGate({ user = null, local = {}, session = {}, sb = true, sbLate = 0, reject = false } = {}) {
+function runGate({ user = null, local = {}, session = {}, sb = true, sbLate = 0, reject = false, authError = false } = {}) {
   const loads = [];
   const links = [];
   const intervals = [];
   const sbObj = {
     auth: {
-      getSession: () => (reject ? Promise.reject(new Error('x')) : Promise.resolve({ data: { session: user ? { user } : null } })),
+      getSession: () => (reject ? Promise.reject(new Error('x'))
+        : authError ? Promise.resolve({ data: { session: null }, error: new Error('refresh failed') })
+        : Promise.resolve({ data: { session: user ? { user } : null }, error: null })),
     },
   };
   const win = {
@@ -151,10 +153,17 @@ describe('onboarding gate: loading', () => {
     assert.equal(win.__tourOpened, 1);
   });
 
-  it('no session, a failing getSession, or no Supabase client at all → load (old behaviour)', async () => {
-    let r = runGate({ user: null, local: done });
+  it('no session at all (clean answer): nothing loads; the page is redirecting to login anyway', async () => {
+    const r = runGate({ user: null });
     await tick();
-    assert.equal(r.loads.length, 1, 'no session');
+    assert.equal(r.loads.length, 0, 'no session');
+    assert.equal(r.links.length, 0, 'no onboarding.css either');
+  });
+
+  it('an auth error, a failing getSession, or no Supabase client at all → load (old behaviour)', async () => {
+    let r = runGate({ user: null, local: done, authError: true });
+    await tick();
+    assert.equal(r.loads.length, 1, 'getSession answered with an error');
     r = runGate({ user: { id: UID }, local: done, reject: true });
     await tick();
     assert.equal(r.loads.length, 1, 'getSession rejected');

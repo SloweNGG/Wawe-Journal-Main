@@ -89,7 +89,14 @@
 /icons/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Kökteki JS/CSS — tek tek (kök için "/*" yazılamaz; sw.js listede YOK).
+# Service worker: tarayıcı önbelleğinde tutulmasın. Varsayılan "max-age=0, must-revalidate"i Cloudflare'in
+# "Browser Cache TTL" ayarı canlıda max-age=14400'e (4 saat) çeviriyordu (2026-11-24 ölçüldü; robots.txt'de de aynı).
+# no-cache açıkça "her seferinde sor" der. Modern tarayıcılar SW betiğini zaten önbelleği atlayarak kontrol eder
+# (BaseHead: updateViaCache 'none'); bu kural eski tarayıcılar ve ara önbellekler için. ASLA immutable yapmayın.
+/sw.js
+  Cache-Control: no-cache
+
+# Kökteki JS/CSS — tek tek (kök için "/*" yazılamaz; sw.js yukarıda, immutable DEĞİL).
 # Köke yeni bir .js/.css eklerseniz buraya da ekleyin (eklemezseniz yalnızca
 # varsayılan "değişti mi?" davranışında kalır, bozulmaz).
 /auth-i18n.js
