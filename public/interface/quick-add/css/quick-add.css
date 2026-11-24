@@ -2489,3 +2489,253 @@ body.light-theme .qa-comm-btn-cancel:hover {
   .qa-map-head, .qa-map-foot { flex-direction: column; align-items: stretch; }
   .qa-map-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ============================================================
+   SEKMELER ARASI SABİT BOYUT + KOMPAKT ÖNİZLEME (masaüstü)
+   - Fiyat sekmesinden ayrılınca quick-add.js modalın yüksekliğini o anki boyuta kilitler; diğer sekmeler
+     bu alanı doldurur (bırakma alanı / metin kutusu uzar), içerik taşarsa modal kendi içinde kayar.
+   - Önizleme kartı sağ kolonun kalan yerini doldurur, kendi boyunu dayatmaz (contain: size): altı Strateji
+     kutusuyla aynı hizada biter, Notlar hemen altına oturur.
+   ============================================================ */
+#tab-csv.active,
+#tab-bulk.active,
+#tab-ai.active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.quick-add-body {
+  display: flex;
+  flex-direction: column;
+}
+#tab-csv.active > .qa-csv-wrap,
+#tab-bulk.active > .quick-bulk-area,
+#tab-ai.active > .qa-ai-wrap {
+  flex: 1;
+}
+.qa-ai-drop:not(.has-image),
+.qa-csv-wrap:not(:has(.quick-import-status[style*="flex"])) > .quick-import-area {
+  flex: 1;
+}
+/* seçili koçun avatarı (ai-coach.css .wwc-av) — kutu çerçevesi yerine kendisi durur */
+.quick-import-icon.qa-ai-coach-icon {
+  width: auto;
+  height: auto;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+}
+.qa-ai-drop.has-image .quick-import-icon.qa-ai-coach-icon { width: auto; height: auto; }
+.qa-ai-drop.has-image .qa-ai-coach-icon .wwc-av { --av: 34px !important; }
+
+@media (min-width: 768px) {
+  .qa-col-right .quick-add-preview {
+    contain: size;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0.85rem 0.4rem 1rem;
+  }
+  .qa-col-right .preview-items-row {
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: minmax(0, auto) 1px minmax(0, auto);
+    justify-content: start;
+    gap: 0.7rem;
+  }
+  .qa-col-right .preview-item { gap: 2px; }
+  .qa-col-right .preview-item .p-label {
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .qa-col-right .preview-item .p-val { font-size: 1rem; }
+  .qa-col-right #preview-pnl { font-size: 1.15rem; }
+  .qa-col-right .preview-divider { height: 26px; }
+  /* Brüt / Komisyon / Swap: alt satır yerine sağda küçük dikey liste */
+  .qa-col-right .preview-breakdown {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 1px;
+    padding: 0 0 0 0.75rem;
+    border-top: 0;
+    border-left: 1px dashed var(--qa-border-strong);
+    font-size: 10px;
+    line-height: 1.2;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .qa-col-right .preview-breakdown .breakdown-sep { display: none; }
+}
+
+/* Sekme sıralama (quick-add.js initTabReorder): sürükle-bırak / dokunmatikte basılı tut */
+.quick-tab {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.quick-add-tabs.is-reordering,
+.quick-add-tabs.is-reordering .quick-tab {
+  cursor: grabbing;
+}
+.quick-tab.is-dragging {
+  position: relative;
+  z-index: 1;
+  color: var(--qa-text);
+  background: var(--qa-surface3);
+  box-shadow: 0 0 0 1px var(--qa-accent), 0 6px 16px rgba(0, 0, 0, 0.35);
+  opacity: 0.92;
+}
+
+/* Sekme sırası butonu (çubuğun sağ ucu) + açılan liste */
+.qa-tab-order-btn {
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--qa-r-sm);
+  color: var(--qa-muted);
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.qa-tab-order-btn svg { width: 15px; height: 15px; }
+.qa-tab-order-btn:hover,
+.qa-tab-order-btn.is-open {
+  color: var(--qa-accent-light);
+  background: var(--qa-accent-tint);
+  border-color: rgba(var(--ac-b1-rgb), 0.3);
+}
+.qa-tab-order-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
+
+.qa-tab-order-pop {
+  position: absolute;
+  right: 1.25rem;
+  z-index: 6;
+  width: 280px;
+  max-width: calc(100% - 2rem);
+  padding: 0.6rem;
+  background: var(--modal-bg);
+  border: 1px solid var(--qa-border-strong);
+  border-radius: var(--qa-r-md);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+  animation: qaTabFade 0.16s ease-out;
+}
+.qa-tab-order-pop[hidden] { display: none; }
+.qa-tab-order-head {
+  padding: 0.15rem 0.35rem 0.5rem;
+  font-family: var(--qa-font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--qa-muted);
+}
+.qa-tab-order-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.qa-tab-order-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.35rem 0.35rem 0.35rem 0.5rem;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  font-family: var(--qa-font-body);
+  font-size: 12.5px;
+  color: var(--qa-text);
+}
+.qa-tab-order-num {
+  width: 14px;
+  flex-shrink: 0;
+  font-family: var(--qa-font-numeric);
+  font-size: 11px;
+  color: var(--qa-muted);
+  text-align: center;
+}
+.qa-tab-order-ic { display: inline-flex; flex-shrink: 0; color: var(--qa-muted); }
+.qa-tab-order-ic svg { width: 14px; height: 14px; }
+.qa-tab-order-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+/* ilk sıradaki sekme (açılışta seçili gelir): vurgulu çerçeve + numara */
+.qa-tab-order-row.is-first {
+  border-color: rgba(var(--ac-b1-rgb), 0.45);
+  background: var(--qa-accent-tint);
+}
+.qa-tab-order-row.is-first .qa-tab-order-num,
+.qa-tab-order-row.is-first .qa-tab-order-ic { color: var(--qa-accent-light); font-weight: 700; }
+.qa-tab-order-mv {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--qa-surface);
+  border: 1px solid var(--qa-border);
+  border-radius: 6px;
+  color: var(--qa-text);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.qa-tab-order-mv svg { width: 14px; height: 14px; }
+.qa-tab-order-mv:hover:not([disabled]) { border-color: var(--qa-accent); color: var(--qa-accent-light); background: var(--qa-accent-tint); }
+.qa-tab-order-mv:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
+.qa-tab-order-mv[disabled] { opacity: 0.3; cursor: default; }
+.qa-tab-order-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.55rem 0.35rem 0.1rem;
+}
+.qa-tab-order-note { font-size: 11px; line-height: 1.35; color: var(--qa-muted); }
+.qa-tab-order-reset {
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  background: transparent;
+  border: 1px solid var(--qa-border-strong);
+  border-radius: 6px;
+  color: var(--qa-text);
+  font-family: var(--qa-font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.qa-tab-order-reset:hover { border-color: var(--qa-accent); color: var(--qa-accent-light); }
+@media (max-width: 767px) {
+  /* sekmeler yatay kaysa da buton sağda görünür kalsın */
+  .qa-tab-order-btn,
+  .qa-tab-order-btn:hover,
+  .qa-tab-order-btn.is-open {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    width: 36px;
+    height: 36px;
+    border-radius: 0;
+    border-color: transparent;
+    background: var(--modal-bg);
+    box-shadow: -10px 0 10px var(--modal-bg);
+  }
+  .qa-tab-order-pop { right: 0.75rem; }
+  .qa-tab-order-mv { width: 34px; height: 34px; }
+}
