@@ -15,7 +15,7 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1100px;
+  min-width: 1150px; /* = sütun genişliklerinin toplamı (aşağıda) */
 }
 .trades-page .ww-table th,
 .trades-page .ww-table td {
@@ -23,16 +23,16 @@
   vertical-align: middle;
 }
 .trades-page .ww-table th:nth-child(1) { width: 36px; }
-.trades-page .ww-table th:nth-child(2) { width: 85px; }
-.trades-page .ww-table th:nth-child(3) { width: 65px; }
-.trades-page .ww-table th:nth-child(4) { width: 55px; }
-.trades-page .ww-table th:nth-child(5) { width: 80px; }
-.trades-page .ww-table th:nth-child(6) { width: 80px; }
-.trades-page .ww-table th:nth-child(7) { width: 70px; }
-.trades-page .ww-table th:nth-child(8) { width: 70px; }
-.trades-page .ww-table th:nth-child(9) { width: 90px; }
+.trades-page .ww-table th:nth-child(2) { width: 170px; } /* sembol + "Backtest" rozeti sığsın (85px'te rozet "Backtes" diye kesiliyordu) */
+.trades-page .ww-table th:nth-child(3) { width: 80px; }
+.trades-page .ww-table th:nth-child(4) { width: 50px; }
+.trades-page .ww-table th:nth-child(5) { width: 85px; }
+.trades-page .ww-table th:nth-child(6) { width: 85px; }
+.trades-page .ww-table th:nth-child(7) { width: 75px; }
+.trades-page .ww-table th:nth-child(8) { width: 75px; }
+.trades-page .ww-table th:nth-child(9) { width: 100px; }
 .trades-page .ww-table th:nth-child(10) { width: 55px; }
-.trades-page .ww-table th:nth-child(11) { width: 110px; }
+.trades-page .ww-table th:nth-child(11) { width: 115px; }
 .trades-page .ww-table th:nth-child(12) { width: 150px; } /* tarih + saat sığsın (100px'te "Nov 27, 2026, 12:…" kesiliyordu) */
 .trades-page .ww-table th:nth-child(13) { width: 70px; }
 
@@ -104,7 +104,12 @@
 .symbol-cell {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
+.symbol-cell .row-indicator,
+.symbol-cell .symbol-text { flex-shrink: 0; }
+/* çok uzun sembolde rozet taşmasın, kendi içinde kısalsın */
+.symbol-cell .badge-backtest { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .symbol-text {
   font-family: var(--font);
   font-weight: 600;
@@ -1029,4 +1034,159 @@ body.light-theme .skeleton-row .skeleton-cell::after {
   .pagination-info {
     font-size: 9px;
   }
+}
+/* ============================================================
+   2026-11-23: K/Z rengi, Profit Factor alt satırı, arama satırı, yeni filtreler, gün başlıkları
+   ============================================================ */
+/* Masaüstü tablo K/Z hücresi: kâr yeşil, zarar kırmızı (eskiden ikisi de beyazdı) */
+.trades-page .ww-table .positive { color: var(--green); }
+.trades-page .ww-table .negative { color: var(--red); }
+
+/* Profit Factor kartı: altında ort. kazanç / ort. kayıp */
+.stat-card-sub {
+  margin-top: 0.2rem;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-card-sub:empty { display: none; }
+.stat-card-sub .positive { color: var(--green); }
+.stat-card-sub .negative { color: var(--red); }
+.stat-card-sub-sep { opacity: 0.5; }
+
+/* Arama + özel tarih + temizle + CSV */
+.trades-searchbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.trades-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 260px;
+  max-width: 420px;
+  min-width: 0;
+}
+.trades-search svg {
+  position: absolute;
+  left: 0.75rem;
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.trades-search input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.trades-search input::placeholder { color: var(--muted); }
+.trades-search input:hover { border-color: rgba(var(--ac-rgb), 0.4); }
+.trades-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--ac-rgb), 0.15); }
+.trades-date-custom { display: inline-flex; align-items: center; gap: 0.4rem; }
+.trades-date-custom[hidden] { display: none; }
+.trades-date-custom input { padding: 0.45rem 0.6rem; color-scheme: dark; }
+:root[data-theme="light"] .trades-date-custom input { color-scheme: light; }
+.trades-date-sep { color: var(--muted); }
+.trades-clear-filters,
+.trades-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.trades-clear-filters svg,
+.trades-export-btn svg { width: 14px; height: 14px; }
+.trades-clear-filters[hidden] { display: none; }
+.trades-clear-filters {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+}
+.trades-clear-filters:hover { color: var(--text); border-color: var(--accent); }
+.trades-export-btn {
+  margin-left: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.trades-export-btn:hover { border-color: var(--accent); color: var(--ac-l2, var(--accent)); }
+
+/* Gün başlığı (tarih sıralamasında): gün adı · işlem sayısı · günün K/Z'si */
+.trades-page .ww-table tbody tr.trade-day-row,
+.trades-page .ww-table tbody tr.trade-day-row:hover {
+  cursor: default;
+  background: transparent;
+}
+.trades-page .ww-table tr.trade-day-row td {
+  padding: 1rem 0.75rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  overflow: visible;
+}
+.trades-page .ww-table tbody tr.trade-day-row:first-child td { padding-top: 0.6rem; }
+.trade-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--font);
+}
+.trade-day-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+.trade-day-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.trade-day-count { font-size: 11px; color: var(--muted); }
+.trade-day-pnl { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.trade-day-pnl.positive { color: var(--green); }
+.trade-day-pnl.negative { color: var(--red); }
+/* mobil kart listesinde gün başlığı */
+.trade-day-head-m { padding: 0.9rem 0.25rem 0.35rem; }
+.trade-day-head-m:first-child { padding-top: 0.2rem; }
+
+@media (max-width: 768px) {
+  .trades-searchbar { gap: 0.5rem; }
+  /* arama + (temizle) + CSV aynı satırda; butonlar mobilde yalnızca ikon */
+  .trades-searchbar { flex-wrap: nowrap; }
+  .trades-searchbar:has(.trades-date-custom:not([hidden])) { flex-wrap: wrap; }
+  .trades-search { flex: 1 1 0; max-width: none; }
+  .trades-export-btn { margin-left: 0; }
+  .trades-export-btn span,
+  .trades-clear-filters span { display: none; }
+  .trades-export-btn,
+  .trades-clear-filters { padding: 0.55rem 0.65rem; }
+  .trades-date-custom { flex: 1 1 100%; order: 5; }
+  .trades-date-custom input { flex: 1; min-width: 0; }
+  .mobile-filter-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .mobile-filter-chips::-webkit-scrollbar { display: none; }
+  .mobile-filter-chip { flex-shrink: 0; }
 }
