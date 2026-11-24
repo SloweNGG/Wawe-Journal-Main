@@ -81,7 +81,9 @@ import Layout from '../layouts/Layout.astro';
       <!-- GRID -->
       <div class="cal-grid" id="cal-grid" style="display:none;"></div>
 
-      <div class="cal-legend" id="cal-legend" style="display:none;">
+      {/* Renk açıklaması sabit metin: iskeletle birlikte gizlenmez. Gizliyken veri gelince beliriyordu ve ay başlığından
+           büyük olduğu için LCP onu sayıyordu (yavaş 4G ilk ziyaret: 1,4 sn yerine ~3 sn). */}
+      <div class="cal-legend" id="cal-legend">
         <div class="legend-group">
           <span class="legend-swatch" style="background:rgba(239,68,68,0.45);"></span>
           <span class="legend-swatch" style="background:rgba(239,68,68,0.16);"></span>

@@ -211,13 +211,12 @@ function showCalendarSkeleton() {
   var el2 = document.getElementById('cal-grid');
   var el3 = document.getElementById('calendar-summary-skeleton');
   var el4 = document.getElementById('calendar-summary');
-  var el5 = document.getElementById('cal-legend');
 
   if (el1) el1.style.display = 'grid';
   if (el2) el2.style.display = 'none';
   if (el3) el3.style.display = 'grid';
   if (el4) el4.style.display = 'none';
-  if (el5) el5.style.display = 'none';
+  // Renk açıklaması (#cal-legend) sabit metin: iskelet sırasında da görünür kalır (bkz. calendar.astro)
 }
 
 function hideCalendarSkeleton() {
