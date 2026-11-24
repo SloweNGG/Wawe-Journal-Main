@@ -66,7 +66,10 @@ pngjs@7 pixelmatch@5.3.0`). verify.mjs (tüm sayfalar), live-check.mjs, race.mjs
 
 ## Açık kalanlar
 - **Cloudflare paneli (bizim erişimimiz yok):** Caching → Browser Cache TTL → "Respect Existing Headers" (şu an
-  .js/.txt dosyalarında başlıkları 4 saate çeviriyor). İsteğe bağlı: Scrape Shield → Email Obfuscation kapalı.
+  .js/.txt dosyalarında başlıkları 4 saate çeviriyor). Speed → Speed Brain kapalı: Cloudflare sayfalara
+  `speculation-rules` başlığı ekliyor, Chrome navbar sayfalarını önceden çekiyor, HTML edge'de önbelleklenmediği için
+  Cloudflare bu isteklere 503 dönüyor (faydası yok, konsolda hata). İsteğe bağlı: Scrape Shield → Email Obfuscation kapalı.
+- Konsolda kalanlar site kodundan değil: giriş/kayıt sayfasındaki `%c%d` satırları Cloudflare Turnstile'dan.
 - Profilde tema ve bildirim tercihleri hâlâ ayrı sorgular (farklı alanlar, farklı zamanlar).
 - Kullanılmayan `public/images/brand/logo-mark.png` ve `logo-mark@2x.png`: silmeden önce Supabase e-posta
   şablonlarına bakılmalı.
