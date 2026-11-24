@@ -1114,7 +1114,9 @@ async function renderPlan() {
     try {
       var sbClient = window.sb || window.supabase;
       if (sbClient) {
-        var { data: dbSettings } = await sbClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
+        // maybeSingle: normal kullanıcı bu satırı göremiyor (0 satır); single() her açılışta konsola 406 yazıyordu.
+        // Satır yoksa aşağıda get_prices'a düşülür (davranış aynı).
+        var { data: dbSettings } = await sbClient.from('system_settings').select('value').eq('key', 'payment_settings').maybeSingle();
         if (dbSettings && dbSettings.value) {
           var mVal = parseFloat(dbSettings.value.monthly_price_usd);
           var yVal = parseFloat(dbSettings.value.yearly_price_usd);

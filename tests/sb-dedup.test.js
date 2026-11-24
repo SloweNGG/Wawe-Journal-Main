@@ -208,6 +208,11 @@ describe('fewer duplicate profile / payment queries on page load', () => {
       assert.ok(!body.includes("from('user_profiles')"), name + ': no direct profile query');
     }
   });
+  it('settings reads payment_settings with maybeSingle (members cannot see that row; single() logged a 406 on every load)', () => {
+    const settings = fs.readFileSync('public/settings/js/settings.js', 'utf8');
+    assert.match(settings, /from\('system_settings'\)\.select\('value'\)\.eq\('key', 'payment_settings'\)\.maybeSingle\(\);/);
+    assert.ok(!/eq\('key', 'payment_settings'\)\.single\(\)/.test(settings));
+  });
   it('the failed-payments cutoff is rounded to the minute, so concurrent loads send the same URL', () => {
     assert.match(navbar, /var paySince = new Date\(Math\.floor\(\(Date\.now\(\) - 14 \* 864e5\) \/ 60000\) \* 60000\)\.toISOString\(\);/);
   });
