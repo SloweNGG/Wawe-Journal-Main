@@ -519,6 +519,11 @@
   // için 11/05 Mayıs olurdu; burada ay/gün okunur (ay > 12 ise ters çevrilir). Saat dilimi ayarı parseDate'te uygulanır.
   function parseTradovateDate(raw) {
     if (raw === null || raw === undefined || raw === '') return null;
+    // TradingView'in Strategy Performance dışa aktarımı Tradovate Performance ile AYNI sütun adlarını kullanır ama zamanı
+    // Unix epoch (ms) yazar (TradeTally dokümanındaki örnek). Epoch mutlak bir an: saat dilimi ayarı uygulanmaz.
+    var epoch = typeof raw === 'number' ? raw : (/^\d{9,14}$/.test(String(raw).trim()) ? +String(raw).trim() : NaN);
+    if (epoch >= 1e11 && epoch < 1e14) return new Date(epoch);          // ms: 1973-5138
+    if (epoch >= 1e9 && epoch < 1e11) return new Date(epoch * 1000);    // sn: 2001-5138
     if (typeof raw === 'number' || raw instanceof Date) return Dict.parseDate(raw);
     var s = String(raw).trim();
     var pad = function (n) { return String(n).padStart(2, '0'); };

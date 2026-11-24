@@ -215,3 +215,72 @@ describe('Tradovate Orders: real export layout', () => {
     assert.equal(b.pnl, 116.25);
   });
 });
+
+describe('Tradovate: layouts seen in other tools (2026-11-24 research)', () => {
+  it('Performance with Unix epoch timestamps (ms or seconds) gives the same trades as the US date format', () => {
+    // TradingView's Strategy Performance export uses the same headers as Tradovate Performance but Unix milliseconds
+    // for boughtTimestamp / soldTimestamp (TradeTally docs sample); it is detected as 'tradovate'
+    const us = P.parse(csv([
+      PERF_HEAD,
+      perf('MNQZ6', '201', '202', '1', '21009.25', '21010.50', '$2.50', '10/19/2026 13:30:17', '10/19/2026 13:30:50'),
+      perf('MNQZ6', '204', '203', '1', '21012.00', '21015.00', '$(6.00)', '10/19/2026 13:41:00', '10/19/2026 13:40:00'),
+    ]), { timezone: 'UTC' });
+    const ms = (s) => String(Date.parse(s.replace(/^(\d\d)\/(\d\d)\/(\d{4}) /, '$3-$1-$2T') + 'Z'));
+    const epochMs = P.parse(csv([
+      PERF_HEAD,
+      perf('MNQZ6', '201', '202', '1', '21009.25', '21010.50', '$2.50', ms('10/19/2026 13:30:17'), ms('10/19/2026 13:30:50')),
+      perf('MNQZ6', '204', '203', '1', '21012.00', '21015.00', '$(6.00)', ms('10/19/2026 13:41:00'), ms('10/19/2026 13:40:00')),
+    ]), {});
+    const epochSec = P.parse(csv([
+      PERF_HEAD,
+      perf('MNQZ6', '201', '202', '1', '21009.25', '21010.50', '$2.50', String(ms('10/19/2026 13:30:17') / 1000), String(ms('10/19/2026 13:30:50') / 1000)),
+    ]), {});
+    assert.equal(epochMs.detected, 'tradovate');
+    assert.equal(epochMs.rows.length, us.rows.length, JSON.stringify(epochMs.errors));
+    assert.deepEqual(epochMs.rows.map((r) => [r.direction, r.pnl]), us.rows.map((r) => [r.direction, r.pnl]));
+    assert.equal(epochMs.rows[0].date.toISOString(), '2026-10-19T13:30:50.000Z');
+    assert.equal(epochMs.rows[1].direction, 'SHORT');
+    assert.equal(epochSec.rows[0].date.toISOString(), '2026-10-19T13:30:50.000Z');
+  });
+
+  it('Orders-like export with Account / Fill Time / B/S / Contract / Product / avgPrice / filledQty, mixed NQ and ES', () => {
+    const r = P.parse(csv([
+      ['Account', 'Fill Time', 'B/S', 'Contract', 'Product', 'avgPrice', 'filledQty'],
+      ['DEMO1', '06/08/2026 09:35:12', 'Buy', 'NQM6', 'NQ', '21850.25', '1'],
+      ['DEMO1', '06/08/2026 09:41:47', 'Sell', 'NQM6', 'NQ', '21862.75', '1'],
+      ['DEMO1', '06/08/2026 10:07:10', 'Buy', 'NQM6', 'NQ', '21851.00', '2'],
+      ['DEMO1', '06/08/2026 10:09:55', 'Sell', 'NQM6', 'NQ', '21838.00', '2'],
+      ['DEMO1', '06/09/2026 13:01:11', 'Sell', 'ESM6', 'ES', '6105.50', '1'],
+      ['DEMO1', '06/09/2026 13:10:44', 'Buy', 'ESM6', 'ES', '6103.25', '1'],
+    ]), {});
+    assert.equal(r.detected, 'tradovate-orders');
+    assert.deepEqual(plain(r.rows.map((x) => [x.symbol, x.direction, x.lot, x.multiplier, x.pnl])), [
+      ['NQ', 'LONG', 1, 20, 250],
+      ['NQ', 'LONG', 2, 20, -520],
+      ['ES', 'SHORT', 1, 50, 112.5],
+    ]);
+  });
+
+  it('real export format: CRLF, no BOM, sold-before-bought = short, partial pairs of one position merged', () => {
+    // Header and value formats checked against a real NinjaTrader Web (= Tradovate) Performance export by another
+    // project (kyoshiroDev/my-trading-coach #262, 2026-11-14: header byte-identical, CRLF, ASCII, no BOM).
+    // Rows below are our own, in that format: "$23.00", "26sec", fill ids 12 digits.
+    const text = [
+      PERF_HEAD.join(','),
+      'MNQU6,-2,0,0.25,600000000013,600000000004,1,29903.50,29915.00,$23.00,07/10/2026 15:34:00,07/10/2026 15:33:34,26sec',
+      'MNQU6,-2,0,0.25,600000000021,600000000007,1,29900.00,29915.75,$31.50,07/10/2026 15:34:09,07/10/2026 15:33:34,35sec',
+      'MNQU6,-2,0,0.25,600000000031,600000000032,1,29823.50,29833.25,$19.50,07/10/2026 15:40:02,07/10/2026 15:41:11,1min 9sec',
+      'MNQU6,-2,0,0.25,600000000041,600000000040,1,29774.25,29850.50,$(152.50),07/10/2026 16:41:06,07/10/2026 16:39:51,1min 15sec',
+      '',
+    ].join('\r\n');
+    const r = P.parse(text, {});
+    assert.equal(r.detected, 'tradovate');
+    assert.deepEqual(plain(r.rows.map((x) => [x.symbol, x.direction, x.lot, x.pnl])), [
+      ['MNQ', 'SHORT', 1, 23],
+      ['MNQ', 'SHORT', 1, 31.5],
+      ['MNQ', 'LONG', 1, 19.5],
+      ['MNQ', 'SHORT', 1, -152.5],
+    ]);
+    assert.equal(r.rows.reduce((a, x) => a + x.pnl, 0), -78.5);
+  });
+});
