@@ -1,5 +1,4 @@
 import { defineConfig } from 'astro/config';
-import react from '@astrojs/react';
 import esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,7 +60,6 @@ export default defineConfig({
   // → i18n eksik anahtar doldurma (scripts/i18n-fill.mjs) → asset-version.
   // localize (/tr/, /de/ kopyaları) damgalanmış HTML'den üretir → asset-version'dan sonra; sitemap onları da görsün → sitemap'ten önce.
   integrations: [
-    react(),
     bundleAppScript(),
     minifyDistAssets(),
     i18nFallbackFill(),

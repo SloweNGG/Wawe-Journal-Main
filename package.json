@@ -10,12 +10,7 @@
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
-    "@astrojs/react": "^7.1.9",
-    "@types/react": "^18.3.31",
-    "@types/react-dom": "^18.3.7",
-    "astro": "^7.4.12",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "astro": "^7.4.12"
   },
   "author": "WaweDev",
   "license": "AGPL-3.0-only",
