@@ -58,6 +58,24 @@ demo hesapla kontrol edildi (sayfalar, SPA geçişleri, dosya hash'leri).
   pencere plan kontrolünden sonra açılıyor (ücretsiz kullanıcı).
 - Kalan geç LCP'ler: backtest (~4,6 sn, tamamen JS ile kurulan uygulama), strategies mobil (~3,8 sn, veriye bağlı metin).
 
+## Otomatik canlı sağlık kontrolü (bu Mac)
+- `~/WaweJournal-HealthCheck` + launchd (`com.wawejournal.healthcheck`): her gün 09:00 ve 21:00. Yalnızca okur.
+  Sayfalar, önbellek başlıkları, dosya hash'leri, uygulama sayfaları (demo oturum), SPA geçişleri, dashboard Supabase
+  sorgu sayısı, yavaş 4G hızı. Sorun olursa macOS bildirimi; ayrıntı `logs/health.log`. Kullanım: klasördeki README.md.
+
+## AI koç uçtan uca test (canlı, demo hesap)
+- Panel, sohbet (ilk kelime 2,5 sn), strateji ekleme / plan / aylık hedef kartları ve söz kartı: hepsi çalıştı,
+  veritabanında doğrulandı; test kayıtları geri alındı. Gözlem: koç "siz" diyor, arayüz "sen".
+
+## Tradovate CSV araştırması (`e0671a4`)
+- Orders 23 Kasım'da gerçek örnekle doğrulanmıştı. Performance için: başka bir proje (kyoshiroDev/my-trading-coach
+  #262) gerçek bir NinjaTrader Web (= Tradovate) dışa aktarımıyla başlığın birebir aynı olduğunu doğrulamış (CRLF,
+  BOM yok). O dosyada bizim ayrıştırıcı toplam K/Z'yi kuruşu kuruşuna tutturdu (20 çift → 17 pozisyon, $466,50).
+- Düzeltildi: TradingView'in Strategy Performance dışa aktarımı aynı sütunlarla geliyor ama zamanı Unix ms yazıyor;
+  tarihler boş geliyordu (işlemler bugünün tarihiyle eklenirdi). Artık okunuyor.
+- Açık: Tradovate Performance dosyasında komisyon yok; Cash History dosyası komisyonları içeriyor (aynı dolum
+  zamanları). İkisini birlikte içe aktarma henüz yok.
+
 ## Temizlik
 - Kullanılmayan React entegrasyonu ve `.tsx` dosyaları silindi (`ca2b87d`). Build çıktısı birebir aynı;
   yalnızca hiçbir sayfanın kullanmadığı 141 KB'lık React dosyası artık üretilmiyor.
@@ -82,6 +100,5 @@ pngjs@7 pixelmatch@5.3.0`). verify.mjs (tüm sayfalar), live-check.mjs, race.mjs
   Cloudflare bu isteklere 503 dönüyor (faydası yok, konsolda hata). İsteğe bağlı: Scrape Shield → Email Obfuscation kapalı.
 - Konsolda kalanlar site kodundan değil: giriş/kayıt sayfasındaki `%c%d` satırları Cloudflare Turnstile'dan.
 - Profilde tema ve bildirim tercihleri hâlâ ayrı sorgular (farklı alanlar, farklı zamanlar).
-- Kullanılmayan `public/images/brand/logo-mark.png` ve `logo-mark@2x.png`: silmeden önce Supabase e-posta
-  şablonlarına bakılmalı.
-- Eskiden kalanlar: AI koç gerçek üyeyle denenmedi; Tradovate CSV gerçek bir dosyayla denenmedi.
+- Kullanılmayan logo PNG'leri silindi (`b996bd0`); 13 Supabase e-posta şablonunda da kullanılmıyordu.
+- Eskiden kalanlar: AI koç gerçek bir üyeyle denenmedi (demo hesapla uçtan uca denendi).
