@@ -1306,3 +1306,51 @@ body.light-theme .cal-news-ask { color: var(--ac-d1); }
   .cal-news-row { grid-template-columns: 40px 8px 30px minmax(0, 1fr); }
   .cal-news-ask { grid-column: 4; justify-self: start; margin-top: 2px; }
 }
+
+/* ============================================================
+   MASAÜSTÜ: takvim ekrana tam sığar (efsane + özet kartları kaydırmadan görünür)
+   Sayfa en az viewport - navbar boyunda; ızgara satırları kalan alanı eşit paylaşır.
+   Satır tabanı 72px: ekran buna yetmeyecek kadar kısaysa sayfa eskisi gibi kayar.
+   ============================================================ */
+@media (min-width: 769px) {
+  .calendar-page-main {
+    flex: 1 0 auto;
+    min-height: calc(100vh - var(--nav-height, 64px));
+    min-height: calc(100dvh - var(--nav-height, 64px));
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 1rem;
+  }
+  .calendar-page-header { flex-shrink: 0; }
+  .calendar-main-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+  }
+  .cal-header,
+  .cal-day-names,
+  .cal-legend,
+  .calendar-summary-grid,
+  .calendar-summary-skeleton { flex-shrink: 0; }
+  .cal-header { margin-bottom: 0.9rem; }
+  .cal-legend { margin-top: 0.5rem; padding-right: 3rem; }   /* sağ alttaki AI/+ butonlarının altında kalmasın */
+  .calendar-summary-grid,
+  .calendar-summary-skeleton { margin-top: 0.75rem; padding-top: 0.75rem; }
+  .cal-grid,
+  .cal-grid-skeleton {
+    flex: 1 1 auto;
+    grid-auto-rows: minmax(72px, 1fr);
+  }
+  .cal-day,
+  .cal-day.empty { min-height: 0; }
+  .cal-grid-skeleton .skeleton-day { aspect-ratio: auto; min-height: 0; }
+}
+
+/* Gün paneli (koyu tema): iç kutular gri (--surface2) değil, panelle aynı siyah (--card-bg; özel temada tema rengi) */
+body:not(.light-theme) #calendar-day-modal .detail-metric-box,
+body:not(.light-theme) #calendar-day-modal .detail-table-wrap,
+body:not(.light-theme) #calendar-day-modal table.detail-table thead th,
+body:not(.light-theme) #calendar-day-modal .cal-news-list,
+body:not(.light-theme) #calendar-day-modal .cal-news-filter,
+body:not(.light-theme) #calendar-day-modal .btn-export { background: var(--card-bg, #000); }

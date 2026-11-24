@@ -2339,3 +2339,8 @@ body.light-theme .wj-coach-nav:hover:not(:disabled) { background: #f1f5f9; }
   .wj-coach-slide[aria-selected="true"] .wwc-av { animation: none; }
   .wj-coach-dot, .wj-coach-nav { transition: none; }
 }
+
+/* İşlem Ekle penceresi açıkken başlangıç görevleri kartı (z-index 9995) pencerenin üstüne binmesin */
+body:has(.quick-add-overlay.active) .wj-tasks-floating-container {
+  display: none !important; /* onboarding.js satır içi display: block yazıyor */
+}

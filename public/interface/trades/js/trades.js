@@ -128,6 +128,9 @@
   
   var allTrades = [];
   var filteredTrades = [];
+  var lastFilteredAll = [];   // filtrelenmiş + sıralanmış TÜM liste (sayfalamadan önce): CSV ve gün toplamları
+  var dayTotals = {};         // 'YYYY-MM-DD' -> { n, pnl } (filtrelenmiş listenin tamamı üzerinden)
+  var searchQuery = '';
   var selectedTrades = new Set();
   var strategyNames = {};
   var strategiesList = [];
@@ -345,6 +348,7 @@
   }
 
   function updateStrategySelect() {
+    refreshStrategyFilterOptions();
     var strategySelect = safeEl('edit-strategy');
     if (!strategySelect) return;
     
@@ -382,8 +386,12 @@
       var total = pnls.reduce(function(s, v) { return s + (v || 0); }, 0);
       var wins = pnls.filter(function(v) { return v > 0; }).length;
       var wr = closed.length ? Math.round(wins / closed.length * 100) : 0;
-      var rrValues = trades.filter(function(t) { return t.rr_ratio; }).map(function(t) { return parseFloat(t.rr_ratio); });
-      var avgRR = rrValues.length ? (rrValues.reduce(function(s, v) { return s + v; }, 0) / rrValues.length).toFixed(1) : null;
+      // Profit Factor = kazançların toplamı / kayıpların toplamı (SL/TP gerektirmez, her zaman hesaplanır)
+      var grossWin = 0, grossLoss = 0, winN = 0, lossN = 0;
+      pnls.forEach(function(v) {
+        if (v > 0) { grossWin += v; winN++; }
+        else if (v < 0) { grossLoss += -v; lossN++; }
+      });
 
       var totalEl = safeEl('stat-total');
       if (totalEl) {
@@ -403,10 +411,29 @@
         applyStatValueSize(countEl, String(trades.length), '');
       }
 
-      var rrEl = safeEl('stat-rr');
-      if (rrEl) {
-        var rrStr = avgRR ? '1:' + avgRR : '—';
-        applyStatValueSize(rrEl, rrStr, '');
+      var pfEl = safeEl('stat-pf');
+      if (pfEl) {
+        var pfStr = '—', pfCls = '';
+        if (grossLoss > 0) {
+          var pf = grossWin / grossLoss;
+          pfStr = pf.toFixed(2);
+          pfCls = pf >= 1 ? 'positive' : 'negative';
+        } else if (grossWin > 0) {
+          pfStr = '∞';
+          pfCls = 'positive';
+        }
+        applyStatValueSize(pfEl, pfStr, pfCls);
+      }
+      var pfSub = safeEl('stat-pf-sub');
+      if (pfSub) {
+        // ortalama kazanç / ortalama kayıp
+        if (winN || lossN) {
+          pfSub.innerHTML = '<span title="' + escAttr(_tf('trades.stats.avg_win', 'Ort. kazanç')) + '" class="positive">' + (winN ? formatCurrency(grossWin / winN) : '—') + '</span>' +
+            ' <span class="stat-card-sub-sep">/</span> ' +
+            '<span title="' + escAttr(_tf('trades.stats.avg_loss', 'Ort. kayıp')) + '" class="negative">' + (lossN ? formatCurrency(-grossLoss / lossN) : '—') + '</span>';
+        } else {
+          pfSub.textContent = '';
+        }
       }
     } catch(e) {
       wwLog.warn('renderStats hatası:', e);
@@ -579,6 +606,180 @@
   // ⭐ OPTİMİZE EDİLMİŞ FİLTRELEME VE SIRALAMA
   // ============================================================
   
+  // ---- Ek filtreler: arama, tarih aralığı, sembol, strateji ----
+  function tradeDayKey(t) {
+    try { return t.trade_date ? window.WwTime.dateKey(t.trade_date) : ''; } catch (e) { return ''; }
+  }
+  function normSym(s) { return String(s || '').trim().toUpperCase(); }
+  // [başlangıç, bitiş] gün anahtarları (ikisi de dahil); null = sınır yok
+  function dateRangeKeys() {
+    var sel = safeEl('date-filter');
+    var v = sel ? sel.value : 'all';
+    var WT = window.WwTime;
+    var today = WT.todayKey();
+    if (v === 'today') return [today, today];
+    if (v === '7d') return [WT.addDays(today, -6), today];
+    if (v === '30d') return [WT.addDays(today, -29), today];
+    if (v === 'month') return [today.slice(0, 8) + '01', today];
+    if (v === 'year') return [today.slice(0, 4) + '-01-01', today];
+    if (v === 'custom') {
+      var f = (safeEl('date-from') || {}).value || null;
+      var to = (safeEl('date-to') || {}).value || null;
+      if (f && to && f > to) { var x = f; f = to; to = x; }
+      return [f, to];
+    }
+    return [null, null];
+  }
+  function applyExtraFilters(trades) {
+    var range = dateRangeKeys();
+    if (range[0] || range[1]) {
+      trades = trades.filter(function(t) {
+        var k = tradeDayKey(t);
+        if (!k) return false;
+        return (!range[0] || k >= range[0]) && (!range[1] || k <= range[1]);
+      });
+    }
+    var symSel = safeEl('symbol-filter');
+    var sym = symSel ? symSel.value : 'all';
+    if (sym && sym !== 'all') trades = trades.filter(function(t) { return normSym(t.symbol) === sym; });
+    var stSel = safeEl('strategy-filter');
+    var st = stSel ? stSel.value : 'all';
+    if (st === 'none') trades = trades.filter(function(t) { return !t.strategy_id; });
+    else if (st && st !== 'all') trades = trades.filter(function(t) { return t.strategy_id === st; });
+    var q = searchQuery.trim().toLocaleLowerCase();
+    if (q) {
+      trades = trades.filter(function(t) {
+        var stName = t.strategy_id ? (strategyNames[t.strategy_id] || '') : '';
+        return (String(t.symbol || '') + ' ' + String(t.notes || '') + ' ' + stName).toLocaleLowerCase().indexOf(q) !== -1;
+      });
+    }
+    return trades;
+  }
+  // Sembol listesi kapsamdaki işlemlerden (çok kullanılan önce değil, alfabetik); seçili sembol korunur
+  var _symbolOptsSig = '';
+  function refreshSymbolOptions(scoped) {
+    var sel = safeEl('symbol-filter');
+    if (!sel) return;
+    var seen = {}, label = {};
+    scoped.forEach(function(t) {
+      var s = normSym(t.symbol);
+      if (!s) return;
+      seen[s] = (seen[s] || 0) + 1;
+      if (!label[s]) label[s] = String(t.symbol).trim();   // listede kullanıcının yazdığı haliyle (US30.cash)
+    });
+    var syms = Object.keys(seen).sort();
+    var cur = sel.value;
+    if (cur && cur !== 'all' && !seen[cur]) syms.push(cur);   // seçili sembol bu kapsamda yoksa da listede kalsın
+    var sig = syms.join(',');
+    if (sig === _symbolOptsSig) return;
+    _symbolOptsSig = sig;
+    var first = sel.options[0];
+    sel.innerHTML = '';
+    if (first) sel.appendChild(first);
+    syms.forEach(function(s) {
+      var o = document.createElement('option');
+      o.value = s;
+      o.textContent = (label[s] || s) + (seen[s] ? ' (' + seen[s] + ')' : '');
+      sel.appendChild(o);
+    });
+    sel.value = cur && (cur === 'all' || syms.indexOf(cur) !== -1) ? cur : 'all';
+  }
+  function refreshStrategyFilterOptions() {
+    var sel = safeEl('strategy-filter');
+    if (!sel) return;
+    var cur = sel.value;
+    var keep = Array.prototype.slice.call(sel.options, 0, 2);   // Tümü + Stratejisiz
+    sel.innerHTML = '';
+    keep.forEach(function(o) { sel.appendChild(o); });
+    strategiesList.forEach(function(st) {
+      var o = document.createElement('option');
+      o.value = st.id;
+      o.textContent = st.name;
+      sel.appendChild(o);
+    });
+    sel.value = Array.prototype.some.call(sel.options, function(o) { return o.value === cur; }) ? cur : 'all';
+  }
+  function filtersActive() {
+    var ids = ['dir-filter', 'result-filter', 'date-filter', 'symbol-filter', 'strategy-filter'];
+    for (var i = 0; i < ids.length; i++) { var e = safeEl(ids[i]); if (e && e.value !== 'all') return true; }
+    return !!searchQuery.trim();
+  }
+  function syncClearFiltersBtn() {
+    var b = safeEl('clear-filters');
+    if (b) b.hidden = !filtersActive();
+    var wrap = safeEl('date-custom-wrap');
+    var df = safeEl('date-filter');
+    if (wrap) wrap.hidden = !(df && df.value === 'custom');
+  }
+  function clearFilters() {
+    ['dir-filter', 'result-filter', 'date-filter', 'symbol-filter', 'strategy-filter'].forEach(function(id) {
+      var e = safeEl(id);
+      if (e) { e.value = 'all'; e.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+    var f = safeEl('date-from'); if (f) f.value = '';
+    var to = safeEl('date-to'); if (to) to.value = '';
+    var si = safeEl('trade-search'); if (si) si.value = '';
+    searchQuery = '';
+    currentPage = 1;
+    applyFiltersAndSort();
+  }
+
+  // ---- CSV dışa aktarma: filtrelenmiş listenin tamamı (yalnızca görünen sayfa değil) ----
+  function exportCsv() {
+    var list = lastFilteredAll || [];
+    if (!list.length) {
+      showToast(_tf('trades.export_empty', 'Dışa aktarılacak işlem yok.'), 'warning');
+      return;
+    }
+    var WT = window.WwTrades;
+    var head = ['date', 'symbol', 'instrument', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit',
+      'commission', 'swap', 'pnl', 'rr_ratio', 'strategy', 'source', 'notes'];
+    var lines = [head.join(',')];
+    list.forEach(function(t) {
+      var pnl = getTradePnL(t);
+      lines.push([
+        WT.csvDate(t.trade_date), t.symbol || '', WT.instrumentText(t), t.direction || '', t.lot, t.entry_price, t.exit_price, t.stop_loss, t.take_profit,
+        t.commission, t.swap, pnl === null ? '' : Number(pnl.toFixed(2)), t.rr_ratio,
+        t.strategy_id ? (strategyNames[t.strategy_id] || '') : '', isBacktestRow(t) ? 'backtest' : 'live', t.notes || ''
+      ].map(WT.csvCell).join(','));
+    });
+    var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    // Bağlantı sayfaya EKLENMEZ: SPA yönlendiricisi belgedeki <a> tıklamalarını yakalayıp blob adresine "sayfa geçişi" yapıyordu
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wawe-trades-' + window.WwTime.todayKey() + '.csv';
+    a.rel = 'noopener';
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500);
+    showToast(_tf('trades.export_done', '{count} işlem indirildi.', { count: list.length }).replace('{count}', list.length), 'success');
+  }
+
+  // ---- Gün başlığı: tarih sıralamasında her günün ilk satırının üstünde (o günün tüm filtrelenmiş işlemleri) ----
+  function dayGroupingOn() {
+    var s = safeEl('sort-select');
+    var v = s ? s.value : 'date_desc';
+    return v === 'date_desc' || v === 'date_asc';
+  }
+  function dayLabel(key) {
+    var WT = window.WwTime;
+    var today = WT.todayKey();
+    if (key === today) return _tf('trades.day_today', 'Bugün');
+    if (key === WT.addDays(today, -1)) return _tf('trades.day_yesterday', 'Dün');
+    try {
+      var opts = { weekday: 'long', day: 'numeric', month: 'long' };
+      if (key.slice(0, 4) !== today.slice(0, 4)) opts.year = 'numeric';
+      return WT.formatDate(key, _lang(), opts);
+    } catch (e) { return key; }
+  }
+  function dayHeaderInner(key) {
+    var d = dayTotals[key] || { n: 0, pnl: 0 };
+    var cls = d.pnl > 0 ? 'positive' : d.pnl < 0 ? 'negative' : '';
+    var countTxt = (d.n === 1 ? _tf('trades.day_count_one', '1 işlem', { count: 1 }) : _tf('trades.day_count', '{count} işlem', { count: d.n })).replace('{count}', d.n);
+    return '<span class="trade-day-label">' + sanitizeHTML(dayLabel(key)) + '</span>' +
+      '<span class="trade-day-meta"><span class="trade-day-count">' + sanitizeHTML(countTxt) + '</span>' +
+      '<span class="trade-day-pnl ' + cls + '">' + formatCurrency(d.pnl) + '</span></span>';
+  }
+
   function applyFiltersAndSort() {
     try {
       var sortSelect = safeEl('sort-select');
@@ -591,6 +792,8 @@
       
       // Kaynak kapsamı ÖNCE: toplamlar, sayfalama ve stat kartları seçili kapsama göre (D6)
       var trades = window.WwTrades.filterScope(allTrades, scopeFilter);
+      refreshSymbolOptions(trades);
+      trades = applyExtraFilters(trades);
       
       if (dir !== 'all') trades = trades.filter(function(t) { return t.direction === dir; });
       if (result === 'win') trades = trades.filter(function(t) { return t.exit_price && getTradePnL(t) > 0; });
@@ -623,6 +826,18 @@
           break;
       }
 
+      lastFilteredAll = trades;
+      dayTotals = {};
+      trades.forEach(function(t) {
+        var k = tradeDayKey(t);
+        if (!k) return;
+        var d = dayTotals[k] || (dayTotals[k] = { n: 0, pnl: 0 });
+        d.n++;
+        var v = getTradePnL(t);
+        if (v !== null && !isNaN(v)) d.pnl += v;
+      });
+      syncClearFiltersBtn();
+
       totalItems = trades.length;
       totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
       
@@ -646,6 +861,9 @@
   // ============================================================
   function buildDesktopTableHTML(trades) {
     var rows = '';
+    var anySelectable = false; // sayfada seçilebilir (canlı) satır yoksa "tümünü seç" kutusu da gösterilmez
+    var grouping = dayGroupingOn();
+    var lastDay = null;
     for (var i = 0; i < trades.length; i++) {
       var t = trades[i];
       var pnl = getTradePnL(t);
@@ -653,6 +871,13 @@
       var isLoss = pnl !== null && pnl < 0;
       var isOpen = !t.exit_price;
       var indClass = isOpen ? 'open' : isWin ? 'win' : 'loss';
+      if (grouping) {
+        var dk = tradeDayKey(t);
+        if (dk && dk !== lastDay) {
+          rows += '\n        <tr class="trade-day-row"><td colspan="13"><div class="trade-day-head">' + dayHeaderInner(dk) + '</div></td></tr>';
+        }
+        lastDay = dk;
+      }
       
       // ⭐ i18n: 'Açık' → _t('trades.open')
       var pnlStr = isOpen 
@@ -677,6 +902,7 @@
 
       // Backtest aynası: rozet; seçim kutusu YOK (toplu silmeye girmez); silme düğmesi YOK
       var isBt = isBacktestRow(t);
+      if (!isBt) anySelectable = true;
       var selectCell = isBt
         ? '<td style="width:36px;"></td>'
         : '<td style="width:36px;" onclick="event.stopPropagation()">\n            <input type="checkbox" class="trade-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)">\n          </td>';
@@ -687,7 +913,7 @@
 
       rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          ' + selectCell + '\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>' + btBadge + '\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-variant-numeric:tabular-nums;">' + (t.lot ?? '—') + '</td>\n          <td style="font-variant-numeric:tabular-nums;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-variant-numeric:tabular-nums;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-variant-numeric:tabular-nums;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-variant-numeric:tabular-nums;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + safeStrategy + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-variant-numeric:tabular-nums;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button type="button" class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="' + editTitle + '" aria-label="' + editTitle + '"><i data-lucide="pencil"></i></button>\n              ' + delBtn + '\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong class="trade-note-label"><i data-lucide="sticky-note"></i>' + notesLabel + '</strong>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>') + '\n          </td>\n        </tr>\n      ';
     }
-    return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>' + _t('trades.th_symbol') + '</th><th>' + _t('trades.th_direction') + '</th><th>' + _t('trades.th_lot') + '</th><th>' + _t('trades.th_entry') + '</th><th>' + _t('trades.th_exit') + '</th><th>' + _t('trades.th_sl') + '</th><th>' + _t('trades.th_tp') + '</th><th>' + _t('trades.th_pnl') + '</th><th>' + _t('trades.th_rr') + '</th><th>' + _t('trades.th_strategy') + '</th><th>' + _t('trades.th_date') + '</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
+    return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;">' + (anySelectable ? '<input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)">' : '') + '</th>\n              <th>' + _t('trades.th_symbol') + '</th><th>' + _t('trades.th_direction') + '</th><th>' + _t('trades.th_lot') + '</th><th>' + _t('trades.th_entry') + '</th><th>' + _t('trades.th_exit') + '</th><th>' + _t('trades.th_sl') + '</th><th>' + _t('trades.th_tp') + '</th><th>' + _t('trades.th_pnl') + '</th><th>' + _t('trades.th_rr') + '</th><th>' + _t('trades.th_strategy') + '</th><th>' + _t('trades.th_date') + '</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
   }
 
   // ============================================================
@@ -695,6 +921,8 @@
   // ============================================================
   function buildMobileCardsHTML(trades) {
     var html = '<div class="trades-mobile-cards">';
+    var mGrouping = dayGroupingOn();
+    var mLastDay = null;
     for (var i = 0; i < trades.length; i++) {
       var t = trades[i];
       var pnl = getTradePnL(t);
@@ -728,6 +956,11 @@
       var notesDisplay = hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>';
       var isBtCard = isBacktestRow(t);
 
+      if (mGrouping) {
+        var mdk = tradeDayKey(t);
+        if (mdk && mdk !== mLastDay) html += '<div class="trade-day-head trade-day-head-m">' + dayHeaderInner(mdk) + '</div>';
+        mLastDay = mdk;
+      }
       html += '<div class="trade-card" data-id="' + t.id + '">';
       html +=   '<div class="trade-card-header">';
       if (!isBtCard) html +=     '<input type="checkbox" class="trade-checkbox trade-card-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)" onclick="event.stopPropagation()">';
@@ -1156,7 +1389,10 @@
       scope: { selectId: 'scope-filter', titleKey: 'trades.scope_title', fallbackTitle: 'Kaynak' },
       sort: { selectId: 'sort-select', titleKey: 'trades.sort_title', fallbackTitle: 'Sıralama' },
       dir: { selectId: 'dir-filter', titleKey: 'trades.filter_title', fallbackTitle: 'Yön' },
-      result: { selectId: 'result-filter', titleKey: 'trades.result_title', fallbackTitle: 'Sonuç' }
+      result: { selectId: 'result-filter', titleKey: 'trades.result_title', fallbackTitle: 'Sonuç' },
+      date: { selectId: 'date-filter', titleKey: 'trades.date_title', fallbackTitle: 'Tarih' },
+      symbol: { selectId: 'symbol-filter', titleKey: 'trades.symbol_title', fallbackTitle: 'Sembol' },
+      strategy: { selectId: 'strategy-filter', titleKey: 'trades.strategy_title', fallbackTitle: 'Strateji' }
     };
 
     var currentFilterKey = null;
@@ -1227,7 +1463,7 @@
 
     overlay.addEventListener('click', closeSheet);
 
-    ['scope-filter', 'sort-select', 'dir-filter', 'result-filter'].forEach(function(id) {
+    ['scope-filter', 'sort-select', 'dir-filter', 'result-filter', 'date-filter', 'symbol-filter', 'strategy-filter'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('change', syncChipLabels);
     });
@@ -1363,6 +1599,41 @@
             applyFiltersAndSort();
           });
         }
+
+        // Tarih / sembol / strateji filtreleri, özel aralık, arama, temizle, CSV
+        ['date-filter', 'symbol-filter', 'strategy-filter', 'date-from', 'date-to'].forEach(function(id) {
+          var fe = safeEl(id);
+          if (!fe) return;
+          fe.addEventListener('change', function() {
+            if (id === 'date-filter' && this.value === 'custom') {
+              syncClearFiltersBtn();
+              var from = safeEl('date-from');
+              if (from && !from.value) { try { from.focus(); if (from.showPicker) from.showPicker(); } catch (e) {} }
+            }
+            currentPage = 1;
+            applyFiltersAndSort();
+          });
+        });
+        var searchInput = safeEl('trade-search');
+        if (searchInput) {
+          var searchTimer = null;
+          searchInput.addEventListener('input', function() {
+            var v = this.value;
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function() {
+              searchQuery = v;
+              currentPage = 1;
+              applyFiltersAndSort();
+            }, 150);
+          });
+          searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && this.value) { e.stopPropagation(); this.value = ''; searchQuery = ''; currentPage = 1; applyFiltersAndSort(); }
+          });
+        }
+        var clearBtn = safeEl('clear-filters');
+        if (clearBtn) clearBtn.addEventListener('click', clearFilters);
+        var exportBtn = safeEl('export-csv');
+        if (exportBtn) exportBtn.addEventListener('click', exportCsv);
       
         var editInstrument = safeEl('edit-instrument');
         if (editInstrument) {

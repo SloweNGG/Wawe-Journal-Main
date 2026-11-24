@@ -1194,6 +1194,7 @@ function dayNewsHtml(dateStr) {
   if (calNews.key !== currentYear + '-' + currentMonth && !list.length) return head + '<div class="cal-news-empty">' + calT('econ.loading', 'Yükleniyor…') + '</div>';
   if (!list.length) return head + '<div class="cal-news-empty">' + calT('calendar.news.none', 'Bu gün filtrene uyan haber yok.') + '</div>';
   var ask = api.canAsk();
+  var askLabel = calAskCoachLabel();
   var row = function (e, past) {
     var d = api.describe(e), vals = [];
     if (e.forecast) vals.push(calT('econ.forecast', 'Bkl') + ' ' + e.forecast);
@@ -1208,7 +1209,7 @@ function dayNewsHtml(dateStr) {
         (vals.length ? '<small>' + sanitizeHTML(vals.join(' · ')) + '</small>' : '') +
         (d.pairs.length ? '<span class="cal-news-pairs">' + d.pairs.slice(0, 4).map(function (l) { return '<b>' + sanitizeHTML(l) + '</b>'; }).join('') + '</span>' : '') +
       '</span>' +
-      (ask && e.impact !== 'holiday' ? '<button type="button" class="cal-news-ask" data-econ-ask="' + sanitizeHTML(e.id) + '" title="' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '">' + sanitizeHTML(calT('econ.ask', 'Koça sor')) + '</button>' : '') +
+      (ask && e.impact !== 'holiday' ? '<button type="button" class="cal-news-ask" data-econ-ask="' + sanitizeHTML(e.id) + '" title="' + sanitizeHTML(askLabel) + '">' + sanitizeHTML(askLabel) + '</button>' : '') +
       '</div>' +
       (open ? api.detail(e) : '');   // the detail (econ-calendar.js): what it is, how to read it, forecast/previous, source link
   };
@@ -1216,6 +1217,14 @@ function dayNewsHtml(dateStr) {
     (upcoming.length && released.length ? '<div class="cal-news-sep">' + calT('econ.released', 'Açıklananlar') + '</div>' : '') +
     released.map(function (e) { return row(e, upcoming.length > 0); }).join('');
   return head + '<div class="cal-news-list">' + rows + '</div><div class="cal-news-note">' + calT('calendar.news.note', 'Kaynak: Forex Factory, CryptoCraft, MetalsMine, EnergyExch. Açıklanan sonuçlar (actual) yok; haberler 15 Kasım 2026\'dan beri kaydediliyor.') + '</div>';
+}
+
+// "Atlas'a sor": seçili koçun adı (ai-coach.js → WwAiCoach). Türkçede yönelme eki isme göre değiştiği için her koçun kendi anahtarı var ("{coach}'a sor"); ad dil dosyasında yazmaz.
+function calAskCoachLabel() {
+  var c = window.WwAiCoach, id = null, name = null;
+  try { id = c && c.coachId && c.coachId(); name = c && c.coachName && c.coachName(); } catch (e) { /* koç paneli yok */ }
+  if (!id || !name) return calT('econ.ask', 'Koça sor');
+  return calT('econ.ask_coach.' + id, calT('econ.ask_named', '{coach} sor', { coach: name }), { coach: name });
 }
 
 function appendDayNews(dateStr) {

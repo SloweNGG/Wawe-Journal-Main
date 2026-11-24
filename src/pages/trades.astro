@@ -64,9 +64,29 @@ import Layout from '../layouts/Layout.astro';
         <div class="stat-card-value" id="stat-count">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label" data-i18n="trades.stats.avg_rr">Ort. R/R</div>
-        <div class="stat-card-value" id="stat-rr">—</div>
+        <div class="stat-card-label" data-i18n="trades.stats.profit_factor" data-i18n-title="trades.stats.profit_factor_hint" title="Kazançların toplamı / kayıpların toplamı. 1'in üstü kârlı.">Profit Factor</div>
+        <div class="stat-card-value" id="stat-pf">—</div>
+        <div class="stat-card-sub" id="stat-pf-sub"></div>
       </div>
+    </div>
+
+    <!-- ARAMA + ÖZEL TARİH ARALIĞI + FİLTRE TEMİZLE + CSV (mobilde de görünür) -->
+    <div class="trades-searchbar">
+      <label class="trades-search">
+        <i data-lucide="search"></i>
+        <input type="search" id="trade-search" autocomplete="off" spellcheck="false" data-i18n-placeholder="trades.search_placeholder" placeholder="Sembol veya notta ara…" aria-label="Ara">
+      </label>
+      <div class="trades-date-custom" id="date-custom-wrap" hidden>
+        <input type="date" id="date-from" class="toolbar-select" data-i18n-title="trades.date_from" title="Başlangıç">
+        <span class="trades-date-sep">–</span>
+        <input type="date" id="date-to" class="toolbar-select" data-i18n-title="trades.date_to" title="Bitiş">
+      </div>
+      <button type="button" class="trades-clear-filters" id="clear-filters" hidden data-i18n-title="trades.clear_filters" title="Filtreleri temizle">
+        <i data-lucide="x"></i><span data-i18n="trades.clear_filters">Filtreleri temizle</span>
+      </button>
+      <button type="button" class="trades-export-btn" id="export-csv" data-i18n-title="trades.export_csv_hint" title="Filtrelenmiş işlemleri CSV olarak indir">
+        <i data-lucide="download"></i><span data-i18n="trades.export_csv">CSV indir</span>
+      </button>
     </div>
 
     <!-- TOOLBAR -->
@@ -95,6 +115,23 @@ import Layout from '../layouts/Layout.astro';
         <option value="loss" data-i18n="trades.filter.loss">Kayıp</option>
         <option value="open" data-i18n="trades.filter.open">Açık</option>
       </select>
+      <select id="date-filter" class="toolbar-select" aria-label="Tarih" data-i18n-title="trades.date_title" title="Tarih">
+        <option value="all" data-i18n="trades.filter.date_all">Tüm Zamanlar</option>
+        <option value="today" data-i18n="trades.filter.date_today">Bugün</option>
+        <option value="7d" data-i18n="trades.filter.date_7d">Son 7 Gün</option>
+        <option value="30d" data-i18n="trades.filter.date_30d">Son 30 Gün</option>
+        <option value="month" data-i18n="trades.filter.date_month">Bu Ay</option>
+        <option value="year" data-i18n="trades.filter.date_year">Bu Yıl</option>
+        <option value="custom" data-i18n="trades.filter.date_custom">Özel Aralık…</option>
+      </select>
+      <!-- seçenekleri trades.js işlemlerden doldurur -->
+      <select id="symbol-filter" class="toolbar-select" aria-label="Sembol" data-i18n-title="trades.symbol_title" title="Sembol">
+        <option value="all" data-i18n="trades.filter.all_symbols">Tüm Semboller</option>
+      </select>
+      <select id="strategy-filter" class="toolbar-select" aria-label="Strateji" data-i18n-title="trades.strategy_title" title="Strateji">
+        <option value="all" data-i18n="trades.filter.all_strategies">Tüm Stratejiler</option>
+        <option value="none" data-i18n="trades.filter.no_strategy">Stratejisiz</option>
+      </select>
     </div>
 
     <!-- MOBİL FİLTRE ÇİPLERİ -->
@@ -111,6 +148,15 @@ import Layout from '../layouts/Layout.astro';
       </button>
       <button type="button" class="mobile-filter-chip" data-filter="result">
         <span class="mobile-filter-chip-text" data-i18n="trades.filter.all_results">Tüm Sonuçlar</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="date">
+        <span class="mobile-filter-chip-text">Tüm Zamanlar</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="symbol">
+        <span class="mobile-filter-chip-text">Tüm Semboller</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="strategy">
+        <span class="mobile-filter-chip-text">Tüm Stratejiler</span>
       </button>
     </div>
 

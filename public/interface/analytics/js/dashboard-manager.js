@@ -974,12 +974,15 @@ export function exportCSV(trades) {
       _t('csv.sl', 'Zarar Kes'), _t('csv.tp', 'Kâr Al'), _t('csv.pnl', 'K/Z'),
       _t('csv.rr', 'R:R'), _t('csv.date', 'Tarih'), _t('csv.notes', 'Notlar')
     ];
+    var WT = window.WwTrades;
     var rows = trades.map(function(t) {
       var pnl = calcTradePnL(t);
+      // CSV'de HTML kaçışı yok (sanitizeHTML "&" → "&amp;" yazıyordu); hücreler csvCell ile tırnaklanır.
+      // Enstrüman: 'EURUSD · Forex'; tarih kullanıcının saat diliminde.
       return [
-        sanitizeHTML(t.symbol || ''),
-        sanitizeHTML(t.direction || ''),
-        sanitizeHTML(t.instrument || ''),
+        t.symbol || '',
+        t.direction || '',
+        WT.instrumentText(t),
         t.lot || '',
         t.entry_price || '',
         t.exit_price || '',
@@ -987,9 +990,9 @@ export function exportCSV(trades) {
         t.take_profit || '',
         t.exit_price ? pnl.toFixed(2) : '',
         t.rr_ratio || '',
-        t.trade_date || '',
-        (t.notes || '').replace(/,/g,';').replace(/\n/g,' ')
-      ].join(',');
+        WT.csvDate(t.trade_date),
+        t.notes || ''
+      ].map(WT.csvCell).join(',');
     });
     var csv = [headers.join(','), rows.join('\n')].join('\n');
     var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });

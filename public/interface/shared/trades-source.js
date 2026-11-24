@@ -206,7 +206,82 @@
     });
   }
 
+  // ------------------------------------------------------------
+  // CSV dışa aktarma yardımcıları (Dashboard, Analytics, Trades ortak kullanır)
+  // ------------------------------------------------------------
+  // Sembolden enstrüman türü: quick-add/broker-dictionary.js guessInstrument ile AYNI mantık
+  // (o dosya yalnızca hızlı ekleme panelinde yükleniyor). Forex önce, kripto başa/sona sabitli.
+  var FIAT_CODES = 'EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH|CZK|HUF|DKK|THB|ILS|RUB|CNY';
+  var FOREX_PAIR_RE = new RegExp('^(' + FIAT_CODES + ')(' + FIAT_CODES + ')(?![A-Z]{4,})');
+  function guessInstrument(symbol) {
+    if (!symbol) return 'other';
+    var s = String(symbol).toUpperCase().trim();
+    var letters = s.replace(/[^A-Z]/g, '');
+    if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+    if (FOREX_PAIR_RE.test(letters)) return 'forex';
+    if (/^(XBT|BTC|ETH|SOL|ADA|XRP|DOGE|BNB|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(letters) || /(USDT|USDC|BUSD)$/.test(letters)) return 'crypto';
+    if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
+    if (letters.length === 6) return 'forex';
+    return 'other';
+  }
+  // Sembolden tanınıyorsa o (kayıttaki değer varsayılan 'forex' kalmış olabilir), yoksa kayıttaki tür
+  function instrumentOf(t) {
+    var g = guessInstrument(t && t.symbol);
+    if (g !== 'other') return g;
+    var st = t && t.instrument;
+    return (st === 'forex' || st === 'gold' || st === 'index' || st === 'crypto') ? st : 'other';
+  }
+  var INST_FALLBACK = { forex: 'Forex', gold: 'Gold', metal: 'Metal', index: 'Index', crypto: 'Crypto', other: 'Other' };
+  function instrumentLabel(inst) {
+    var key = 'csv.instrument_' + inst;
+    try {
+      if (global.i18n && typeof global.i18n.t === 'function') {
+        var v = global.i18n.t(key);
+        if (v && v !== key) return v;
+      }
+    } catch (e) { /* yedek */ }
+    return INST_FALLBACK[inst] || inst;
+  }
+  // 'EURUSD · Forex', 'XAUUSD · Altın', 'XAGUSD · Metal', 'US30 · Endeks'
+  function instrumentText(t) {
+    var sym = t && t.symbol ? String(t.symbol).trim() : '';
+    var inst = instrumentOf(t);
+    if (inst === 'gold' && !/(XAU|GOLD)/i.test(sym)) inst = 'metal';   // gümüş / platin "Altın" yazmasın
+    var label = instrumentLabel(inst);
+    return sym ? sym + ' · ' + label : label;
+  }
+  // Tarih: kullanıcının saat dilimindeki duvar saati 'YYYY-MM-DD HH:mm' (saatsiz işlemde yalnızca tarih).
+  // Eskiden ham UTC ('...T11:17:00+00:00') yazılıyordu; tablo programında saat kayık görünüyordu.
+  function csvDate(v) {
+    if (!v) return '';
+    try {
+      var WT = global.WwTime;
+      var c = WT.classify(v);
+      if (c.kind === 'date') return c.key;
+      if (c.kind === 'time') {
+        var p = WT.partsInTz(c.ms, WT.getTz());
+        var z = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return p.y + '-' + z(p.m) + '-' + z(p.d) + ' ' + z(p.H) + ':' + z(p.Mi);
+      }
+    } catch (e) { /* ham değer */ }
+    return String(v);
+  }
+  // Tek hücre: virgül/tırnak/satır sonu tırnaklanır (not içeriği bozulmaz); =,+,-,@ ile başlayan METİN
+  // hücreleri ' ile kaçırılır (Excel formül enjeksiyonu). Sayılar olduğu gibi.
+  function csvCell(v) {
+    if (v === null || v === undefined) return '';
+    var s = String(v);
+    // '-100.00' gibi sayısal metinler (toFixed çıktısı) dokunulmaz; yalnızca formül gibi duranlar kaçırılır
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s) && !/^[+-]?\d+(\.\d+)?$/.test(s)) s = "'" + s;
+    return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
   global.WwTrades = {
+    guessInstrument: guessInstrument,
+    instrumentOf: instrumentOf,
+    instrumentText: instrumentText,
+    csvDate: csvDate,
+    csvCell: csvCell,
     BACKTEST: BACKTEST,
     LIVE_OR: LIVE_OR,
     SCOPES: SCOPES.slice(),

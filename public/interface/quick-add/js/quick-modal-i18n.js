@@ -37,6 +37,13 @@ const quickTranslations = {
     "quickmodal.map_column": "Column {{n}}",
     "quickmodal.map_ai_privacy": "AI only sees the headers and the first 5 rows.",
     "quickmodal.tab_ai": "Add with AI",
+    "quickmodal.tab_reorder_hint": "Drag to reorder, or use the order button on the right.",
+    "quickmodal.tab_order_title": "Tab order",
+    "quickmodal.tab_order_note": "The first tab opens by default.",
+    "quickmodal.tab_order_reset": "Reset",
+    "quickmodal.tab_order_default": "Opens first",
+    "quickmodal.tab_order_up": "Move {{name}} up",
+    "quickmodal.tab_order_down": "Move {{name}} down",
     "quickmodal.ai_drop_hint": "Drop the image",
     "quickmodal.ai_drop_title": "Paste or drop a screenshot",
     "quickmodal.ai_drop_desc": "MT4/MT5, cTrader, TradingView, your broker app or a prop firm dashboard. You can also paste with Ctrl+V.",
@@ -243,6 +250,13 @@ const quickTranslations = {
     "quickmodal.map_column": "Sütun {{n}}",
     "quickmodal.map_ai_privacy": "AI'ya yalnızca başlıklar ve ilk 5 satır gider.",
     "quickmodal.tab_ai": "AI ile Ekle",
+    "quickmodal.tab_reorder_hint": "Sürükleyerek ya da sağdaki sıralama butonuyla yerini değiştir.",
+    "quickmodal.tab_order_title": "Sekme sırası",
+    "quickmodal.tab_order_note": "İlk sıradaki sekme açılışta seçili gelir.",
+    "quickmodal.tab_order_reset": "Sıfırla",
+    "quickmodal.tab_order_default": "İlk açılan",
+    "quickmodal.tab_order_up": "{{name}} yukarı",
+    "quickmodal.tab_order_down": "{{name}} aşağı",
     "quickmodal.ai_drop_hint": "Görseli bırak",
     "quickmodal.ai_drop_title": "Ekran görüntüsünü yapıştır veya bırak",
     "quickmodal.ai_drop_desc": "MT4/MT5, cTrader, TradingView, broker uygulaması ya da prop firma paneli. Ctrl+V ile de yapıştırabilirsin.",
@@ -424,6 +438,13 @@ const quickTranslations = {
     "quickmodal.map_column": "Spalte {{n}}",
     "quickmodal.map_ai_privacy": "Die KI sieht nur die Überschriften und die ersten 5 Zeilen.",
     "quickmodal.tab_ai": "Mit KI",
+    "quickmodal.tab_reorder_hint": "Zum Sortieren ziehen oder den Sortier-Button rechts nutzen.",
+    "quickmodal.tab_order_title": "Tab-Reihenfolge",
+    "quickmodal.tab_order_note": "Der erste Tab öffnet sich standardmäßig.",
+    "quickmodal.tab_order_reset": "Zurücksetzen",
+    "quickmodal.tab_order_default": "Öffnet zuerst",
+    "quickmodal.tab_order_up": "{{name}} nach oben",
+    "quickmodal.tab_order_down": "{{name}} nach unten",
     "quickmodal.ai_drop_hint": "Bild ablegen",
     "quickmodal.ai_drop_title": "Screenshot einfügen oder ablegen",
     "quickmodal.ai_drop_desc": "MT4/MT5, cTrader, TradingView, deine Broker-App oder ein Prop-Firm-Dashboard. Einfügen geht auch mit Strg+V.",
@@ -691,6 +712,15 @@ class QuickI18n {
         const text = this.t(key);
         if (el.placeholder !== text) {
           el.placeholder = text;
+        }
+      });
+
+      document.querySelectorAll('[data-quick-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-quick-i18n-title');
+        if (!key) return;
+        const text = this.t(key);
+        if (el.title !== text) {
+          el.title = text;
         }
       });
 

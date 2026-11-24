@@ -473,6 +473,9 @@ async function fileToCsvText(file) {
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
     spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:qaSpin 0.6s linear infinite;"><circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>',
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    arrowUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>',
+    arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+    reorder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16"/><path d="M4 7l3-3 3 3"/><path d="M17 20V4"/><path d="M14 17l3 3 3-3"/></svg>',
     chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
     settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
@@ -748,10 +751,21 @@ async function fileToCsvText(file) {
           </div>
 
           <div class="quick-add-tabs" id="quick-tabs">
-            <button class="quick-tab active" data-tab="price">${ICONS.edit}<span data-quick-i18n="quickmodal.tab_price">Fiyattan Hesapla</span></button>
-            <button class="quick-tab" data-tab="csv">${ICONS.file}<span data-quick-i18n="quickmodal.tab_csv">CSV İçe Aktar</span></button>
-            <button class="quick-tab" data-tab="bulk">${ICONS.list}<span data-quick-i18n="quickmodal.tab_bulk">Toplu Metin</span></button>
-            <button class="quick-tab qa-tab-ai" data-tab="ai">${ICONS.sparkle}<span data-quick-i18n="quickmodal.tab_ai">AI ile Ekle</span></button>
+            <button class="quick-tab active" data-tab="price" data-quick-i18n-title="quickmodal.tab_reorder_hint">${ICONS.edit}<span data-quick-i18n="quickmodal.tab_price">Fiyattan Hesapla</span></button>
+            <button class="quick-tab" data-tab="csv" data-quick-i18n-title="quickmodal.tab_reorder_hint">${ICONS.file}<span data-quick-i18n="quickmodal.tab_csv">CSV İçe Aktar</span></button>
+            <button class="quick-tab" data-tab="bulk" data-quick-i18n-title="quickmodal.tab_reorder_hint">${ICONS.list}<span data-quick-i18n="quickmodal.tab_bulk">Toplu Metin</span></button>
+            <button class="quick-tab qa-tab-ai" data-tab="ai" data-quick-i18n-title="quickmodal.tab_reorder_hint">${ICONS.sparkle}<span data-quick-i18n="quickmodal.tab_ai">AI ile Ekle</span></button>
+            <button type="button" class="qa-tab-order-btn" id="qa-tab-order-btn" aria-haspopup="true" aria-expanded="false" aria-controls="qa-tab-order-pop" data-quick-i18n-title="quickmodal.tab_order_title" title="Sekme sırası">${ICONS.reorder}</button>
+          </div>
+
+          <!-- Sekme sırası (initTabReorder): ↑/↓ ile taşı, ilk sekme açılışta seçili gelir -->
+          <div class="qa-tab-order-pop" id="qa-tab-order-pop" role="dialog" aria-labelledby="qa-tab-order-head" hidden>
+            <div class="qa-tab-order-head" id="qa-tab-order-head" data-quick-i18n="quickmodal.tab_order_title">Sekme sırası</div>
+            <ol class="qa-tab-order-list" id="qa-tab-order-list"></ol>
+            <div class="qa-tab-order-foot">
+              <span class="qa-tab-order-note" data-quick-i18n="quickmodal.tab_order_note">İlk sıradaki sekme açılışta seçili gelir.</span>
+              <button type="button" class="qa-tab-order-reset" id="qa-tab-order-reset" data-quick-i18n="quickmodal.tab_order_reset">Sıfırla</button>
+            </div>
           </div>
 
           <div class="quick-add-body">
@@ -1345,6 +1359,8 @@ async function fileToCsvText(file) {
     const payload = { v: 1, ts: readPrefsTs() || Date.now(), symbols: readCustomSymbols(), instruments: {} };
     const comm = buildCommPayload();
     if (comm) payload.comm = comm;
+    const tabs = readStoredTabOrder();
+    if (tabs) payload.tabs = tabs;
     function fill() { payload.instruments = {}; keys.forEach(function(k) { payload.instruments[k] = map[k]; }); }
     fill();
     while (keys.length && JSON.stringify(payload).length > 6000) { keys = keys.slice(Math.ceil(keys.length / 4)); fill(); }
@@ -1373,7 +1389,7 @@ async function fileToCsvText(file) {
         }
       });
     }
-    return { ts: Number(o.ts) || 0, symbols: symbols, instruments: instruments, comm: cleanRemoteComm(o.comm) };
+    return { ts: Number(o.ts) || 0, symbols: symbols, instruments: instruments, comm: cleanRemoteComm(o.comm), tabs: cleanTabOrder(o.tabs) };
   }
   // Pencere açılışında (en fazla dakikada bir): hesaptaki daha yeniyse al, yereldeki daha yeniyse hesaba yaz
   function pullQuickAddPrefs() {
@@ -1405,6 +1421,7 @@ async function fileToCsvText(file) {
               const unionProfiles = remote.comm.profiles.concat(localProfiles.filter(function(p) { return ids.indexOf(p.id) === -1; }));
               applyRemoteComm({ profiles: cleanCommProfiles(unionProfiles), active: remote.comm.active, auto: remote.comm.auto }, localHasComm());
             }
+            if (remote.tabs && !readStoredTabOrder()) { writeTabOrder(remote.tabs, true); applyTabOrder(); }
           }
           try { localStorage.setItem(PREFS_TS_KEY, String(Date.now())); } catch (e) {}
           await pushQuickAddPrefs();
@@ -1419,6 +1436,7 @@ async function fileToCsvText(file) {
           writeSymbolInstruments(merged);
           try { localStorage.setItem(PREFS_TS_KEY, String(remote.ts)); } catch (e) {}
           if (remote.comm) applyRemoteComm(remote.comm, false);
+          if (remote.tabs) { writeTabOrder(remote.tabs, true); applyTabOrder(); }
           const box = el('qa-sym-list');
           if (box && !box.hidden) renderSymbolList();
           // Hesaptaki kopyayı eski bir sürüm yazdıysa (komisyon yok) ve burada şablon varsa: onları da hesaba ekle
@@ -2086,6 +2104,7 @@ async function fileToCsvText(file) {
     closeDatePicker();
     resetForm();
     setSide('BUY');
+    applyTabOrder();
     switchTab('price');
     selectInstrument('forex', 100000);
     instrumentTouched = false;
@@ -2104,9 +2123,14 @@ async function fileToCsvText(file) {
     renderCommChips();
     syncCommissionWithLot(true);
 
+    // kullanıcının ilk sıraya koyduğu sekme açılır; fiyat sekmesi önce bir kez çizildiği için yükseklik kilidi ondan alınır
+    const firstTab = readTabOrder()[0];
+    if (firstTab !== 'price') switchTab(firstTab);
+
     setTimeout(function() {
-      const symbol = el('price-symbol');
-      if (symbol) symbol.focus();
+      const focusId = currentTab === 'price' ? 'price-symbol' : currentTab === 'bulk' ? 'quick-bulk-textarea' : currentTab === 'ai' ? 'qa-ai-text' : null;
+      const f = focusId && el(focusId);
+      if (f) f.focus();
     }, 100);
   }
 
@@ -2209,9 +2233,234 @@ async function fileToCsvText(file) {
     if (bulkBtn) bulkBtn.style.display = 'none';
   }
 
+  // ---- Sekme sırası: sürükle-bırak (dokunmatikte basılı tutup sürükle) ya da odaktaki sekmede Alt+←/→.
+  // Yerelde ww_qa_tab_order, hesapta user_profiles.quick_add_prefs.tabs. Pencere açılınca ilk sekme seçili gelir.
+  const TAB_KEYS = ['price', 'csv', 'bulk', 'ai'];
+  const TAB_ORDER_KEY = 'ww_qa_tab_order';
+  function cleanTabOrder(arr) {
+    if (!Array.isArray(arr)) return null;
+    const out = arr.filter(function(k, i) { return TAB_KEYS.indexOf(k) !== -1 && arr.indexOf(k) === i; });
+    if (!out.length) return null;
+    TAB_KEYS.forEach(function(k) { if (out.indexOf(k) === -1) out.push(k); });
+    return out;
+  }
+  function readStoredTabOrder() {
+    try { return cleanTabOrder(JSON.parse(localStorage.getItem(TAB_ORDER_KEY) || 'null')); } catch (e) { return null; }
+  }
+  function readTabOrder() { return readStoredTabOrder() || TAB_KEYS.slice(); }
+  function writeTabOrder(order, fromRemote) {
+    const clean = cleanTabOrder(order);
+    if (!clean) return;
+    try { localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(clean)); } catch (e) {}
+    if (!fromRemote) markPrefsChanged();
+  }
+  function domTabOrder() {
+    return Array.from(document.querySelectorAll('#quick-tabs .quick-tab')).map(function(b) { return b.dataset.tab; });
+  }
+  function applyTabOrder() {
+    const bar = el('quick-tabs');
+    if (!bar) return;
+    const end = el('qa-tab-order-btn');
+    readTabOrder().forEach(function(k) {
+      const b = bar.querySelector('.quick-tab[data-tab="' + k + '"]');
+      if (b) bar.insertBefore(b, end && end.parentNode === bar ? end : null);
+    });
+    renderTabOrderList();
+  }
+  // key sekmesini dir (-1 / +1) kadar taşı; sınırdaysa bir şey yapmaz
+  function moveTab(key, dir) {
+    const order = domTabOrder();
+    const i = order.indexOf(key);
+    const j = i + dir;
+    if (i === -1 || j < 0 || j >= order.length) return false;
+    order.splice(i, 1);
+    order.splice(j, 0, key);
+    writeTabOrder(order, false);
+    applyTabOrder();
+    return true;
+  }
+  function tabLabel(key) {
+    const b = document.querySelector('#quick-tabs .quick-tab[data-tab="' + key + '"]');
+    return b ? (b.querySelector('span') || b).textContent.trim() : key;
+  }
+  function renderTabOrderList() {
+    const list = el('qa-tab-order-list');
+    if (!list) return;
+    const order = domTabOrder();
+    list.innerHTML = order.map(function(k, i) {
+      const b = document.querySelector('#quick-tabs .quick-tab[data-tab="' + k + '"]');
+      const icon = b && b.querySelector('svg') ? b.querySelector('svg').outerHTML : '';
+      const name = escapeHtml(tabLabel(k));
+      return '<li class="qa-tab-order-row' + (i === 0 ? ' is-first' : '') + '" data-key="' + k + '"' + (i === 0 ? ' title="' + escapeHtml(t('quickmodal.tab_order_default')) + '"' : '') + '>' +
+        '<span class="qa-tab-order-num">' + (i + 1) + '</span>' +
+        '<span class="qa-tab-order-ic">' + icon + '</span>' +
+        '<span class="qa-tab-order-name">' + name + '</span>' +
+        '<button type="button" class="qa-tab-order-mv" data-dir="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="' + escapeHtml(t('quickmodal.tab_order_up', { name: tabLabel(k) })) + '">' + ICONS.arrowUp + '</button>' +
+        '<button type="button" class="qa-tab-order-mv" data-dir="1"' + (i === order.length - 1 ? ' disabled' : '') + ' aria-label="' + escapeHtml(t('quickmodal.tab_order_down', { name: tabLabel(k) })) + '">' + ICONS.arrowDown + '</button>' +
+        '</li>';
+    }).join('');
+  }
+  function tabOrderPopOpen() { const p = el('qa-tab-order-pop'); return !!(p && !p.hidden); }
+  function closeTabOrderPop(focusBtn) {
+    const p = el('qa-tab-order-pop');
+    const b = el('qa-tab-order-btn');
+    if (!p || p.hidden) return;
+    p.hidden = true;
+    if (b) { b.setAttribute('aria-expanded', 'false'); b.classList.remove('is-open'); if (focusBtn) b.focus(); }
+  }
+  function openTabOrderPop() {
+    const p = el('qa-tab-order-pop');
+    const b = el('qa-tab-order-btn');
+    const modal = document.querySelector('.quick-add-modal');
+    const bar = el('quick-tabs');
+    if (!p || !b || !modal || !bar) return;
+    renderTabOrderList();
+    // modalın içinde, sekme çubuğunun hemen altında sağa yaslı (çubuk mobilde yatay kaydığı için onun içine konmaz)
+    const mr = modal.getBoundingClientRect();
+    const br = bar.getBoundingClientRect();
+    p.style.top = Math.round(br.bottom - mr.top + modal.scrollTop + 6) + 'px';
+    p.hidden = false;
+    b.setAttribute('aria-expanded', 'true');
+    b.classList.add('is-open');
+    const first = p.querySelector('.qa-tab-order-mv:not([disabled])');
+    if (first) first.focus();
+  }
+  function saveDomTabOrder(before) {
+    const now = domTabOrder();
+    if (now.join() !== before.join()) writeTabOrder(now, false);
+  }
+  function initTabReorder() {
+    const bar = el('quick-tabs');
+    if (!bar || bar.dataset.reorder) return;
+    bar.dataset.reorder = '1';
+    let drag = null;          // { btn, id, x, y, touch, active, timer, before }
+    let swallowClick = false; // sürükleme bitince bıraktığın sekmeye tıklanmış sayılmasın
+
+    function stop(save) {
+      if (!drag) return;
+      clearTimeout(drag.timer);
+      if (drag.active) {
+        drag.btn.classList.remove('is-dragging');
+        bar.classList.remove('is-reordering');
+        try { drag.btn.releasePointerCapture(drag.id); } catch (e) {}
+        if (save) { saveDomTabOrder(drag.before); renderTabOrderList(); }
+        swallowClick = true;
+        setTimeout(function() { swallowClick = false; }, 0);
+      }
+      drag = null;
+    }
+    function begin() {
+      drag.active = true;
+      drag.before = domTabOrder();
+      drag.btn.classList.add('is-dragging');
+      bar.classList.add('is-reordering');
+      try { drag.btn.setPointerCapture(drag.id); } catch (e) {}
+      if (drag.touch && navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
+    }
+    bar.addEventListener('pointerdown', function(e) {
+      const btn = e.target.closest('.quick-tab');
+      if (!btn || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      stop(false);
+      drag = { btn: btn, id: e.pointerId, x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse', active: false, timer: null, before: null };
+      if (drag.touch) drag.timer = setTimeout(function() { if (drag && !drag.active) begin(); }, 350);
+    });
+    bar.addEventListener('pointermove', function(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      if (!drag.active) {
+        // dokunmatikte basılı tutmadan kaydırma: sekme çubuğunun yatay kaymasıdır, sürükleme değil
+        if (drag.touch) { if (Math.abs(dx) > 8 || Math.abs(dy) > 8) stop(false); return; }
+        if (Math.abs(dx) < 6) return;
+        begin();
+      }
+      e.preventDefault();
+      const others = Array.from(bar.querySelectorAll('.quick-tab')).filter(function(b) { return b !== drag.btn; });
+      let ref = null;
+      for (let i = 0; i < others.length; i++) {
+        const r = others[i].getBoundingClientRect();
+        if (e.clientX < r.left + r.width / 2) { ref = others[i]; break; }
+      }
+      const end = el('qa-tab-order-btn');
+      const target = ref || (end && end.parentNode === bar ? end : null);
+      if (target !== drag.btn.nextElementSibling) bar.insertBefore(drag.btn, target);
+    });
+    bar.addEventListener('pointerup', function(e) { if (drag && e.pointerId === drag.id) stop(true); });
+    bar.addEventListener('pointercancel', function(e) { if (drag && e.pointerId === drag.id) stop(true); });
+    // sürükleme başladıysa sayfanın/çubuğun kaymasını engelle (dokunmatik)
+    bar.addEventListener('touchmove', function(e) { if (drag && drag.active && e.cancelable) e.preventDefault(); }, { passive: false });
+    bar.addEventListener('contextmenu', function(e) { if (e.target.closest('.quick-tab')) e.preventDefault(); });
+    bar.addEventListener('click', function(e) {
+      if (swallowClick) { e.stopPropagation(); e.preventDefault(); swallowClick = false; }
+    }, true);
+    bar.addEventListener('keydown', function(e) {
+      const btn = e.target.closest('.quick-tab');
+      if (!btn || !e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+      e.preventDefault();
+      moveTab(btn.dataset.tab, e.key === 'ArrowLeft' ? -1 : 1);
+      btn.focus();
+    });
+
+    // Sekme sırası butonu + listesi
+    const orderBtn = el('qa-tab-order-btn');
+    const pop = el('qa-tab-order-pop');
+    if (orderBtn && pop) {
+      orderBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (tabOrderPopOpen()) closeTabOrderPop(false); else openTabOrderPop();
+      });
+      pop.addEventListener('click', function(e) {
+        const mv = e.target.closest('.qa-tab-order-mv');
+        if (mv && !mv.disabled) {
+          const row = mv.closest('.qa-tab-order-row');
+          const key = row && row.dataset.key;
+          const dir = Number(mv.dataset.dir);
+          if (key && moveTab(key, dir)) {
+            // odak aynı sekmenin aynı yöndeki okunda kalsın (sınıra geldiyse diğer okuna geç)
+            const nrow = pop.querySelector('.qa-tab-order-row[data-key="' + key + '"]');
+            const same = nrow && nrow.querySelector('.qa-tab-order-mv[data-dir="' + dir + '"]');
+            const other = nrow && nrow.querySelector('.qa-tab-order-mv[data-dir="' + (-dir) + '"]');
+            (same && !same.disabled ? same : other)?.focus();
+          }
+          return;
+        }
+        if (e.target.closest('#qa-tab-order-reset')) {
+          writeTabOrder(TAB_KEYS.slice(), false);
+          applyTabOrder();
+        }
+      });
+      document.addEventListener('pointerdown', function(e) {
+        if (!tabOrderPopOpen()) return;
+        if (e.target.closest('#qa-tab-order-pop') || e.target.closest('#qa-tab-order-btn')) return;
+        closeTabOrderPop(false);
+      }, true);
+    }
+  }
+
+  // AI sekmesindeki büyük simge: kullanıcının seçtiği AI koçunun avatarı (ai-coach.js / ai-coach.css, her sayfada yüklü);
+  // koç betiği yoksa eski parıltı simgesi kalır
+  function renderAiCoachIcon() {
+    const box = document.querySelector('#qa-ai-drop .quick-import-icon');
+    if (!box) return;
+    let html = null;
+    try {
+      const api = window.WwAiCoach;
+      if (api && typeof api.coachAv === 'function') html = api.coachAv(46);
+    } catch (e) { html = null; }
+    if (html) { box.innerHTML = html; box.classList.add('qa-ai-coach-icon'); }
+    else if (box.classList.contains('qa-ai-coach-icon')) { box.innerHTML = ICONS.sparkle; box.classList.remove('qa-ai-coach-icon'); }
+  }
+
   function switchTab(tab) {
+    // Sekmeler arası aynı boy: fiyat sekmesinden çıkarken modalın o anki yüksekliği kilitlenir, fiyata dönünce serbest
+    const modal = document.querySelector('.quick-add-modal');
+    if (modal) {
+      if (tab === 'price') modal.style.height = '';
+      else if (currentTab === 'price' && modal.offsetHeight > 0) modal.style.height = modal.offsetHeight + 'px';
+    }
     currentTab = tab;
     closeDatePicker();
+    closeTabOrderPop(false);
 
     qsa('.quick-tab').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -2232,7 +2481,7 @@ async function fileToCsvText(file) {
     syncImportBtn();
     if (bulkBtn) bulkBtn.style.display = (tab === 'bulk') ? '' : 'none';
     if (aiBtn) aiBtn.style.display = (tab === 'ai') ? '' : 'none';
-    if (tab === 'ai') { syncAiBtn(); showAiUsage(); }
+    if (tab === 'ai') { syncAiBtn(); showAiUsage(); renderAiCoachIcon(); }
 
     const error = el('quick-add-error');
     if (error) error.classList.remove('active');
@@ -3312,6 +3561,7 @@ async function fileToCsvText(file) {
     qsa('.quick-tab').forEach(function(btn) {
       btn.addEventListener('click', function() { switchTab(this.dataset.tab); });
     });
+    initTabReorder();
 
     const buyBtn = document.getElementById('price-side-buy');
     const sellBtn = document.getElementById('price-side-sell');
@@ -3413,6 +3663,11 @@ async function fileToCsvText(file) {
 
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
+        if (tabOrderPopOpen()) {
+          e.stopPropagation();
+          closeTabOrderPop(true);
+          return;
+        }
         if (datePickerState.isOpen) {
           e.stopPropagation();
           closeDatePicker();
