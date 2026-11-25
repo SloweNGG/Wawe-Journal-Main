@@ -5,10 +5,11 @@
 // ============================================================
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveVisuals, buildVisual, MAX_VISUALS } from '../supabase/functions/_shared/visuals.ts';
+import { readFileSync } from 'node:fs';
+import { resolveVisuals, buildVisual, MAX_VISUALS, LEGACY_KINDS } from '../supabase/functions/_shared/visuals.ts';
 import { takeSseEvents, createStepBuilder, createLeakGuard, leakedReasoning } from '../supabase/functions/_shared/gemini-stream.ts';
-import { COACH_KNOWLEDGE, VISUAL_DATASETS, VISUAL_METRICS, answerLength, answerLengthRule } from '../supabase/functions/_shared/coach-knowledge.ts';
-import { summarizeTrades, equityCurve } from '../supabase/functions/_shared/trade-summary.ts';
+import { COACH_KNOWLEDGE, VISUAL_DATASETS, VISUAL_METRICS, SHARE_DATASETS, answerLength, answerLengthRule } from '../supabase/functions/_shared/coach-knowledge.ts';
+import { summarizeTrades, equityCurve, chartSeries } from '../supabase/functions/_shared/trade-summary.ts';
 
 const S = [{ id: 's1', name: 'Breakout' }, { id: 's2', name: 'Scalp' }];
 const rows = [];
@@ -19,6 +20,7 @@ for (let i = 0; i < 40; i++) {
 }
 const summary = summarizeTrades(rows, S, { tz: 'UTC' });
 const eq = equityCurve(rows);
+const ser = chartSeries(rows, 'UTC', Date.UTC(2026, 10, 25, 12));
 
 describe('visuals', () => {
   it('kpis, equity and bars come from the summary, not from the model', () => {
@@ -55,6 +57,11 @@ describe('visuals', () => {
     assert.match(r.text, /Text  inline\./);                       // the inline directive is removed, the sentence stays
     assert.match(r.text, /\[\[viz:bar:by_symbol:net\]\]\n\[\[viz:equity\]\]\n+End\./);     // a dropped line may leave a blank line (not rendered)
   });
+  it('a dataset name with digits resolves (by_month_last_12 was dropped by a letters-only pattern)', () => {
+    const r = resolveVisuals('A\n[[viz:bar:by_month_last_12:net]]\nB', summary, eq);
+    assert.deepEqual(Object.keys(r.visuals), ['bar:by_month_last_12:net']);
+    assert.equal(r.text, 'A\n[[viz:bar:by_month_last_12:net]]\nB');
+  });
   it('the same chart twice keeps both lines with one data entry', () => {
     const r = resolveVisuals('[[viz:kpis]]\nx\n[[viz:kpis]]', summary, eq);
     assert.equal(r.text, '[[viz:kpis]]\nx\n[[viz:kpis]]'); assert.equal(Object.keys(r.visuals).length, 1);
@@ -62,7 +69,92 @@ describe('visuals', () => {
   it('the knowledge base only offers datasets and metrics that exist', () => {
     for (const d of VISUAL_DATASETS) assert.ok(d in summary, d + ' missing in the summary');
     for (const m of VISUAL_METRICS) assert.ok(m in summary.by_strategy[0], m + ' missing in a bucket');
-    for (const m of COACH_KNOWLEDGE.matchAll(/\[\[viz:([a-z_:]+)\]\]/g)) assert.ok(buildVisual(m[1], summary, eq), 'example ' + m[1] + ' does not resolve');
+    for (const m of COACH_KNOWLEDGE.matchAll(/\[\[viz:([a-z0-9_:]+)\]\]/g)) assert.ok(buildVisual(m[1], summary, eq, ser), 'example ' + m[1] + ' does not resolve');
+    for (const d of SHARE_DATASETS) assert.equal(!!buildVisual('share:' + d, summary, eq, ser), rows.length && (Array.isArray(summary[d]) ? summary[d] : Object.keys(summary[d])).length >= 2, 'share:' + d);
+  });
+  it('winloss: counts, payoff and the break-even win rate come from the totals', () => {
+    const w = buildVisual('winloss', summary, eq, ser);
+    const t = summary.totals;
+    assert.equal(w.kind, 'winloss'); assert.equal(w.wins, t.wins); assert.equal(w.losses, t.losses); assert.equal(w.breakeven, 0);
+    assert.equal(w.avg_win, 60); assert.equal(w.avg_loss, -80);
+    assert.equal(w.breakeven_win_rate, 57.1);                           // 80 / (60 + 80)
+    assert.equal(buildVisual('winloss', summarizeTrades([], []), [], null), null);
+  });
+  it('share: biggest buckets plus one "other" slice that keeps the totals', () => {
+    const many = rows.map((r, i) => ({ ...r, symbol: 'S' + (i % 8) }));
+    const s8 = summarizeTrades(many, S, { tz: 'UTC' });
+    const v = buildVisual('share:by_symbol', s8, [], null);
+    assert.equal(v.items.length, 6); assert.equal(v.items[5].label, '(other)');
+    assert.equal(v.items.reduce((a, x) => a + x.trades, 0), s8.totals.trades);
+    assert.equal(Math.round(v.items.reduce((a, x) => a + x.net, 0) * 100) / 100, s8.totals.net);
+    const d = buildVisual('share:by_direction', summary, eq, ser);
+    assert.equal(d, null);                                              // one bucket (all LONG): nothing to compare
+    assert.equal(buildVisual('share:by_planet', summary, eq, ser), null);
+    const wd = buildVisual('share:by_weekday', summary, eq, ser);
+    assert.deepEqual(wd.items.map((x) => x.label), summary.by_weekday.map((x) => x.key));   // weekdays keep their order
+  });
+  it('heatmap: weekday × session cells add up to the closed trades', () => {
+    const h = buildVisual('heatmap', summary, eq, ser);
+    assert.equal(h.kind, 'heatmap');
+    assert.deepEqual(h.cols, ['london', 'london_ny_overlap', 'new_york']);   // entries 08-17 UTC
+    assert.equal(h.cells.reduce((a, c) => a + c.trades, 0), 40);
+    assert.equal(Math.round(h.cells.reduce((a, c) => a + c.net, 0) * 100) / 100, summary.totals.net);
+    assert.equal(buildVisual('heatmap', summary, eq, null), null);
+  });
+  it('calendar: six Monday-first weeks ending at the last trade when nothing is recent', () => {
+    const c = buildVisual('calendar', summary, eq, ser);
+    assert.equal(c.kind, 'calendar'); assert.equal(c.days_n, 42);
+    assert.equal(new Date(c.start + 'T00:00:00Z').getUTCDay(), 1);    // a Monday
+    const last = ser.daily[ser.daily.length - 1].d;
+    assert.ok(c.days.some((d) => d.d === last));
+    assert.ok(c.days.every((d) => d.d >= c.start));
+    // a trade yesterday: the calendar ends this week
+    const now = Date.UTC(2026, 10, 25, 12), recent = chartSeries([...rows, { ...rows[0], trade_date: '2026-11-24T09:00:00Z', exit_date: '2026-11-24T10:00:00Z' }], 'UTC', now);
+    const c2 = buildVisual('calendar', summary, eq, recent);
+    assert.equal(c2.start, '2026-10-19'); assert.ok(c2.days.some((d) => d.d === '2026-11-24'));
+  });
+  it('calendar days follow the member time zone', () => {
+    const late = [{ ...rows[0], trade_date: '2026-11-23T22:30:00Z', exit_date: '2026-11-23T22:45:00Z', pnl: 50 }];
+    assert.equal(chartSeries(late, 'UTC', Date.UTC(2026, 10, 25)).daily[0].d, '2026-11-23');
+    assert.equal(chartSeries(late, 'Europe/Istanbul', Date.UTC(2026, 10, 25)).daily[0].d, '2026-11-24');
+  });
+  it('drawdown: never above zero, the deepest point kept when thinned', () => {
+    const d = buildVisual('drawdown', summary, eq, ser);
+    assert.ok(d.points.every((x) => x.v <= 0)); assert.ok(d.max.v < 0);
+    assert.equal(d.max.v, -summary.risk.max_drawdown);
+    const many = []; for (let i = 0; i < 500; i++) many.push({ ...rows[0], pnl: i === 250 ? -500 : 10, trade_date: new Date(Date.UTC(2025, 0, 1) + i * 864e5).toISOString(), exit_date: null });
+    const thin = chartSeries(many, 'UTC');
+    assert.ok(thin.drawdown.length <= 81);
+    assert.equal(Math.min(...thin.drawdown.map((x) => x.v)), -500);
+    assert.equal(thin.drawdown[thin.drawdown.length - 1].v, 0);      // recovered: where the account is now
+    const up = chartSeries(rows.map((r) => ({ ...r, pnl: 10 })), 'UTC');
+    assert.equal(buildVisual('drawdown', summary, eq, up), null);       // never below a peak: nothing to draw
+  });
+  it('streak: the last 30 closed live trades in order', () => {
+    const v = buildVisual('streak', summary, eq, ser);
+    assert.equal(v.items.length, 30);
+    assert.equal(v.items[29].v, rows[39].pnl);
+    assert.ok(v.items.every((x, i) => !i || x.t >= v.items[i - 1].t));
+    const bt = chartSeries([...rows, { ...rows[39], pnl: 9999, platform_source: 'backtest', exit_date: '2027-01-01T00:00:00Z' }], 'UTC');
+    assert.ok(!bt.last.some((x) => x.v === 9999));
+    assert.equal(buildVisual('streak', summary, eq, chartSeries(rows.slice(0, 4), 'UTC')), null);
+  });
+  it('an older panel (no viz: 2) gets only the kinds it can draw', () => {
+    const r = resolveVisuals('A\n[[viz:winloss]]\n[[viz:kpis]]\n[[viz:share:by_symbol]]\n[[viz:bar:by_symbol:net]]', summary, eq, ser, LEGACY_KINDS);
+    assert.deepEqual(Object.keys(r.visuals), ['kpis', 'bar:by_symbol:net']);
+    assert.ok(!/winloss|share/.test(r.text));
+  });
+  it('the panel sends viz: 2 and knows every kind the server builds', () => {
+    const src = readFileSync('public/components/ai-coach/ai-coach.js', 'utf8');
+    assert.match(src, /currency: currency\(\), viz: 2 \}/);
+    const draw = src.slice(src.indexOf('var VIZ_DRAW = {'), src.indexOf('};', src.indexOf('var VIZ_DRAW = {')));
+    for (const k of ['kpis', 'bar', 'equity', 'drawdown', 'winloss', 'share', 'heatmap', 'calendar', 'streak']) assert.match(draw, new RegExp('\\b' + k + '\\b'), k);
+  });
+  it('resolveVisuals draws the new kinds with the series', () => {
+    const r = resolveVisuals('A\n[[viz:winloss]]\nB\n[[viz:heatmap]]\n[[viz:streak]]', summary, eq, ser);
+    assert.deepEqual(Object.keys(r.visuals), ['winloss', 'heatmap', 'streak']);
+    const none = resolveVisuals('A\n[[viz:heatmap]]\nB', summary, eq);   // no series: the line goes
+    assert.equal(none.text, 'A\n\nB'); assert.deepEqual(none.visuals, {});
   });
   it('equity curve is thinned to at most 80 points, first and last kept, backtest and open trades left out', () => {
     const many = []; for (let i = 0; i < 500; i++) many.push({ ...rows[0], pnl: 1, trade_date: new Date(Date.UTC(2025, 0, 1) + i * 864e5).toISOString(), exit_date: null });

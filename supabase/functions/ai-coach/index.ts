@@ -38,9 +38,9 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
-import { summarizeTrades, safeTimeZone, equityCurve } from '../_shared/trade-summary.ts';
+import { summarizeTrades, safeTimeZone, equityCurve, chartSeries } from '../_shared/trade-summary.ts';
 import { COACH_KNOWLEDGE, answerLength, answerLengthRule, currencySymbol, currencyRule, type AnswerLength } from '../_shared/coach-knowledge.ts';
-import { resolveVisuals } from '../_shared/visuals.ts';
+import { resolveVisuals, LEGACY_KINDS } from '../_shared/visuals.ts';
 import { createStepBuilder, takeSseEvents, createLeakGuard } from '../_shared/gemini-stream.ts';
 import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
 import { loadPropContexts } from '../_shared/prop-context.ts';
@@ -586,7 +586,9 @@ serve(async (req: Request) => {
         if (lastStatus === 429 || lastStatus === 503) return { ok: false, code: 'BUSY', message: 'The AI service is busy. Try again in a minute.', status: 503 };
         return { ok: false, code: 'UPSTREAM', message: 'The AI service could not answer. Try again shortly.', status: 502 };
       }
-      const rv = resolveVisuals(got.text, context, equity);
+      // a panel that sends viz >= 2 draws every chart kind; an older one (a tab opened before its update) only the first three
+      const rv = Number(body?.viz) >= 2 ? resolveVisuals(got.text, context, equity, chartSeries(loaded.trades, tz))
+        : resolveVisuals(got.text, context, equity, null, LEGACY_KINDS);
       const rc = resolveCommitments(rv.text, Date.now(), tz);         // the "I promise" card: absolute day, never the model's
       const ra = resolveActions(rc.text);                           // cards the member confirms (strategy, plan, goals)
       const reply = ra.text, visuals: Record<string, unknown> = { ...rv.visuals, ...rc.visuals, ...ra.visuals };

@@ -317,3 +317,50 @@ export function equityCurve(rows: TradeRow[], maxPoints = 80): { t: string; v: n
   for (let i = 0; i < maxPoints; i++) out.push(pts[Math.round(i * step)]);
   return out;
 }
+
+// Raw series behind the coach's other charts (visuals.ts), from the closed live trades: the result of each local day (by
+// closing time), a weekday × session grid (by entry, like by_weekday / by_session_utc), the last `lastN` trades in order and
+// the drawdown ("underwater") curve. For the charts only; not sent to the model.
+export interface ChartSeries {
+  today: string;
+  daily: { d: string; v: number; n: number }[];
+  grid: { wd: string; s: string; v: number; n: number; w: number; l: number }[];
+  last: { t: string; s: string; v: number; r: number | null }[];
+  drawdown: { t: string; v: number }[];
+}
+export function chartSeries(rows: TradeRow[], tzIn?: string, now = Date.now(), lastN = 30, maxPoints = 80): ChartSeries {
+  const tz = safeTimeZone(tzIn);
+  const closed = rows.filter((t) => t && t.platform_source !== 'backtest' && isClosed(t) && Number.isFinite(endTime(t)) && Number.isFinite(num(t.pnl)))
+    .sort((a, b) => endTime(a) - endTime(b));
+  const day = new Map<string, { v: number; n: number }>(), cell = new Map<string, { wd: string; s: string; v: number; n: number; w: number; l: number }>();
+  for (const t of closed) {
+    const p = num(t.pnl), d = zoneParts(endTime(t), tz).day, a = day.get(d) || { v: 0, n: 0 };
+    a.v += p; a.n++; day.set(d, a);
+    const start = Date.parse(t.trade_date);
+    if (!Number.isFinite(start)) continue;
+    const wd = zoneParts(start, tz).weekday, s = session(start).split(' ')[0], k = wd + '|' + s;
+    const c = cell.get(k) || { wd, s, v: 0, n: 0, w: 0, l: 0 };
+    c.v += p; c.n++; if (p > 0) c.w++; else if (p < 0) c.l++;
+    cell.set(k, c);
+  }
+  // underwater curve: distance below the running peak after each trade; thinned to the deepest point of each step
+  let eq = 0, peak = 0;
+  const dd = closed.map((t) => { eq += num(t.pnl); peak = Math.max(peak, eq); return { t: new Date(endTime(t)).toISOString().slice(0, 10), v: Math.round((eq - peak) * 100) / 100 }; });
+  let drawdown = dd;
+  if (dd.length > maxPoints) {
+    drawdown = [];
+    for (let b = 0; b < maxPoints; b++) {
+      const from = Math.floor(b * dd.length / maxPoints), to = Math.floor((b + 1) * dd.length / maxPoints);
+      let m = from; for (let i = from + 1; i < to; i++) if (dd[i].v < dd[m].v) m = i;
+      drawdown.push(dd[m]);
+    }
+    if (drawdown[drawdown.length - 1] !== dd[dd.length - 1]) drawdown.push(dd[dd.length - 1]);   // where the account is now
+  }
+  return {
+    today: zoneParts(now, tz).day,
+    daily: [...day.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([d, x]) => ({ d, v: Math.round(x.v * 100) / 100, n: x.n })),
+    grid: [...cell.values()].map((c) => ({ ...c, v: Math.round(c.v * 100) / 100 })),
+    last: closed.slice(-lastN).map((t) => { const r = rMultiple(t); return { t: new Date(endTime(t)).toISOString().slice(0, 10), s: String(t.symbol || '?').toUpperCase(), v: Math.round(num(t.pnl) * 100) / 100, r: r == null ? null : Math.round(r * 100) / 100 }; }),
+    drawdown,
+  };
+}

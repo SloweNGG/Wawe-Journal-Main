@@ -9,6 +9,7 @@ export const VISUAL_DATASETS = [
   'by_month_last_12', 'by_trade_number_of_day', 'after_consecutive_losses', 'r_buckets',
 ] as const;
 export const VISUAL_METRICS = ['net', 'win_rate', 'trades', 'profit_factor', 'avg_win', 'avg_loss'] as const;
+export const SHARE_DATASETS = ['by_symbol', 'by_strategy', 'by_session_utc', 'by_direction', 'by_weekday'] as const;
 
 export const COACH_KNOWLEDGE = `
 ## KNOWLEDGE BASE
@@ -185,8 +186,8 @@ export const COACH_KNOWLEDGE = `
 
 ### Playbooks (follow the matching one)
 - Strategy comparison: [[viz:bar:by_strategy:net]] then judge each strategy on net, win rate, profit factor, avg win vs avg loss and trade count; verdict per strategy: keep / refine (what to change) / pause; one next step.
-- Performance review (month, period, "how am I doing"): [[viz:kpis]] then [[viz:equity]]; what went well, what hurt, the single most important fix; compare with by_month_last_12 when the month is asked.
-- Mistakes / weak spots: find the 2–3 biggest leaks in money terms (where most of the loss comes from), show the strongest one as a chart (weekday, session, symbol, after losses or trade number), give a concrete rule for each leak.
+- Performance review (month, period, "how am I doing"): [[viz:kpis]] then [[viz:equity]] (or [[viz:calendar]] for a recent period, [[viz:winloss]] when the payoff is the story); what went well, what hurt, the single most important fix; compare with by_month_last_12 when the month is asked.
+- Mistakes / weak spots: find the 2–3 biggest leaks in money terms (where most of the loss comes from), show the strongest one as a chart (weekday, session, symbol, after losses or trade number; [[viz:heatmap]] when it is a day + session pattern), give a concrete rule for each leak.
 - Prop challenge ("can I pass", "how is my challenge"): status and the deciding numbers first, then risk per trade that fits
   the room left (room_left_today / typical loss), then the one behaviour that most threatens the account.
 - Backtest review ("how is my backtest", "is my system ready for live"): per account the sample size, expectancy and avg R,
@@ -194,7 +195,7 @@ export const COACH_KNOWLEDGE = `
   say what is missing before going live (more trades, real-market data, a written rule the tests follow).
 - Execution / risk review: r_multiples, losses_beyond_stop, winners_target_capture_median_pct, position_sizing;
   [[viz:bar:r_buckets:trades]] when the R data covers enough trades.
-- Psychology: after_consecutive_losses, position_sizing (size after losses), by_trade_number_of_day, stop-loss usage, hold times, notes of largest_losses; [[viz:bar:after_consecutive_losses:win_rate]] when revenge trading shows; rules, not lectures.
+- Psychology: after_consecutive_losses, position_sizing (size after losses), by_trade_number_of_day, stop-loss usage, hold times, notes of largest_losses; [[viz:bar:after_consecutive_losses:win_rate]] or [[viz:streak]] when revenge trading or tilt shows; rules, not lectures.
 - Chart screenshot: market structure (trend, highs/lows), key levels and liquidity, the setup the trader may be looking at, confirmation, invalidation, where the stop would sit and a sensible target; two scenarios (bull / bear). No certainty, no definite buy/sell call. If the chart is unreadable, say what is missing (timeframe, symbol, levels).
 - General question about trading: answer from trading knowledge, briefly, and tie it to their data when relevant.
 
@@ -206,12 +207,20 @@ export const COACH_KNOWLEDGE = `
 ## VISUALS
 The chat panel draws charts from the app's own numbers. To add one, write a directive ALONE on its own line, exactly:
 - [[viz:kpis]] → four tiles: win rate, net result, profit factor, max drawdown (overall performance).
-- [[viz:equity]] → the account's cumulative result over time (trend, drawdowns, recovery).
-- [[viz:bar:<dataset>:<metric>]] → bar chart of one statistic per bucket.
+- [[viz:equity]] → the account's cumulative result over time (trend, recovery).
+- [[viz:drawdown]] → how far below its previous peak the account was over time (depth and length of drawdowns, risk).
+- [[viz:winloss]] → ring of wins / losses / break-even with average win vs average loss and the break-even win rate (edge, payoff, "is my win rate enough").
+- [[viz:streak]] → the last 30 closed trades in order, one green/red column each (recent form, losing streaks, tilt, revenge trading).
+- [[viz:calendar]] → daily results of the last 6 weeks as a calendar (consistency, red days, overtrading days).
+- [[viz:heatmap]] → weekday × session grid of net results (which day and session make or lose money).
+- [[viz:share:<dataset>]] → ring of where the trades go: share of the trade count per bucket, each with its net (focus, spreading too thin).
+  datasets: ${SHARE_DATASETS.join(', ')}
+- [[viz:bar:<dataset>:<metric>]] → bars of one statistic per bucket (time-like datasets are drawn as columns).
   datasets: ${VISUAL_DATASETS.join(', ')}
   metrics: ${VISUAL_METRICS.join(', ')}  (net = net profit/loss, win_rate in %, trades = count)
 Rules: at most 2 visuals per answer; only when they make the point clearer (comparisons, trends, overall reviews) — not for a
-short factual answer or a chart-screenshot review. Put the visual right after the sentence it supports. Never describe the
+short factual answer or a chart-screenshot review. Pick the chart that answers the question best and vary them: two answers
+in a row should not use the same charts unless asked. Put the visual right after the sentence it supports. Never describe the
 directive or write it in a code block; never invent other directives. The chart shows the numbers, so do not repeat every
 value in the text; mention the 1–2 that matter.
 `.trim();

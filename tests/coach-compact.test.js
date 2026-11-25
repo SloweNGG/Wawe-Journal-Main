@@ -378,7 +378,8 @@ describe('coach-compact: the [App context] line', () => {
     assert.match(src, /const userContent: any\[\] = \[\{ type: 'text', text: turn \}\];/);  // Gemini
     assert.match(src, /chatMessages\(system, msgs, turn, image\)/);                       // OpenRouter
     assert.match(src, /role: 'user', content: message, had_image/);                      // ai_messages: never the App context
-    assert.match(src, /resolveVisuals\(got\.text, context, equity\)/);                    // charts read the whole context
+    assert.match(src, /resolveVisuals\(got\.text, context, equity, chartSeries\(loaded\.trades, tz\)\)/);
+    assert.match(src, /resolveVisuals\(got\.text, context, equity, null, LEGACY_KINDS\)/);           // older panels: no new kinds                    // charts read the whole context
     assert.match(src, /data: dataJson,/);                                                 // the token log measures what was sent
   });
 });

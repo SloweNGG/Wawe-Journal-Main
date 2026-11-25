@@ -212,7 +212,7 @@ describe('the coach writes money in the currency the app shows', async () => {
   });
   it('the panel sends its symbol; the function falls back to the profile, then $', () => {
     const panel = fs.readFileSync('public/components/ai-coach/ai-coach.js', 'utf8');
-    assert.match(panel, /tone: cc\.tone, currency: currency\(\) \};/);
+    assert.match(panel, /tone: cc\.tone, currency: currency\(\), viz: 2 \};/);
     const src = fs.readFileSync('supabase/functions/ai-coach/index.ts', 'utf8');
     assert.match(src, /const bodyCurrency = currencySymbol\(body\?\.currency\);/);
     assert.match(src, /currency = currencySymbol\(prof\?\.preferred_currency\) \|\| '\$';/);

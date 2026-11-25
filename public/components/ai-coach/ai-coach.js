@@ -842,7 +842,7 @@
   }
   // model text: markdown chunks with charts in place of their [[viz:...]] lines (data from the server, never the model).
   // While streaming, a directive line shows a placeholder and a half-written one at the end is hidden.
-  var VIZ_LINE = /^\s*\[\[viz:([a-z_:]+)\]\]\s*$/;
+  var VIZ_LINE = /^\s*\[\[viz:([a-z0-9_:]+)\]\]\s*$/;   // digits: by_month_last_12
   function fillModel(body, m) {
     body.innerHTML = '';
     var lines = String(m.content || '').split('\n'), chunk = [];
@@ -867,8 +867,9 @@
       if (!v) { chunk.push(ln); return; }
       flush();
       var data = m.visuals && m.visuals[v[1]];
-      if (data) body.appendChild(renderViz(data));
-      else if (m.streaming) body.appendChild(el('div', 'wwai-viz wwai-viz-wait'));
+      var node = data ? renderViz(data, m, v[1]) : null;
+      if (node) body.appendChild(node);
+      else if (m.streaming && !data) body.appendChild(el('div', 'wwai-viz wwai-viz-wait'));
     });
     flush();
   }
@@ -996,7 +997,8 @@
     }
     session().then(function (s) {
       if (!s) throw Object.assign(new Error('session'), { code: 'UNAUTHORIZED' });
-      var cc = coach(), body = { message: text, lang: lang(), tz: tz(), stream: true, detail: detail(), coach: cc.id, tone: cc.tone, currency: currency() };
+      // viz 2: this panel draws every chart kind of renderViz (the server keeps older panels to kpis / equity / bar)
+      var cc = coach(), body = { message: text, lang: lang(), tz: tz(), stream: true, detail: detail(), coach: cc.id, tone: cc.tone, currency: currency(), viz: 2 };
       var mtv = monthlyTarget(actionJournal()); if (mtv) body.monthlyTarget = mtv;
       if (S.conversationId) body.conversationId = S.conversationId;
       else { var jid = currentJournal(); if (jid) body.journalId = jid; S.convJournal = jid || null; }
@@ -1110,6 +1112,12 @@
   function vizTitle(v) {
     if (v.kind === 'kpis') return _t('aiCoach.viz.kpis', 'Genel performans');
     if (v.kind === 'equity') return _t('aiCoach.viz.equity', 'Bakiye eğrisi (kümülatif sonuç)');
+    if (v.kind === 'winloss') return _t('aiCoach.viz.winloss', 'Kazanç / kayıp dengesi');
+    if (v.kind === 'share') return _t('aiCoach.viz.share', 'İşlem dağılımı') + ' · ' + vt('dataset', v.dataset);
+    if (v.kind === 'heatmap') return _t('aiCoach.viz.heatmap', 'Gün × seans · net sonuç');
+    if (v.kind === 'calendar') return _t('aiCoach.viz.calendar', 'Günlük sonuçlar (son {n} hafta)', { n: Math.round((v.days_n || 42) / 7) });
+    if (v.kind === 'drawdown') return _t('aiCoach.viz.drawdown', 'Düşüş (zirveden uzaklık)');
+    if (v.kind === 'streak') return _t('aiCoach.viz.streak', 'Son {n} işlem', { n: v.items.length });
     return vt('metric', v.metric) + ' · ' + vt('dataset', v.dataset);
   }
   function tipFor(box) {
@@ -1123,15 +1131,95 @@
     tip.style.left = Math.max(4, Math.min(bw - tw - 4, x - tw / 2)) + 'px'; tip.style.top = Math.max(4, y - tip.offsetHeight - 10) + 'px';
   }
   function hideTip(box) { var t = box.querySelector('.wwai-tip'); if (t) t.hidden = true; }
+  // hover / focus tooltip over a mark: above the mark, or at the pointer for a big mark (a ring segment)
+  function hoverTip(node, box, html, atPointer) {
+    function at(e) {
+      var b = box.getBoundingClientRect();
+      if (atPointer && e && e.clientX != null) { showTip(box, html, e.clientX - b.left, e.clientY - b.top - 4); return; }
+      var r = node.getBoundingClientRect(); showTip(box, html, r.left - b.left + r.width / 2, r.top - b.top);
+    }
+    node.addEventListener('mouseenter', at); node.addEventListener('focus', function () { at(null); });
+    if (atPointer) node.addEventListener('mousemove', at);
+    node.addEventListener('mouseleave', function () { hideTip(box); }); node.addEventListener('blur', function () { hideTip(box); });
+  }
 
-  function renderViz(v) {
-    var box = el('figure', 'wwai-viz wwai-viz-' + v.kind);
+  // ---- entrance animation: a chart waits hidden (.wwai-anim) and plays once when it scrolls into the message list's view
+  // (.is-in): bars and columns grow, lines draw, rings sweep, cells pop in, numbers count up. The message remembers it
+  // (m.vizSeen), so a later re-render (history, an applied card) shows it settled. Reduced motion: always settled.
+  var SVGNS = 'http://www.w3.org/2000/svg', vizIO = null;
+  function calm() { try { return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return true; } }
+  function svgEl(W, H, cls, label) {
+    var s = document.createElementNS(SVGNS, 'svg');
+    s.setAttribute('viewBox', '0 0 ' + W + ' ' + H); s.setAttribute('class', cls); s.setAttribute('role', 'img');
+    if (label) s.setAttribute('aria-label', label);
+    return s;
+  }
+  // a number that counts up from zero when its chart plays; the final text is there from the start
+  function counted(node, value, f) {
+    node.textContent = f(value);
+    if (value != null && isFinite(value) && value !== 0) { node.setAttribute('data-count', String(value)); node._fmt = f; }
+    return node;
+  }
+  function countUp(n) {
+    var to = +n.getAttribute('data-count'), f = n._fmt, t0 = 0, raf = global.requestAnimationFrame;
+    if (!f || !isFinite(to) || !raf) return;
+    n.textContent = f(0 * to);
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var k = Math.min(1, (ts - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+      n.textContent = f(k < 1 ? to * e : to);
+      if (k < 1) raf(step);
+    }
+    raf(step);
+  }
+  function playViz(box) {
+    if (box.classList.contains('is-in')) return;
+    box.classList.add('is-in');
+    if (box._seen) box._seen();
+    Array.prototype.forEach.call(box.querySelectorAll('[data-count]'), countUp);
+    setTimeout(function () { box.classList.add('is-done'); }, 2200);
+  }
+  function armViz(box, m, id) {
+    var seen = m && m.vizSeen && m.vizSeen[id];
+    if (seen || calm() || typeof global.IntersectionObserver !== 'function' || !R.msgs) { box.classList.add('is-in', 'is-done'); return; }
+    box.classList.add('wwai-anim');
+    box._seen = function () { if (m) { m.vizSeen = m.vizSeen || {}; m.vizSeen[id] = 1; } };
+    if (!vizIO || vizIO.root !== R.msgs) {                         // a remount (sign out / in) builds a new message list
+      if (vizIO) vizIO.disconnect();
+      vizIO = new global.IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { vizIO.unobserve(e.target); playViz(e.target); } });
+      }, { root: R.msgs, threshold: 0.3 });
+    }
+    vizIO.observe(box);
+  }
+
+  // time-like bar datasets are drawn as columns (left to right in time), the others as horizontal bars (best first)
+  var COLUMNS = { by_month_last_12: 1, by_entry_hour_local: 1, by_weekday: 1, r_buckets: 1 };
+  var VIZ_DRAW = {
+    kpis: function (v) { return kpis(v); },
+    bar: function (v, box) { return COLUMNS[v.dataset] ? columns(v, box) : bars(v, box); },
+    equity: function (v, box) { return lineChart(v, box, false); },
+    drawdown: function (v, box) { return lineChart(v, box, true); },
+    winloss: winloss, share: share, heatmap: heatmap, calendar: calendar, streak: streak
+  };
+  // short amounts for cells and column tops: 950, 1.2K, 3.4M (K/M in every language: Turkish compact "B" reads as billion)
+  function moneyShort(v, signed) {
+    var a = Math.abs(v);
+    var s = a < 1000 ? nf(a, { maximumFractionDigits: a < 100 ? 1 : 0 }) : a < 1e6 ? nf(a / 1e3, { maximumFractionDigits: a < 1e4 ? 1 : 0 }) + 'K' : nf(a / 1e6, { maximumFractionDigits: 1 }) + 'M';
+    return (v < 0 ? '−' : signed && v > 0 ? '+' : '') + currency() + s;
+  }
+  function pol(v) { return v > 0 ? 'is-pos' : v < 0 ? 'is-neg' : ''; }
+  function dayLabel(d, opts) {
+    try { return new Intl.DateTimeFormat(lang(), Object.assign({ timeZone: 'UTC' }, opts || { day: 'numeric', month: 'short', year: 'numeric' })).format(new Date(d + 'T00:00:00Z')); } catch (e) { return d; }
+  }
+
+  function renderViz(v, m, id) {
+    if (!v || !VIZ_DRAW[v.kind]) return null;                     // a kind this panel does not know yet: no chart
+    var box = el('figure', 'wwai-viz wwai-viz-' + v.kind + (v.kind === 'bar' && COLUMNS[v.dataset] ? ' wwai-viz-cols' : ''));
     var cap = el('figcaption', 'wwai-viz-head');
     cap.appendChild(el('span', 'wwai-viz-title', esc(vizTitle(v))));
-    if (v.kind === 'equity' && v.points.length) {
-      var lastV = v.points[v.points.length - 1].v, hv = el('span', 'wwai-viz-value ' + (lastV > 0 ? 'is-pos' : lastV < 0 ? 'is-neg' : ''), esc(fmt(lastV, 'money', true)));
-      cap.appendChild(hv);
-    }
+    var head = headValue(v);
+    if (head) cap.appendChild(head);
     if (v.kind !== 'kpis') {
       var tb = el('button', 'wwai-viz-table-btn'); tb.type = 'button'; tb.textContent = _t('aiCoach.viz.table', 'Tablo');
       tb.setAttribute('aria-expanded', 'false');
@@ -1139,18 +1227,38 @@
       cap.appendChild(tb);
     }
     box.appendChild(cap);
-    if (v.kind === 'kpis') box.appendChild(kpis(v));
-    else if (v.kind === 'bar') box.appendChild(bars(v, box));
-    else if (v.kind === 'equity') box.appendChild(equity(v, box));
+    var body;
+    try { body = VIZ_DRAW[v.kind](v, box); } catch (e) { return null; }
+    if (!body) return null;
+    box.appendChild(body);
     if (v.kind !== 'kpis') box.appendChild(table(v));
+    armViz(box, m, id);
     return box;
   }
+  // the number next to the title: where the line ends, the current drawdown, the net of the shown trades or days
+  function headValue(v) {
+    var val = null, txt = '';
+    if (v.kind === 'equity' && v.points.length) val = v.points[v.points.length - 1].v;
+    else if (v.kind === 'streak') val = v.items.reduce(function (s, x) { return s + x.v; }, 0);
+    else if (v.kind === 'calendar') val = v.days.reduce(function (s, x) { return s + x.net; }, 0);
+    else if (v.kind === 'drawdown' && v.points.length) {
+      var now = v.points[v.points.length - 1].v;
+      txt = now < 0 ? _t('aiCoach.viz.dd_now', 'Şu an {v}', { v: money(now) }) : _t('aiCoach.viz.at_peak', 'Zirvede');
+      return el('span', 'wwai-viz-value ' + (now < 0 ? 'is-neg' : 'is-pos'), esc(txt));
+    }
+    if (val == null) return null;
+    val = Math.round(val * 100) / 100;
+    return counted(el('span', 'wwai-viz-value ' + pol(val)), val, function (x) { return fmt(x, 'money', true); });
+  }
+
   function kpis(v) {
     var g = el('div', 'wwai-kpis');
-    v.items.forEach(function (it) {
-      var t = el('div', 'wwai-kpi');
+    v.items.forEach(function (it, i) {
+      var t = el('div', 'wwai-kpi'); t.style.setProperty('--i', i);
       t.appendChild(el('span', 'wwai-kpi-label', esc(vt('kpi', it.id))));
-      var val = el('span', 'wwai-kpi-value', esc(it.id === 'max_drawdown' && it.value ? money(-it.value) : fmt(it.value, it.unit, it.id === 'net')));
+      var val = el('span', 'wwai-kpi-value');
+      if (it.id === 'max_drawdown' && it.value) counted(val, -it.value, function (x) { return money(x); });
+      else counted(val, it.value, function (x) { return fmt(x, it.unit, it.id === 'net'); });
       if (it.id === 'net' && isFinite(it.value) && it.value !== 0) val.classList.add(it.value > 0 ? 'is-pos' : 'is-neg');
       t.appendChild(val);
       if (it.sub) t.appendChild(el('span', 'wwai-kpi-sub', esc(it.id === 'net' ? _t('aiCoach.viz.trades_n', '{n} işlem', { n: it.sub }) : _t('aiCoach.viz.wins_of', '{w} kazanç / {t}', { w: it.sub.split('/')[0], t: it.sub.split('/')[1] }))));
@@ -1159,49 +1267,88 @@
     return g;
   }
   function bars(v, box) {
-    var wrap = el('div', 'wwai-bars'), pol = v.unit === 'money';
+    var wrap = el('div', 'wwai-bars'), pl = v.unit === 'money';
     var max = 0, min = 0;
     v.items.forEach(function (it) { max = Math.max(max, it.value); min = Math.min(min, it.value); });
-    var span = (max - min) || 1, zero = pol ? (-min / span) * 100 : 0;
-    v.items.forEach(function (it) {
-      var row = el('div', 'wwai-bar-row'); row.tabIndex = 0;
+    var span = (max - min) || 1, zero = pl ? (-min / span) * 100 : 0;
+    v.items.forEach(function (it, i) {
+      var row = el('div', 'wwai-bar-row'); row.tabIndex = 0; row.style.setProperty('--i', i);
       row.appendChild(el('span', 'wwai-bar-label', esc(bucketLabel(v.dataset, it.label))));
       var track = el('span', 'wwai-bar-track'), bar = el('span', 'wwai-bar');
-      var w = Math.abs(it.value) / (pol ? span : (max || 1)) * 100;
-      if (pol && it.value < 0) { bar.classList.add('is-neg'); bar.style.right = (100 - zero) + '%'; }
-      else { if (pol) bar.classList.add('is-pos'); bar.style.left = zero + '%'; }
+      var w = Math.abs(it.value) / (pl ? span : (max || 1)) * 100;
+      if (pl && it.value < 0) { bar.classList.add('is-neg'); bar.style.right = (100 - zero) + '%'; }
+      else { if (pl) bar.classList.add('is-pos'); bar.style.left = zero + '%'; }
       bar.style.width = Math.max(w, it.value === 0 ? 0 : 1.5) + '%';
       track.appendChild(bar);
-      if (pol && min < 0) { var z = el('span', 'wwai-bar-zero'); z.style.left = zero + '%'; track.appendChild(z); }
+      if (pl && min < 0) { var z = el('span', 'wwai-bar-zero'); z.style.left = zero + '%'; track.appendChild(z); }
       row.appendChild(track);
-      row.appendChild(el('span', 'wwai-bar-value', esc(fmt(it.value, v.unit, pol))));
-      var tipHtml = '<strong>' + esc(bucketLabel(v.dataset, it.label)) + '</strong><br>' + esc(fmt(it.value, v.unit, pol)) + ' · ' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: it.trades }));
-      function show() { var r = row.getBoundingClientRect(), b = box.getBoundingClientRect(); showTip(box, tipHtml, r.left - b.left + r.width / 2, r.top - b.top); }
-      row.addEventListener('mouseenter', show); row.addEventListener('focus', show);
-      row.addEventListener('mouseleave', function () { hideTip(box); }); row.addEventListener('blur', function () { hideTip(box); });
+      row.appendChild(counted(el('span', 'wwai-bar-value'), it.value, function (x) { return fmt(x, v.unit, pl); }));
+      hoverTip(row, box, '<strong>' + esc(bucketLabel(v.dataset, it.label)) + '</strong><br>' + esc(fmt(it.value, v.unit, pl)) + ' · ' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: it.trades })));
       wrap.appendChild(row);
     });
     return wrap;
   }
-  function equity(v, box) {
-    var W = 360, H = 140, PL = 4, PR = 6, PT = 8, PB = 20, pts = v.points;
+  // columns: one per time bucket, money around a zero line; only the highest (and the lowest loss) carry their value
+  function columns(v, box) {
+    var pl = v.unit === 'money', n = v.items.length, max = 0, min = 0, hi = 0, lo = 0;
+    v.items.forEach(function (it, i) {
+      max = Math.max(max, it.value); min = Math.min(min, it.value);
+      if (it.value > v.items[hi].value) hi = i;
+      if (it.value < v.items[lo].value) lo = i;
+    });
+    var span = (max - min) || 1, base = (-min / span) * 100, every = n > 16 ? 3 : n > 9 ? 2 : 1;
+    var wrap = el('div', 'wwai-cols'), plot = el('div', 'wwai-cols-plot'), axis = el('div', 'wwai-cols-axis');
+    if (min < 0) { var z = el('span', 'wwai-cols-zero'); z.style.bottom = base + '%'; plot.appendChild(z); plot.classList.add('has-neg'); }
+    v.items.forEach(function (it, i) {
+      var col = el('div', 'wwai-col'); col.tabIndex = 0; col.style.setProperty('--i', i);
+      var h = Math.abs(it.value) / span * 100, bar = el('span', 'wwai-col-bar' + (pl ? (it.value < 0 ? ' is-neg' : ' is-pos') : ''));
+      if (it.value < 0) bar.style.top = (100 - base) + '%'; else bar.style.bottom = base + '%';
+      bar.style.height = Math.max(h, it.value === 0 ? 0 : 1.5) + '%';
+      col.appendChild(bar);
+      if ((i === hi && it.value > 0) || (pl && i === lo && it.value < 0)) {
+        var lab = el('span', 'wwai-col-val ' + (it.value < 0 ? 'is-down' : 'is-up'));
+        if (it.value < 0) lab.style.top = (100 - base + h) + '%'; else lab.style.bottom = (base + h) + '%';
+        col.appendChild(counted(lab, it.value, function (x) { return pl ? moneyShort(x, true) : fmt(x, v.unit); }));
+      }
+      hoverTip(col, box, '<strong>' + esc(bucketLabel(v.dataset, it.label)) + '</strong><br>' + esc(fmt(it.value, v.unit, pl)) + ' · ' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: it.trades })));
+      plot.appendChild(col);
+      var lbl = v.dataset === 'by_entry_hour_local' ? it.label : bucketLabel(v.dataset, it.label);
+      axis.appendChild(el('span', 'wwai-cols-label', i % every === 0 ? esc(lbl) : ''));
+    });
+    wrap.appendChild(plot); wrap.appendChild(axis);
+    return wrap;
+  }
+
+  // equity (cumulative result) and drawdown (distance below the running peak, always <= 0): one line with its area,
+  // a crosshair tooltip; the line draws itself from left to right
+  function lineChart(v, box, dd) {
+    var W = 360, H = 140, PL = 4, PR = 6, PT = dd ? 6 : 8, PB = 20, pts = v.points;
     var vs = pts.map(function (p) { return p.v; }), lo = Math.min(0, Math.min.apply(null, vs)), hi = Math.max(0, Math.max.apply(null, vs));
     if (hi === lo) hi = lo + 1;
+    if (dd) lo = lo * 1.12;                                         // room under the deepest point for its label
     function X(i) { return PL + (W - PL - PR) * (pts.length === 1 ? 0.5 : i / (pts.length - 1)); }
     function Y(val) { return PT + (H - PT - PB) * (1 - (val - lo) / (hi - lo)); }
     var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' ');
-    var area = line + ' L' + X(pts.length - 1).toFixed(1) + ' ' + Y(Math.max(lo, 0)).toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + Y(Math.max(lo, 0)).toFixed(1) + ' Z';
-    var last = pts[pts.length - 1], up = last.v >= 0;
-    var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('class', 'wwai-eq ' + (up ? 'is-pos' : 'is-neg')); svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', vizTitle(v) + ': ' + fmt(last.v, 'money', true));
-    svg.innerHTML =
-      (lo < 0 && hi > 0 ? '<line class="wwai-eq-zero" x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '"/>' : '') +
-      '<path class="wwai-eq-area" d="' + area + '"/><path class="wwai-eq-line" d="' + line + '"/>' +
-      '<circle class="wwai-eq-dot" r="4" cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(last.v).toFixed(1) + '"/>' +
-      '<text class="wwai-eq-axis" x="' + PL + '" y="' + (H - 4) + '">' + esc(pts[0].t) + '</text>' +
+    var baseY = Y(dd ? 0 : Math.max(lo, 0)).toFixed(1);
+    var area = line + ' L' + X(pts.length - 1).toFixed(1) + ' ' + baseY + ' L' + X(0).toFixed(1) + ' ' + baseY + ' Z';
+    var last = pts[pts.length - 1], up = dd ? false : last.v >= 0;
+    var svg = svgEl(W, H, 'wwai-eq ' + (dd ? 'is-dd' : up ? 'is-pos' : 'is-neg'), vizTitle(v) + ': ' + fmt(dd ? v.max.v : last.v, 'money', !dd));
+    var html = (lo < 0 && hi > 0 && !dd ? '<line class="wwai-eq-zero" x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '"/>' : '') +
+      (dd ? '<line class="wwai-eq-zero" x1="' + PL + '" x2="' + (W - PR) + '" y1="' + baseY + '" y2="' + baseY + '"/>' : '') +
+      '<path class="wwai-eq-area" d="' + area + '"/><path class="wwai-eq-line" d="' + line + '"/>';
+    if (dd) {                                                       // the deepest point, labelled
+      var mi = 0; pts.forEach(function (p, i) { if (p.v < pts[mi].v) mi = i; });
+      var mx = X(mi), my = Y(pts[mi].v), anchor = mx < 60 ? 'start' : mx > W - 60 ? 'end' : 'middle';
+      html += '<circle class="wwai-eq-mark" r="4" cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '"/>' +
+        '<text class="wwai-eq-txt wwai-eq-marktxt" x="' + mx.toFixed(1) + '" y="' + Math.min(H - PB - 2, my + 16).toFixed(1) + '" text-anchor="' + anchor + '">' + esc(_t('aiCoach.viz.dd_max', 'Maks. {v}', { v: money(pts[mi].v) })) + '</text>';
+    } else {
+      html += '<circle class="wwai-eq-pulse" r="4" cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(last.v).toFixed(1) + '"/>' +
+        '<circle class="wwai-eq-dot" r="4" cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(last.v).toFixed(1) + '"/>';
+    }
+    html += '<text class="wwai-eq-axis" x="' + PL + '" y="' + (H - 4) + '">' + esc(pts[0].t) + '</text>' +
       '<text class="wwai-eq-axis" x="' + (W - PR) + '" y="' + (H - 4) + '" text-anchor="end">' + esc(last.t) + '</text>' +
       '<line class="wwai-eq-cross" y1="' + PT + '" y2="' + (H - PB) + '" visibility="hidden"/><circle class="wwai-eq-hover" r="4" visibility="hidden"/>';
+    svg.innerHTML = html;
     var cross = svg.querySelector('.wwai-eq-cross'), hov = svg.querySelector('.wwai-eq-hover');
     svg.addEventListener('mousemove', function (e) {
       var r = svg.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W;
@@ -1209,17 +1356,230 @@
       cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
       hov.setAttribute('cx', X(i)); hov.setAttribute('cy', Y(pts[i].v)); hov.setAttribute('visibility', 'visible');
       var b = box.getBoundingClientRect();
-      showTip(box, esc(pts[i].t) + '<br><strong>' + esc(fmt(pts[i].v, 'money', true)) + '</strong>', r.left - b.left + X(i) / W * r.width, r.top - b.top + Y(pts[i].v) / H * r.height);
+      showTip(box, esc(pts[i].t) + '<br><strong>' + esc(fmt(pts[i].v, 'money', !dd)) + '</strong>', r.left - b.left + X(i) / W * r.width, r.top - b.top + Y(pts[i].v) / H * r.height);
     });
     svg.addEventListener('mouseleave', function () { cross.setAttribute('visibility', 'hidden'); hov.setAttribute('visibility', 'hidden'); hideTip(box); });
-    return svg;
+    var wrap = el('div', 'wwai-eq-wrap'); wrap.appendChild(svg);
+    return wrap;
   }
+
+  // a ring of shares; segs: [{ value, cls, color, tip }]; the segments sweep round one after another
+  function donut(segs, box, size, thick, center, sub) {
+    var total = segs.reduce(function (s, x) { return s + x.value; }, 0);
+    var wrap = el('div', 'wwai-donut'); wrap.style.width = wrap.style.height = size + 'px';
+    var r = (size - thick) / 2, c = size / 2, C = 2 * Math.PI * r, gap = segs.filter(function (s) { return s.value > 0; }).length > 1 ? 2 : 0, acc = 0;
+    var svg = svgEl(size, size, 'wwai-donut-svg', '');
+    svg.setAttribute('aria-hidden', 'true');
+    var html = '<circle class="wwai-donut-track" cx="' + c + '" cy="' + c + '" r="' + r + '" stroke-width="' + thick + '"/>';
+    segs.forEach(function (s, i) {
+      if (!(s.value > 0)) return;
+      var f = s.value / total, len = Math.max(0.5, f * C - gap);
+      html += '<circle class="wwai-donut-seg ' + (s.cls || '') + '" data-i="' + i + '" cx="' + c + '" cy="' + c + '" r="' + r + '" stroke-width="' + thick + '"' +
+        ' stroke-dashoffset="' + (-acc * C).toFixed(2) + '" transform="rotate(-90 ' + c + ' ' + c + ')"' +
+        ' style="--len:' + len.toFixed(2) + 'px;--gap:' + (C - len).toFixed(2) + 'px;--del:' + Math.round(acc * 800) + 'ms;--dur:' + Math.max(60, Math.round(f * 800)) + 'ms' + (s.color ? ';stroke:' + s.color : '') + '"/>';
+      acc += f;
+    });
+    svg.innerHTML = html;
+    wrap.appendChild(svg);
+    Array.prototype.forEach.call(svg.querySelectorAll('.wwai-donut-seg'), function (node) {
+      var s = segs[+node.getAttribute('data-i')];
+      if (s && s.tip) hoverTip(node, box, s.tip, true);
+    });
+    var mid = el('div', 'wwai-donut-mid');
+    mid.appendChild(center);
+    if (sub) mid.appendChild(el('span', 'wwai-donut-sub', esc(sub)));
+    wrap.appendChild(mid);
+    return wrap;
+  }
+  function highlight(wrap, i) {
+    Array.prototype.forEach.call(wrap.querySelectorAll('.wwai-donut-seg'), function (s) { s.classList.toggle('is-dim', i != null && s.getAttribute('data-i') !== String(i)); });
+  }
+
+  // wins / losses / break-even ring with the payoff: average win vs average loss and the win rate they need to break even
+  function winloss(v, box) {
+    var wrap = el('div', 'wwai-wl');
+    var tipN = function (label, n) { return '<strong>' + esc(label) + '</strong><br>' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: n })) + ' · ' + esc(fmt(n / v.trades * 100, 'pct')); };
+    var L = { w: _t('aiCoach.viz.wins', 'Kazanç'), l: _t('aiCoach.viz.losses', 'Kayıp'), b: _t('aiCoach.viz.breakeven', 'Başa baş') };
+    var segs = [{ value: v.wins, cls: 'is-pos', tip: tipN(L.w, v.wins) }, { value: v.losses, cls: 'is-neg', tip: tipN(L.l, v.losses) }, { value: v.breakeven, cls: 'is-flat', tip: tipN(L.b, v.breakeven) }];
+    var center = counted(el('span', 'wwai-donut-num'), v.win_rate, function (x) { return fmt(x, 'pct'); });
+    wrap.appendChild(donut(segs, box, 112, 14, center, _t('aiCoach.viz.win_rate_short', 'kazanma')));
+    var side = el('div', 'wwai-wl-side');
+    var legend = el('div', 'wwai-legend');
+    [['is-pos', L.w, v.wins], ['is-neg', L.l, v.losses], ['is-flat', L.b, v.breakeven]].forEach(function (x, i) {
+      if (i === 2 && !x[2]) return;
+      var row = el('div', 'wwai-legend-row'); row.style.setProperty('--i', i);
+      row.innerHTML = '<span class="wwai-sw ' + x[0] + '"></span><span class="wwai-legend-label">' + esc(x[1]) + '</span><span class="wwai-legend-val">' + esc(nf(x[2])) + '</span>';
+      legend.appendChild(row);
+    });
+    side.appendChild(legend);
+    // payoff: the two averages on one scale
+    if (v.avg_win != null || v.avg_loss != null) {
+      var aw = Math.abs(v.avg_win || 0), al = Math.abs(v.avg_loss || 0), top = Math.max(aw, al) || 1, pay = el('div', 'wwai-pay');
+      [[_t('aiCoach.viz.avg_win', 'Ort. kazanç'), v.avg_win, aw, 'is-pos'], [_t('aiCoach.viz.avg_loss', 'Ort. kayıp'), v.avg_loss, al, 'is-neg']].forEach(function (x, i) {
+        if (x[1] == null) return;
+        var row = el('div', 'wwai-pay-row'); row.style.setProperty('--i', i + 1);
+        row.appendChild(el('span', 'wwai-pay-label', esc(x[0])));
+        var track = el('span', 'wwai-pay-track'), bar = el('span', 'wwai-pay-bar ' + x[3]); bar.style.width = Math.max(2, x[2] / top * 100) + '%';
+        track.appendChild(bar); row.appendChild(track);
+        row.appendChild(counted(el('span', 'wwai-pay-val'), x[1], function (n) { return money(n, true); }));
+        pay.appendChild(row);
+      });
+      side.appendChild(pay);
+    }
+    // the win rate against the one the payoff needs
+    if (v.breakeven_win_rate != null && v.win_rate != null) {
+      var ok = v.win_rate >= v.breakeven_win_rate, g = el('div', 'wwai-need');
+      var tr = el('div', 'wwai-need-track'), fill = el('span', 'wwai-need-fill ' + (ok ? 'is-pos' : 'is-neg')), tick = el('span', 'wwai-need-tick');
+      fill.style.width = Math.min(100, v.win_rate) + '%'; tick.style.left = Math.min(100, v.breakeven_win_rate) + '%';
+      tr.appendChild(fill); tr.appendChild(tick); g.appendChild(tr);
+      g.appendChild(el('div', 'wwai-need-text ' + (ok ? 'is-pos' : 'is-neg'), '<span class="wwai-need-ico" aria-hidden="true">' + (ok ? '✓' : '!') + '</span>' + esc(_t('aiCoach.viz.need_wr', 'Başa baş için gereken: {p}', { p: fmt(v.breakeven_win_rate, 'pct') }))));
+      side.appendChild(g);
+    }
+    wrap.appendChild(side);
+    return wrap;
+  }
+
+  // where the trades go: ring of the trade count per bucket (fixed colour order, "other" in grey), legend with share and net
+  function share(v, box) {
+    var wrap = el('div', 'wwai-share'), slot = 0;
+    var parts = v.items.map(function (it) {
+      var other = it.label === '(other)', label = other ? _t('aiCoach.viz.other', 'Diğer') : bucketLabel(v.dataset, it.label);
+      var cls = other ? 'is-flat' : 'wwai-cat-' + (++slot), p = it.trades / v.total * 100;
+      return { it: it, label: label, cls: cls, p: p, tip: '<strong>' + esc(label) + '</strong><br>' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: it.trades })) + ' · ' + esc(fmt(p, 'pct')) + '<br>' + esc(money(it.net, true)) };
+    });
+    var center = counted(el('span', 'wwai-donut-num'), v.total, function (x) { return nf(Math.round(x)); });
+    var ring = donut(parts.map(function (x) { return { value: x.it.trades, cls: x.cls, tip: x.tip }; }), box, 112, 16, center, _t('aiCoach.viz.trades_word', 'işlem'));
+    wrap.appendChild(ring);
+    var legend = el('div', 'wwai-legend wwai-legend-share');
+    parts.forEach(function (x, i) {
+      var row = el('div', 'wwai-legend-row'); row.tabIndex = 0; row.style.setProperty('--i', i);
+      row.innerHTML = '<span class="wwai-sw ' + x.cls + '"></span><span class="wwai-legend-label">' + esc(x.label) + '</span>' +
+        '<span class="wwai-legend-pct">' + esc(fmt(x.p, 'pct')) + '</span><span class="wwai-legend-val ' + pol(x.it.net) + '">' + esc(moneyShort(x.it.net, true)) + '</span>';
+      row.addEventListener('mouseenter', function () { highlight(ring, i); }); row.addEventListener('focus', function () { highlight(ring, i); });
+      row.addEventListener('mouseleave', function () { highlight(ring, null); }); row.addEventListener('blur', function () { highlight(ring, null); });
+      legend.appendChild(row);
+    });
+    wrap.appendChild(legend);
+    return wrap;
+  }
+
+  // diverging fill of a cell: grey at zero, deeper green / red with the size of the result (text stays readable)
+  function cellFill(node, val, maxAbs) {
+    if (!val) return;
+    node.classList.add(val > 0 ? 'is-pos' : 'is-neg');
+    node.style.setProperty('--mix', Math.round(14 + 41 * Math.min(1, Math.abs(val) / (maxAbs || 1))) + '%');
+  }
+  function weekdayShort(key) { return bucketLabel('by_weekday', key); }
+  // weekday × session grid of net results
+  function heatmap(v, box) {
+    var maxAbs = v.cells.reduce(function (m, c) { return Math.max(m, Math.abs(c.net)); }, 0);
+    var grid = el('div', 'wwai-heat'); grid.style.gridTemplateColumns = 'auto repeat(' + v.cols.length + ', minmax(0, 1fr))';
+    grid.appendChild(el('span', 'wwai-heat-corner'));
+    v.cols.forEach(function (s) { grid.appendChild(el('span', 'wwai-heat-col', esc(vt('session', s)))); });
+    var at = {}; v.cells.forEach(function (c) { at[c.r + ':' + c.c] = c; });
+    v.rows.forEach(function (wd, r) {
+      grid.appendChild(el('span', 'wwai-heat-row', esc(weekdayShort(wd))));
+      v.cols.forEach(function (s, c) {
+        var x = at[r + ':' + c], cell = el('span', 'wwai-cell'); cell.style.setProperty('--i', r + c);
+        if (!x) { cell.classList.add('is-empty'); grid.appendChild(cell); return; }
+        cellFill(cell, x.net, maxAbs);
+        cell.tabIndex = 0;
+        cell.appendChild(el('span', 'wwai-cell-val', esc(moneyShort(x.net, true))));
+        hoverTip(cell, box, '<strong>' + esc(weekdayShort(wd) + ' · ' + vt('session', s)) + '</strong><br>' + esc(money(x.net, true)) + '<br>' +
+          esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: x.trades })) + (x.win_rate != null ? ' · ' + esc(fmt(x.win_rate, 'pct')) : ''));
+        grid.appendChild(cell);
+      });
+    });
+    var wrap = el('div', 'wwai-heat-wrap'); wrap.appendChild(grid); wrap.appendChild(scaleLegend(maxAbs));
+    return wrap;
+  }
+  function scaleLegend(maxAbs) {
+    var l = el('div', 'wwai-scale');
+    l.innerHTML = '<span>' + esc(moneyShort(-maxAbs)) + '</span><span class="wwai-scale-bar"></span><span>' + esc(moneyShort(maxAbs, true)) + '</span>';
+    return l;
+  }
+
+  // daily results of the last weeks, Monday first; today outlined, days after it faded
+  function calendar(v, box) {
+    var byDay = {}, maxAbs = 0, green = 0, red = 0;
+    v.days.forEach(function (d) { byDay[d.d] = d; maxAbs = Math.max(maxAbs, Math.abs(d.net)); if (d.net > 0) green++; else if (d.net < 0) red++; });
+    var grid = el('div', 'wwai-cal'), start = Date.parse(v.start + 'T00:00:00Z');
+    for (var w = 0; w < 7; w++) grid.appendChild(el('span', 'wwai-cal-wd', esc(dayLabel(new Date(start + w * 864e5).toISOString().slice(0, 10), { weekday: 'short' }))));
+    for (var i = 0; i < (v.days_n || 42); i++) {
+      var ds = new Date(start + i * 864e5).toISOString().slice(0, 10), x = byDay[ds], cell = el('span', 'wwai-cell wwai-cal-day');
+      cell.style.setProperty('--i', Math.floor(i / 7) + (i % 7));
+      var dn = +ds.slice(8, 10);
+      cell.appendChild(el('span', 'wwai-cal-num', esc(dn === 1 ? dayLabel(ds, { day: 'numeric', month: 'short' }) : String(dn))));
+      if (ds === v.today) cell.classList.add('is-today');
+      if (ds > v.today) cell.classList.add('is-future');
+      if (x) {
+        cellFill(cell, x.net, maxAbs); cell.tabIndex = 0;
+        cell.appendChild(el('span', 'wwai-cell-val', esc(moneyShort(x.net, true))));
+        hoverTip(cell, box, '<strong>' + esc(dayLabel(ds, { weekday: 'short', day: 'numeric', month: 'short' })) + '</strong><br>' + esc(money(x.net, true)) + ' · ' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: x.trades })));
+      }
+      grid.appendChild(cell);
+    }
+    var wrap = el('div', 'wwai-cal-wrap'); wrap.appendChild(grid);
+    wrap.appendChild(el('div', 'wwai-viz-foot', esc(_t('aiCoach.viz.days_split', '{g} kârlı gün · {r} zararlı gün', { g: green, r: red }))));
+    return wrap;
+  }
+
+  // the last closed trades in order, one column each around a middle line; the longest losing run (3+) is marked
+  function streak(v, box) {
+    var items = v.items, n = items.length, up = 0, down = 0, wins = 0, losses = 0;
+    items.forEach(function (x) { up = Math.max(up, x.v); down = Math.min(down, x.v); if (x.v > 0) wins++; else if (x.v < 0) losses++; });
+    var span = (up - down) || 1, base = (-down / span) * 100;
+    var run = { s: -1, len: 0 }, cur = 0;
+    items.forEach(function (x, i) { cur = x.v < 0 ? cur + 1 : 0; if (cur > run.len) run = { s: i - cur + 1, len: cur }; });
+    var wrap = el('div', 'wwai-streak'), plot = el('div', 'wwai-streak-plot');
+    if (run.len >= 3) {
+      var band = el('span', 'wwai-streak-band'); band.style.left = (run.s / n * 100) + '%'; band.style.width = (run.len / n * 100) + '%';
+      band.appendChild(el('span', 'wwai-streak-run', esc(_t('aiCoach.viz.losing_run', '{n} kayıp üst üste', { n: run.len }))));
+      if (run.s / n > 0.6) band.classList.add('is-right');
+      plot.appendChild(band);
+    }
+    var z = el('span', 'wwai-cols-zero'); z.style.bottom = base + '%'; plot.appendChild(z);
+    items.forEach(function (x, i) {
+      var col = el('div', 'wwai-col'); col.tabIndex = 0; col.style.setProperty('--i', i);
+      var h = Math.abs(x.v) / span * 100, bar = el('span', 'wwai-col-bar ' + (x.v < 0 ? 'is-neg' : x.v > 0 ? 'is-pos' : 'is-flat'));
+      if (x.v < 0) bar.style.top = (100 - base) + '%'; else bar.style.bottom = base + '%';
+      bar.style.height = Math.max(h, 2) + '%';
+      col.appendChild(bar);
+      hoverTip(col, box, '<strong>' + esc(x.s) + '</strong> · ' + esc(x.t) + '<br>' + esc(money(x.v, true)) + (x.r != null ? ' · ' + esc(nf(x.r, { maximumFractionDigits: 2 })) + 'R' : ''));
+      plot.appendChild(col);
+    });
+    wrap.appendChild(plot);
+    wrap.appendChild(el('div', 'wwai-viz-foot', esc(_t('aiCoach.viz.wl_split', '{w} kazanç · {l} kayıp', { w: wins, l: losses }))));
+    return wrap;
+  }
+
   function table(v) {
     var t = el('table', 'wwai-viz-table'); t.hidden = true;
-    var head = v.kind === 'equity' ? [_t('aiCoach.viz.date', 'Tarih'), _t('aiCoach.viz.cumulative', 'Kümülatif')]
-      : [vt('dataset', v.dataset), vt('metric', v.metric), _t('aiCoach.viz.trades', 'İşlem')];
-    var rows = v.kind === 'equity' ? v.points.map(function (p) { return [p.t, fmt(p.v, 'money', true)]; })
-      : v.items.map(function (it) { return [bucketLabel(v.dataset, it.label), fmt(it.value, v.unit, v.unit === 'money'), String(it.trades)]; });
+    var head, rows, trades = _t('aiCoach.viz.trades', 'İşlem'), net = vt('metric', 'net');
+    if (v.kind === 'equity' || v.kind === 'drawdown') {
+      head = [_t('aiCoach.viz.date', 'Tarih'), v.kind === 'equity' ? _t('aiCoach.viz.cumulative', 'Kümülatif') : _t('aiCoach.viz.dd_col', 'Düşüş')];
+      rows = v.points.map(function (p) { return [p.t, fmt(p.v, 'money', v.kind === 'equity')]; });
+    } else if (v.kind === 'winloss') {
+      head = ['', ''];
+      rows = [[_t('aiCoach.viz.wins', 'Kazanç'), nf(v.wins)], [_t('aiCoach.viz.losses', 'Kayıp'), nf(v.losses)], [_t('aiCoach.viz.breakeven', 'Başa baş'), nf(v.breakeven)],
+        [vt('kpi', 'win_rate'), fmt(v.win_rate, 'pct')], [_t('aiCoach.viz.avg_win', 'Ort. kazanç'), fmt(v.avg_win, 'money', true)],
+        [_t('aiCoach.viz.avg_loss', 'Ort. kayıp'), fmt(v.avg_loss, 'money', true)], [_t('aiCoach.viz.need_wr_col', 'Başa baş kazanma oranı'), fmt(v.breakeven_win_rate, 'pct')]];
+    } else if (v.kind === 'share') {
+      head = [vt('dataset', v.dataset), _t('aiCoach.viz.share_col', 'Pay'), trades, net];
+      rows = v.items.map(function (it) { return [it.label === '(other)' ? _t('aiCoach.viz.other', 'Diğer') : bucketLabel(v.dataset, it.label), fmt(it.trades / v.total * 100, 'pct'), String(it.trades), fmt(it.net, 'money', true)]; });
+    } else if (v.kind === 'heatmap') {
+      head = [vt('dataset', 'by_weekday'), vt('dataset', 'by_session_utc'), net, trades, vt('metric', 'win_rate')];
+      rows = v.cells.map(function (c) { return [weekdayShort(v.rows[c.r]), vt('session', v.cols[c.c]), fmt(c.net, 'money', true), String(c.trades), fmt(c.win_rate, 'pct')]; });
+    } else if (v.kind === 'calendar') {
+      head = [_t('aiCoach.viz.date', 'Tarih'), net, trades];
+      rows = v.days.map(function (d) { return [dayLabel(d.d, { weekday: 'short', day: 'numeric', month: 'short' }), fmt(d.net, 'money', true), String(d.trades)]; });
+    } else if (v.kind === 'streak') {
+      head = [_t('aiCoach.viz.date', 'Tarih'), vt('dataset', 'by_symbol'), net, 'R'];
+      rows = v.items.map(function (x) { return [x.t, x.s, fmt(x.v, 'money', true), x.r == null ? '—' : nf(x.r, { maximumFractionDigits: 2 })]; });
+    } else {
+      head = [vt('dataset', v.dataset), vt('metric', v.metric), trades];
+      rows = v.items.map(function (it) { return [bucketLabel(v.dataset, it.label), fmt(it.value, v.unit, v.unit === 'money'), String(it.trades)]; });
+    }
     t.innerHTML = '<thead><tr>' + head.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>';
     return t;
