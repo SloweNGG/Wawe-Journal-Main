@@ -15,27 +15,15 @@
 //         markOvertradeAsRead içindeki hardcoded metinler i18n'e taşındı.
 // ============================================================
 
-// ⭐ Logger — global wwLog'a fallback ile bağlan
-const wwLog = (typeof window !== 'undefined' && window.wwLog) 
-  ? window.wwLog 
-  : { log: () => {}, warn: () => {}, info: () => {}, debug: () => {}, error: console.error.bind(console) };
-
 import {
   sanitizeHTML,
   sanitizeURL,
   calcTradePnL,
   formatCurrency,
-  formatCurrencyPDF,
   bellEmptyStateHtml
 } from './helpers.js';
 
-import {
-  renderCharts,
-  getCharts,
-  updateChartTheme,
-  clearAllApexCharts,
-  clearLightweightChart
-} from './chart-renderers.js';
+import { getCharts } from './chart-renderers.js';
 
 import {
   loadPrefs,
@@ -62,11 +50,9 @@ function _t(key, fallback) {
 
 // ⭐ GLOBAL DEĞİŞKENLER
 var sortableInstance = null;
-var isDragging = false;
 var resizeTimeout = null;
 var isResizing = false;
 var allStrategies = [];
-var chartRafId = null;
 
 // ⭐ OVERTRADE
 var OVERTRADE_READ_KEY = 'ww_overtrade_read_signature';
@@ -164,9 +150,7 @@ function createSortable(grid) {
     animation: 300,
     handle: '.drag-handle',
     ghostClass: 'sortable-ghost',
-    onStart: function() { isDragging = true; },
     onEnd: function() {
-      isDragging = false;
       setTimeout(forceResizeAllCharts, 300);
       saveLayoutOrder();
     }
@@ -257,7 +241,6 @@ export function destroyDragDrop() {
     try { sortableInstance.destroy(); } catch(e) {}
     sortableInstance = null;
   }
-  isDragging = false;
 }
 
 // ⭐ FORCE RESIZE

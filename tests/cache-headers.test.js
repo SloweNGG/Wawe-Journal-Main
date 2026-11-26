@@ -39,9 +39,6 @@ const rules = parseHeaders(fs.readFileSync('public/_headers', 'utf8'));
 const publicFiles = walk('public').map((f) => '/' + path.relative('public', f).split(path.sep).join('/'));
 const immutableFor = (p) => rules.some((r) => r.headers['cache-control'] === IMMUTABLE && matches(r.pattern, p));
 
-// Uygulamanın açmadığı geliştirici test sayfası (quick-add parser denemesi)
-const DEV_ONLY_HTML = new Set(['/interface/quick-add/js/test-broker-formats.html']);
-
 describe('_headers cache rules', () => {
   it('has no catch-all or extension rule (Cloudflare merges every matching rule)', () => {
     for (const r of rules) {
@@ -90,8 +87,8 @@ describe('_headers cache rules', () => {
     }
   });
 
-  it('HTML is never immutable (pages, settings panels, notification partial)', () => {
-    const html = publicFiles.filter((p) => p.endsWith('.html') && !DEV_ONLY_HTML.has(p));
+  it('HTML is never immutable (pages, settings panels)', () => {
+    const html = publicFiles.filter((p) => p.endsWith('.html'));
     assert.ok(html.some((p) => p.startsWith('/settings/panels/')));
     for (const p of [...html, '/dashboard.html', '/dashboard', '/', '/index.html']) {
       assert.ok(!immutableFor(p), p + ' must not be immutable');

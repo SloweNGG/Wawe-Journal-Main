@@ -246,14 +246,6 @@ async function updatePlanBadge() {
 // ============================================================
 // TRADE PNL YARDIMCI FONKSİYONLARI
 // ============================================================
-function getTradeMultiplier(t) {
-  var mult = t.multiplier || 100000;
-  if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined' && INSTRUMENT_MULTIPLIERS[t.instrument]) {
-    mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
-  }
-  return mult;
-}
-
 // Tek doğruluk kaynağı: interface/shared/trade-metrics.js. Eskiden kayıtlı net pnl'i yok sayıp
 // fiyattan brüt PnL hesaplıyordu (komisyon/swap/broker PnL'i yansımıyordu).
 function getTradePnL(t) {
@@ -1371,7 +1363,6 @@ async function exportStrategyPDF(strategyId) {
       return;
     }
     var s = strategiesList.find(function(x) { return x.id === strategyId; });
-    var perf = getStrategyPerformance(strategyId);
     var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 12;

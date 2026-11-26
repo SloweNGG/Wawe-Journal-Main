@@ -1,7 +1,7 @@
 ---
 // Entegrasyon sayfası: Interactive Brokers (IBKR) içe aktarma. İçerik İngilizce ve sunucuda hazır.
 // DÜRÜSTLÜK NOTU: IBKR'nin ham işlem (execution) raporu her dolumu ayrı satırda verir ve çıkış fiyatı yoktur;
-// parser bunu kapalı işleme ÇEVİRMEZ (test-broker-formats.html'deki IBKR vakası: "needs manual mapping"), uygulamada
+// parser bunu kapalı işleme ÇEVİRMEZ (IBKR execution vakası: "needs manual mapping"), uygulamada
 // manuel eşleme ekranı da yok → "veri bulunamadı". Bu yüzden sayfa, satır başına bir kapalı işlem içeren dosya ister.
 // Kaynaklar: broker-detector.js (ibkr imzası: TradePrice), parser-v2.js (kapalı işlem modu: sembol/yön/giriş/çıkış zorunlu,
 // K/Z yoksa (çıkış-giriş)×miktar×çarpan; hisse/opsiyon çarpanı 1), broker-dictionary.js (kolon adı adayları).

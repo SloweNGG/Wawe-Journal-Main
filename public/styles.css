@@ -1,20 +1,4 @@
 /* ============================================================
-   WAWE JOURNAL – styles.css
-   ⭐ FIX 4.1: chart-wrap boyutları KALDIRILDI (dashboard.css'te)
-   ⭐ FIX 4.2: mini-cal-day boyutları KALDIRILDI (dashboard.css'te)
-   ⭐ FIX 4.3: .stat-card::before accent-color kullanıyor
-   ⭐ FIX: Tema değişkenleri TEK BLOK'ta toplandı (çakışma yok)
-   ⭐ FONT SİSTEMİ: Geist (--font), Syne (--font-display, sadece başlıklar), Geist Mono (--font-mono); :root içinde tek kaynak
-   ⭐ FAZ 1.1: --radius-lg eklendi (index.css'ten taşındı)
-   ⭐ FAZ 2.1: Z-INDEX SKALASI eklendi
-   ⭐ FAZ 2.3: Panel-glow ortak kısmı eklendi
-   ⭐ FAZ 4.1: Global transition KALDIRILDI (scope edildi)
-   ⭐ FAZ 4.2: prefers-reduced-motion desteği eklendi
-   ⭐ EKLENDİ: strategy-tags-card, strategy-pill, best-worst (dashboard/strategies ortak)
-   ⭐ EKLENDİ: empty-state stilleri
-   ============================================================ */
-
-/* ============================================================
    TEMA DEĞİŞKENLERİ - TEK BLOK (ÇAKIŞMA YOK)
    ============================================================ */
 
@@ -166,8 +150,6 @@ html.light-theme {
 .nav,
 .nav *,
 .btn,
-.btn-login,
-.btn-register,
 .btn-ghost,
 .btn-primary,
 .btn-danger,
@@ -180,10 +162,6 @@ html.light-theme {
 .strategy-tags-card,
 .reference-card,
 .plan-card,
-.plan-card-home,
-.feat-card,
-.macos-mockup,
-.toggle-switch .toggle-slider,
 .panel-glow {
   transition: background-color 0.2s ease,
               border-color 0.2s ease,
@@ -194,8 +172,6 @@ html.light-theme {
 
 /* Hover efektleri için ayrı transition */
 .btn:hover,
-.btn-login:hover,
-.btn-register:hover,
 .btn-ghost:hover,
 .btn-primary:hover,
 .btn-danger:hover,
@@ -204,28 +180,13 @@ html.light-theme {
 .cal-day:hover,
 .strategy-card:hover,
 .reference-card:hover,
-.plan-card:hover,
-.plan-card-home:hover,
-.feat-card:hover,
-.macos-mockup:hover {
+.plan-card:hover {
   transition: background-color 0.15s ease,
               border-color 0.15s ease,
               color 0.15s ease,
               box-shadow 0.15s ease,
               transform 0.15s ease;
 }
-
-/* ============================================================
-   WAWE JOURNAL – styles.css
-   TÜM SAYFALAR UYUMLU | KOYU / AÇIK TEMA | TAM GENİŞLİK
-   ============================================================ */
-
-/* Fontlar BaseHead.astro üzerinden non-blocking yüklenmektedir */
-
-/* ============================================================
-   ⭐ NAVBAR - TAMAMEN navbar.css TARAFINDAN YÖNETİLİR
-   ============================================================ */
-/* Bu dosyada navbar ile ilgili HİÇBİR KURAL OLMAMALIDIR! */
 
 
 
@@ -269,7 +230,15 @@ body.light-theme::before {
    TİPOGRAFİ - FLUID TYPOGRAPHY
    ============================================================ */
 
-h1, h2, h3, h4, h5, .h1, .h2, .h3, .h4, .h5 {
+h1,
+h2,
+h3,
+h4,
+h5,
+.h1,
+.h2,
+.h3,
+.h4 {
   font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.22;
@@ -287,11 +256,16 @@ body.light-theme h4, body.light-theme h5 {
   -webkit-text-fill-color: transparent;
 }
 
-.stat-value, .kpi-value, .trade-pnl, .streak-number,
-.stat-card-value, .hstat-val, .stats-bar-value,
-.stat-value.positive, .stat-value.negative,
-.kpi-value.positive, .kpi-value.negative,
-.trade-pnl.positive, .trade-pnl.negative {
+.stat-value,
+.kpi-value,
+.trade-pnl,
+.stat-card-value,
+.stat-value.positive,
+.stat-value.negative,
+.kpi-value.positive,
+.kpi-value.negative,
+.trade-pnl.positive,
+.trade-pnl.negative {
   font-family: var(--font);
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -524,16 +498,16 @@ body.light-theme h4, body.light-theme h5 {
 }
 
 /* Streak & Strategy */
-.streak-card, .strategy-tags-card {
+.strategy-tags-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: clamp(0.6rem, 1vw, 1rem);
 }
-.streak-card:hover, .strategy-tags-card:hover {
+.strategy-tags-card:hover {
   border-color: rgba(var(--ac-rgb), 0.3);
 }
-.streak-title, .strategy-tags-title {
+.strategy-tags-title {
   font-size: clamp(8px, 0.7vw, 9px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -547,30 +521,6 @@ body.light-theme h4, body.light-theme h5 {
   flex-wrap: wrap;
   gap: clamp(3px, 0.5vw, 6px);
   margin-bottom: 0.5rem;
-}
-.streak-dot {
-  width: clamp(10px, 1.5vw, 14px);
-  height: clamp(10px, 1.5vw, 14px);
-  border-radius: 3px;
-  background: var(--border);
-}
-.streak-dot.win {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green-glow);
-}
-.streak-dot.loss {
-  background: var(--red);
-  box-shadow: 0 0 6px var(--red-glow);
-}
-.streak-dot.open { background: var(--muted); opacity: 0.4; }
-.streak-number {
-  font-size: clamp(1.3rem, 3vw, 1.8rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 .streak-label {
   font-size: clamp(9px, 1vw, 11px);
@@ -651,14 +601,6 @@ body.light-theme h4, body.light-theme h5 {
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
-.pill-positive {
-  border-left: 2px solid var(--green);
-}
-
-.pill-negative {
-  border-left: 2px solid var(--red);
-}
-
 .pill-neutral {
   border-left: 2px solid var(--accent);
 }
@@ -696,28 +638,6 @@ body.light-theme h4, body.light-theme h5 {
   flex-direction: column;
   gap: clamp(0.3rem, 0.6vw, 0.5rem);
 }
-
-.trade-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-}
-.trade-icon.long {
-  background: rgba(34,197,94,0.15);
-  color: var(--green);
-  box-shadow: 0 0 8px rgba(34,197,94,0.2);
-}
-.trade-icon.short {
-  background: rgba(239,68,68,0.15);
-  color: var(--red);
-  box-shadow: 0 0 8px rgba(239,68,68,0.2);
-}
 .trade-symbol {
   font-family: var(--font-mono);
   font-weight: 500;
@@ -735,25 +655,6 @@ body.light-theme h4, body.light-theme h5 {
 .trade-direction.short {
   color: var(--red);
   text-shadow: 0 0 4px rgba(239,68,68,0.3);
-}
-.trade-bar-container {
-  width: 100%;
-  height: 3px;
-  background: var(--border);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.trade-bar {
-  height: 100%;
-  border-radius: 99px;
-}
-.trade-bar.positive {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green-glow);
-}
-.trade-bar.negative {
-  background: var(--red);
-  box-shadow: 0 0 6px var(--red-glow);
 }
 .trade-pnl {
   font-size: clamp(0.6rem, 0.9vw, 0.85rem);
@@ -862,19 +763,6 @@ body.light-theme h4, body.light-theme h5 {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: var(--ac-on, #fff);
   box-shadow: 0 2px 8px var(--accent-glow);
-}
-.cal-nav-btn.month-label {
-  cursor: default;
-  font-weight: 600;
-  color: var(--text);
-  min-width: clamp(60px, 10vw, 100px);
-  text-align: center;
-  font-size: clamp(10px, 1vw, 13px);
-  letter-spacing: 0.02em;
-}
-.cal-nav-btn.month-label:hover {
-  background: transparent;
-  color: var(--text);
 }
 .cal-nav-btn.today-btn {
   background: rgba(var(--ac-rgb), 0.08);
@@ -1025,17 +913,6 @@ body.light-theme h4, body.light-theme h5 {
   initial-value: 0deg;
   inherits: false;
 }
-
-.cal-day.today .day-pulse {
-  position: absolute;
-  inset: clamp(-2px, -0.3vw, -4px);
-  border-radius: clamp(10px, 1.2vw, 14px);
-  background: rgba(var(--ac-rgb), 0.12);
-  animation: pulseRing 2s ease-in-out infinite;
-  z-index: -2;
-  pointer-events: none;
-  will-change: transform;
-}
 @keyframes pulseRing {
   0%, 100% { transform: scale(1); opacity: 0.3; }
   50% { transform: scale(1.06); opacity: 0; }
@@ -1043,7 +920,6 @@ body.light-theme h4, body.light-theme h5 {
 .cal-day.today .day-number { color: var(--accent); }
 
 /* Renk skalası */
-.cal-day.color-0 .day-bg { background: transparent; }
 .cal-day.color-1 { border-color: rgba(34,197,94,0.35); }
 .cal-day.color-1 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(34,197,94,0.05)); }
 .cal-day.color-2 { border-color: rgba(34,197,94,0.48); }
@@ -1167,124 +1043,10 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .summary-mini-card .s-info .s-value.negative { color: var(--red); }
 
 /* Takvim Popup */
-.calendar-day-popup {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--surface);
-  border: 1px solid rgba(var(--ac-rgb), 0.3);
-  border-radius: 16px;
-  padding: clamp(0.75rem, 1.5vw, 1.25rem);
-  min-width: min(280px, 85vw);
-  max-width: min(380px, 92vw);
-  z-index: var(--z-popover);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(var(--ac-rgb), 0.08);
-  backdrop-filter: blur(16px);
-}
-.calendar-day-popup.active {
-  display: block;
-  animation: popupIn 0.25s ease;
-}
 @keyframes popupIn {
   from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
-.calendar-day-popup .popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.4rem;
-}
-.calendar-day-popup .popup-header h4 {
-  font-family: var(--font-display);
-  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-}
-.calendar-day-popup .popup-close {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: color 0.2s;
-  min-width: 32px;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.calendar-day-popup .popup-close:hover { color: var(--text); }
-.calendar-day-popup .popup-body {
-  max-height: clamp(200px, 40vh, 300px);
-  overflow-y: auto;
-}
-.calendar-day-popup .popup-body::-webkit-scrollbar { width: 3px; }
-.calendar-day-popup .popup-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
-.calendar-day-popup .popup-trade {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: clamp(3px, 0.4vw, 6px) 0;
-  border-bottom: 1px solid var(--border);
-  font-size: clamp(10px, 0.9vw, 12px);
-  font-family: var(--font);
-}
-.calendar-day-popup .popup-trade:last-child { border-bottom: none; }
-.calendar-day-popup .popup-trade .pt-left {
-  display: flex;
-  align-items: center;
-  gap: clamp(3px, 0.4vw, 6px);
-}
-.calendar-day-popup .popup-trade .pt-badge {
-  font-family: var(--font);
-  font-size: clamp(6px, 0.5vw, 8px);
-  font-weight: 700;
-  padding: 1px clamp(3px, 0.4vw, 6px);
-  border-radius: 4px;
-}
-.calendar-day-popup .popup-trade .pt-badge.long {
-  background: rgba(34,197,94,0.15);
-  color: var(--green);
-  border: 1px solid rgba(34,197,94,0.2);
-}
-.calendar-day-popup .popup-trade .pt-badge.short {
-  background: rgba(239,68,68,0.15);
-  color: var(--red);
-  border: 1px solid rgba(239,68,68,0.2);
-}
-.calendar-day-popup .popup-trade .pt-symbol {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--text);
-}
-.calendar-day-popup .popup-trade .pt-pnl {
-  font-weight: 600;
-  font-family: var(--font);
-  font-variant-numeric: tabular-nums;
-}
-.calendar-day-popup .popup-trade .pt-pnl.positive { color: var(--green); }
-.calendar-day-popup .popup-trade .pt-pnl.negative { color: var(--red); }
-.calendar-day-popup .popup-empty {
-  text-align: center;
-  color: var(--muted);
-  font-size: clamp(11px, 1vw, 13px);
-  padding: 1rem 0;
-}
-.calendar-popup-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-  z-index: calc(var(--z-popover) - 1);
-}
-.calendar-popup-overlay.active { display: block; }
 
 /* ============================================================
    STRATEGIES SAYFASI
@@ -1339,37 +1101,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .ww-table tbody tr:hover td { background: rgba(var(--ac-rgb), 0.04); }
 
 /* Tablo scroll indicator */
-.ww-table-wrapper {
-  position: relative;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: var(--radius);
-}
-.ww-table-wrapper::after {
-  content: '↔ Kaydır';
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(0,0,0,0.7);
-  color: var(--text);
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-family: var(--font);
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  backdrop-filter: blur(4px);
-}
-.ww-table-wrapper:hover::after,
-.ww-table-wrapper:active::after {
-  opacity: 0.7;
-}
-@media (min-width: 768px) {
-  .ww-table-wrapper::after {
-    display: none;
-  }
-}
 
 .sel-bar {
   display: none;
@@ -1454,44 +1185,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .btn-bulk-delete:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
 /* ============================================================
-   AUTH (LOGIN / REGISTER)
-   ============================================================ */
-
-.auth-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 1rem;
-}
-.auth-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: clamp(1rem, 2vw, 1.75rem);
-  width: 100%;
-  max-width: min(420px, 92vw);
-  box-shadow: 0 8px 32px rgba(var(--ac-rgb), 0.1);
-}
-.auth-box .auth-title {
-  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-  margin-bottom: 0.3rem;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--text), var(--accent2));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.auth-box .auth-sub {
-  color: var(--muted);
-  font-size: clamp(11px, 1vw, 13px);
-  margin-bottom: 1rem;
-  font-family: var(--font);
-}
-
-/* ============================================================
    FORMLAR
    ============================================================ */
 
@@ -1573,47 +1266,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: rgba(var(--ac-rgb), 0.05);
   box-shadow: 0 0 12px var(--accent-glow);
 }
-.btn-login {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--muted);
-  font-family: var(--font);
-  font-size: clamp(11px, 0.9vw, 13px);
-  font-weight: 500;
-  padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1.2rem);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 36px;
-}
-.btn-login:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(var(--ac-rgb), 0.05);
-  box-shadow: 0 0 12px var(--accent-glow);
-}
-.btn-register {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border: none;
-  border-radius: 8px;
-  color: var(--ac-on, #fff);
-  font-family: var(--font);
-  font-size: clamp(11px, 0.9vw, 13px);
-  font-weight: 600;
-  padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1.2rem);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 4px 12px var(--accent-glow);
-  min-height: 36px;
-}
-.btn-register:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px var(--accent-glow);
-}
 
 /* ============================================================
    BADGES
@@ -1637,10 +1289,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   color: var(--red);
   border: 1px solid rgba(239,68,68,0.3);
 }
-
-/* ============================================================
-   TOAST - SAFE AREA DESTEKLİ
-   ============================================================ */
 
 /* ============================================================
    TOAST SYSTEM (Lucide Icons + Glassmorphism)
@@ -2127,19 +1775,6 @@ body.light-theme .skeleton-doughnut::before {
   .ww-reveal-stagger > * { animation: none !important; }
 }
 
-.skeleton-calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: clamp(2px, 0.4vw, 5px);
-}
-.skeleton-calendar .skeleton-day {
-  aspect-ratio: 1;
-  border-radius: 8px;
-  background: var(--border);
-  opacity: 0.2;
-  min-height: clamp(32px, 6vw, 60px);
-}
-
 .skeleton-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(clamp(100px, 15vw, 160px), 1fr));
@@ -2195,115 +1830,6 @@ body.light-theme .skeleton-stat::after {
 }
 
 /* ============================================================
-   PRO DROPDOWN
-   ============================================================ */
-
-.nav-dropdown {
-  position: relative;
-  display: inline-block;
-}
-.nav-dropdown-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-family: var(--font);
-  font-size: clamp(10px, 0.8vw, 12px);
-  font-weight: 500;
-  padding: clamp(0.2rem, 0.3vw, 0.3rem) clamp(0.4rem, 0.6vw, 0.7rem);
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-  min-height: 32px;
-}
-.nav-dropdown-btn:hover {
-  color: var(--accent);
-  background: rgba(var(--ac-rgb), 0.06);
-}
-.nav-dropdown-btn .dropdown-arrow {
-  font-size: 7px;
-  transition: transform 0.2s ease;
-  margin-left: 2px;
-}
-.nav-dropdown-btn.active .dropdown-arrow {
-  transform: rotate(180deg);
-}
-.nav-dropdown-menu {
-  position: absolute;
-  top: clamp(34px, 5vw, 40px);
-  right: 0;
-  min-width: clamp(160px, 25vw, 220px);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px 0;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px);
-  z-index: var(--z-dropdown);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  pointer-events: none;
-}
-.nav-dropdown-menu.open {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: all;
-}
-.nav-dropdown-menu .menu-label {
-  padding: 0.25rem 0.8rem;
-  font-size: clamp(7px, 0.6vw, 9px);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  opacity: 0.5;
-}
-.nav-dropdown-menu a {
-  display: flex;
-  align-items: center;
-  gap: clamp(4px, 0.6vw, 8px);
-  padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.6rem, 0.8vw, 1rem);
-  color: var(--text);
-  text-decoration: none;
-  font-family: var(--font);
-  font-size: clamp(10px, 0.8vw, 12px);
-  font-weight: 500;
-}
-.nav-dropdown-menu a:hover {
-  background: rgba(var(--ac-rgb), 0.06);
-  color: var(--accent);
-}
-.nav-dropdown-menu a .pro-icon {
-  font-size: clamp(11px, 1vw, 14px);
-  width: clamp(16px, 2vw, 20px);
-  text-align: center;
-}
-.nav-dropdown-menu .dropdown-divider {
-  height: 1px;
-  background: var(--border);
-  margin: clamp(2px, 0.3vw, 4px) clamp(6px, 0.8vw, 12px);
-}
-
-/* Mobile Pro */
-.mobile-pro-label {
-  padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1rem) 0.2rem;
-  font-size: clamp(8px, 0.7vw, 10px);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  opacity: 0.6;
-}
-.nav-divider {
-  height: 1px;
-  background: var(--border);
-  margin: clamp(2px, 0.3vw, 4px) clamp(6px, 0.8vw, 12px);
-}
-
-/* ============================================================
    PLAN PERKS
    ============================================================ */
 
@@ -2329,9 +1855,6 @@ body.light-theme .skeleton-stat::after {
   gap: clamp(0.3rem, 0.5vw, 0.5rem);
   letter-spacing: 0.02em;
 }
-.plan-perks-box .perks-title .perks-icon {
-  font-size: clamp(15px, 1.5vw, 18px);
-}
 .plan-perks-box .perks-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -2341,32 +1864,6 @@ body.light-theme .skeleton-stat::after {
   .plan-perks-box .perks-grid {
     grid-template-columns: 1fr 1fr;
   }
-}
-.plan-perks-box .perk-item {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.3rem, 0.5vw, 0.6rem);
-  padding: clamp(0.3rem, 0.4vw, 0.5rem) clamp(0.4rem, 0.6vw, 0.75rem);
-  background: var(--surface);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-.plan-perks-box .perk-item:hover {
-  border-color: rgba(var(--ac-rgb), 0.25);
-  background: rgba(var(--ac-rgb), 0.03);
-  transform: translateX(3px);
-}
-.plan-perks-box .perk-item .perk-icon {
-  font-size: clamp(13px, 1.2vw, 16px);
-  width: clamp(20px, 3vw, 28px);
-  text-align: center;
-  flex-shrink: 0;
-}
-.plan-perks-box .perk-item .perk-text {
-  font-size: clamp(10px, 0.9vw, 12.5px);
-  font-weight: 500;
-  color: var(--text);
-  font-family: var(--font);
 }
 
 /* ============================================================
@@ -2456,31 +1953,28 @@ body.light-theme .panel-glow {
 
   /* Animasyonlu elementleri varsayılan hallerine döndür */
   .cal-day.today::before,
-  .cal-day.today .day-pulse,
-  .quick-add-loading .spinner,
-  .spinner,
-  .skeleton::after,
-  .skeleton-chart::after,
-  .skeleton-chart .skeleton-doughnut::before,
-  .skeleton-stat::after,
-  .skeleton-row .skeleton-cell::after,
-  .cal-grid-skeleton .skeleton-day::after,
-  .calendar-summary-skeleton .skeleton-stat::after,
-  .strategies-grid-skeleton .skeleton-strategy-card::after,
-  .comparison-skeleton .comparison-card-skeleton::after {
+.quick-add-loading .spinner,
+.spinner,
+.skeleton::after,
+.skeleton-chart::after,
+.skeleton-chart .skeleton-doughnut::before,
+.skeleton-stat::after,
+.skeleton-row .skeleton-cell::after,
+.cal-grid-skeleton .skeleton-day::after,
+.calendar-summary-skeleton .skeleton-stat::after,
+.strategies-grid-skeleton .skeleton-strategy-card::after,
+.comparison-skeleton .comparison-card-skeleton::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
 
   /* Hareketli gradyanları durdur */
   .plan-card.pro::before,
-  .plan-card.pro::after,
-  .plan-card-home.pro::after {
+.plan-card.pro::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
 
-  .bellShake,
   .nav-bell-btn.has-alert {
     animation: none !important;
   }
@@ -2497,9 +1991,6 @@ body.light-theme .panel-glow {
   .nav-toggle { display: inline-flex; }
   .nav-links { display: none !important; }
   .nav-menu { display: block; }
-  .nav-dropdown {
-    display: none !important;
-  }
   .kpi-bar { flex-direction: column; align-items: flex-start; }
   .kpi-item {
     border-right: none;
@@ -2512,30 +2003,24 @@ body.light-theme .panel-glow {
 
   /* ⭐ DOKUNMATİK HEDEF BOYUTLARI - 44px minimum */
   .btn,
-  .btn-login,
-  .btn-register,
-  .nav-toggle,
-  .user-avatar,
-  .add-trade-btn,
-  .date-filter-option,
-  .export-btn,
-  .cal-nav-btn,
-  .cal-day,
-  .sidebar-nav-item,
-  .settings-tab-btn,
-  .strategy-chip,
-  .plan-features-toggle,
-  .trade-note-indicator,
-  .sel-bar .sel-clear,
-  .btn-bulk-delete,
-  .confirm-modal-footer .btn-modal-cancel,
-  .confirm-modal-footer .btn-modal-danger,
-  .dropdown-item,
-  .nav-dropdown-btn,
-  .nav-dropdown-menu a,
-  .social-link,
-  .mini-cal-day,
-  .strategy-pill {
+.nav-toggle,
+.user-avatar,
+.date-filter-option,
+.export-btn,
+.cal-nav-btn,
+.cal-day,
+.sidebar-nav-item,
+.settings-tab-btn,
+.strategy-chip,
+.trade-note-indicator,
+.sel-bar .sel-clear,
+.btn-bulk-delete,
+.confirm-modal-footer .btn-modal-cancel,
+.confirm-modal-footer .btn-modal-danger,
+.dropdown-item,
+.social-link,
+.mini-cal-day,
+.strategy-pill {
     min-height: 44px;
     min-width: 44px;
   }
@@ -2573,12 +2058,6 @@ body.light-theme .panel-glow {
 
   .page-header h1 { font-size: 1.2rem; }
   .page-header .subtitle { font-size: 0.75rem; }
-
-  .auth-box { padding: 1.25rem; }
-  .auth-box .auth-title { font-size: 1.2rem; }
-
-  .footer-container { grid-template-columns: 1fr; gap: 1.25rem; }
-  .footer-social { gap: 0.75rem; }
   .social-link span { display: none; }
 }
 
@@ -2602,7 +2081,6 @@ body.light-theme .panel-glow {
   .cal-day .day-trade-count { font-size: 4px; }
 
   .cal-nav-btn { font-size: 8px; padding: 0.15rem 0.3rem; }
-  .cal-nav-btn.month-label { font-size: 8px; min-width: 44px; }
   .cal-header .cal-title { font-size: 0.85rem; }
   .cal-header .cal-title .cal-icon-wrap { width: 22px; height: 22px; }
   .cal-header .cal-title .cal-icon-wrap svg { width: 12px; height: 12px; }
@@ -2621,17 +2099,6 @@ body.light-theme .panel-glow {
    ============================================================ */
 
 @media (max-width: 480px) {
-  .theme-customization-section .color-picker-row {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .theme-customization-section .color-picker-row input[type="color"] {
-    width: 48px;
-    height: 48px;
-  }
-  .theme-customization-section .color-picker-row input[type="text"] {
-    width: 100%;
-  }
   .theme-preview-box {
     padding: 0.75rem;
   }

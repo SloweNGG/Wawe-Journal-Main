@@ -266,29 +266,6 @@ body.light-theme .panel-glow.overtrade-glow {
   font-size: clamp(8px, 0.7vw, 10px);
 }
 
-.ot-pro-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(var(--ac-rgb), 0.06);
-  border: 1px solid rgba(var(--ac-rgb), 0.15);
-  border-radius: 10px;
-  margin-bottom: 1rem;
-}
-.ot-pro-banner .banner-icon {
-  font-size: clamp(1.2rem, 2vw, 1.4rem);
-  flex-shrink: 0;
-}
-.ot-pro-banner .banner-text strong {
-  color: var(--accent);
-}
-.ot-pro-banner .banner-text p {
-  font-size: clamp(10px, 0.8vw, 12px);
-  color: var(--muted);
-  margin: 0;
-}
-
 /* ⭐ PRO KİLİTLİ İÇERİK */
 .ot-pro-locked {
   text-align: center;
@@ -1652,21 +1629,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 .settings-page-header {
   margin-bottom: clamp(0.75rem, 1.5vw, 1.5rem);
 }
-.settings-page-header-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  font-family: var(--font);
-  font-size: clamp(7px, 0.6vw, 9px);
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: var(--accent2);
-  background: rgba(var(--ac-rgb), 0.08);
-  border: 1px solid rgba(var(--ac-rgb), 0.18);
-  padding: 3px 10px;
-  border-radius: 20px;
-  margin-bottom: .5rem;
-}
 .settings-page-header h1 {
   font-family: var(--font-display);
   font-size: clamp(1.2rem, 3vw, 1.6rem);
@@ -1811,13 +1773,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   box-shadow: none;
 }
 
-.plan-card .plan-price-wrap {
-  display: flex;
-  align-items: baseline;
-  gap: 0.2rem;
-  margin-bottom: 0.3rem;
-}
-
 .plan-card .plan-price {
   font-family: var(--font);
   font-variant-numeric: tabular-nums;
@@ -1837,19 +1792,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   font-weight: 500;
   color: var(--muted);
 }
-.plan-card .plan-price .discount-tag {
-  display: inline-block;
-  font-size: clamp(0.45rem, 0.5vw, 0.6rem);
-  font-weight: 700;
-  font-family: var(--font);
-  background: rgba(34, 197, 94, 0.15);
-  color: var(--green);
-  padding: 0.1rem 0.5rem;
-  border-radius: 20px;
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  margin-left: 0.3rem;
-  vertical-align: middle;
-}
 
 .plan-card .plan-desc {
   font-size: clamp(11px, 0.9vw, 13px);
@@ -1857,161 +1799,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   line-height: 1.6;
   margin-bottom: 0.75rem;
   max-width: 90%;
-}
-
-.plan-card .plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 0.75rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.2rem 0.75rem;
-}
-@media (min-width: 600px) {
-  .plan-card .plan-features {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.plan-card .plan-features li {
-  font-size: clamp(10px, 0.8vw, 12.5px);
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0;
-  transition: all 0.2s ease;
-  border-radius: 6px;
-}
-.plan-card .plan-features li.included {
-  color: var(--text);
-}
-.plan-card .plan-features li .indicator {
-  width: clamp(16px, 2.5vw, 20px);
-  height: clamp(16px, 2.5vw, 20px);
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: clamp(9px, 0.8vw, 11px);
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-.plan-card .plan-features li.included .indicator {
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--green);
-  border: 1px solid rgba(34, 197, 94, 0.15);
-}
-.plan-card .plan-features li.included:hover .indicator {
-  transform: scale(1.1);
-  box-shadow: none;
-}
-.plan-card .plan-features li.excluded {
-  opacity: 0.5;
-}
-.plan-card .plan-features li.excluded .indicator {
-  background: rgba(107, 107, 128, 0.08);
-  color: var(--muted);
-  border: 1px solid var(--border);
-}
-.plan-card .plan-features li.pro-feature {
-  position: relative;
-}
-.plan-card .plan-features li.pro-feature::after {
-  content: '✦';
-  font-size: clamp(6px, 0.5vw, 8px);
-  color: var(--accent2);
-  margin-left: 4px;
-  opacity: 0.6;
-}
-.plan-card .plan-features li.pro-feature .indicator {
-  background: rgba(var(--ac-rgb), 0.12);
-  color: var(--accent2);
-  border: 1px solid rgba(var(--ac-rgb), 0.2);
-}
-
-.plan-card .plan-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-}
-.plan-card .plan-actions .btn-pro {
-  background: #000;
-  border: none;
-  color: #fff;
-  padding: clamp(0.4rem, 0.6vw, 0.7rem) clamp(0.8rem, 1.2vw, 1.6rem);
-  border-radius: 10px;
-  font-family: var(--font);
-  font-size: clamp(11px, 0.8vw, 13px);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative;
-  overflow: hidden;
-  flex: 1;
-  min-width: 100px;
-  text-align: center;
-  letter-spacing: 0.02em;
-  min-height: 40px;
-}
-.plan-card .plan-actions .btn-pro::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  display: none;
-  transition: left 0.6s ease;
-}
-.plan-card .plan-actions .btn-pro:hover::before {
-  left: 100%;
-}
-.plan-card .plan-actions .btn-pro:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: none;
-}
-.plan-card .plan-actions .btn-pro:active {
-  transform: scale(0.96);
-}
-.plan-card .plan-actions .btn-pro.secondary {
-  background: transparent;
-  border: 1.5px solid var(--border2);
-  color: var(--text);
-  box-shadow: none;
-}
-.plan-card .plan-actions .btn-pro.secondary:hover {
-  border-color: var(--accent2);
-  color: var(--accent2);
-  box-shadow: none;
-  transform: translateY(-2px);
-}
-.plan-card .plan-actions .btn-pro-outline {
-  background: transparent;
-  border: 1.5px solid var(--border);
-  color: var(--muted);
-  padding: clamp(0.4rem, 0.6vw, 0.7rem) clamp(0.8rem, 1.2vw, 1.6rem);
-  border-radius: 10px;
-  font-family: var(--font);
-  font-size: clamp(11px, 0.8vw, 13px);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
-  min-width: 100px;
-  text-align: center;
-  min-height: 40px;
-}
-.plan-card .plan-actions .btn-pro-outline:hover {
-  border-color: var(--red);
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.05);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
 }
 
 .plan-card .plan-status {
@@ -2056,39 +1843,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   50% { opacity: 0.6; transform: scale(0.8); }
 }
 
-.plan-expiry {
-  font-size: clamp(9px, 0.7vw, 11px);
-  color: var(--muted);
-  margin-top: 0.3rem;
-  font-family: var(--font);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--surface2);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-.plan-expiry .expiry-icon {
-  font-size: clamp(12px, 1.2vw, 14px);
-}
-
-.plan-payment-note {
-  font-size: clamp(9px, 0.7vw, 11.5px);
-  color: var(--muted);
-  margin-top: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  background: var(--surface2);
-  border-radius: 8px;
-  border: 1px dashed var(--border);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.plan-payment-note .payment-icon {
-  font-size: clamp(14px, 1.5vw, 16px);
-}
-
 /* ⭐ PLAN PERKS */
 .plan-perks-box {
   margin-top: 0.75rem;
@@ -2113,9 +1867,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   gap: 0.4rem;
   letter-spacing: 0.02em;
 }
-.plan-perks-box .perks-title .perks-icon {
-  font-size: clamp(16px, 1.5vw, 18px);
-}
 .plan-perks-box .perks-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -2126,33 +1877,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
   }
-}
-.plan-perks-box .perk-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: clamp(0.3rem, 0.4vw, 0.5rem) clamp(0.4rem, 0.6vw, 0.75rem);
-  background: var(--surface);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
-}
-.plan-perks-box .perk-item:hover {
-  border-color: rgba(var(--ac-rgb), 0.25);
-  background: rgba(var(--ac-rgb), 0.03);
-  transform: translateX(3px);
-}
-.plan-perks-box .perk-item .perk-icon {
-  font-size: clamp(13px, 1.2vw, 16px);
-  width: clamp(20px, 3vw, 28px);
-  text-align: center;
-  flex-shrink: 0;
-}
-.plan-perks-box .perk-item .perk-text {
-  font-size: clamp(10px, 0.8vw, 12.5px);
-  font-weight: 500;
-  color: var(--text);
-  font-family: var(--font);
 }
 
 /* Görselli Pro kartları: çizim + ad + açıklama (settings.js → PRO_FEATURE_VISUALS) */
@@ -2252,47 +1976,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 @media (prefers-reduced-motion: reduce) {
   .perks-showcase .perk-card, .perks-showcase .pv-lift, .perks-showcase .pv-bell { transition: none; }
   .perks-showcase .perk-card:hover, .perks-showcase .perk-card:hover .pv-lift, .perks-showcase .perk-card:hover .pv-bell { transform: none; }
-}
-
-/* ⭐ ABONELİK SÜRESİ */
-.subscription-timer {
-  margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--surface2);
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-.subscription-timer .timer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.3rem;
-}
-.subscription-timer .timer-label {
-  font-size: clamp(9px, 0.7vw, 11px);
-  color: var(--muted);
-  font-family: var(--font);
-  letter-spacing: 0.05em;
-}
-.subscription-timer .timer-value {
-  font-size: clamp(11px, 1vw, 14px);
-  font-weight: 700;
-  color: var(--text);
-  font-family: var(--font);
-  font-variant-numeric: tabular-nums;
-}
-.subscription-timer .timer-progress-wrap {
-  width: 100%;
-  height: 3px;
-  background: var(--border);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.subscription-timer .timer-progress-wrap .timer-progress {
-  height: 100%;
-  border-radius: 99px;
-  background: var(--accent);
-  transition: width 0.5s ease;
 }
 
 /* ============================================================
@@ -2596,26 +2279,10 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   margin: 0;
 }
 
-.plan-top-badge.pro-badge-glow {
-  background: var(--accent);
-  color: var(--ac-on, #fff);
-  box-shadow: none;
-}
-
 .tier-title-wrap {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.vip-tag {
-  background: #f59e0b;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 6px;
-  letter-spacing: 0.05em;
 }
 
 .tier-title {
@@ -2632,13 +2299,6 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   gap: 3px;
   flex-wrap: wrap;
   margin: 0.4rem 0 0.15rem 0;
-}
-
-.tier-price-from {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-right: 4px;
 }
 
 .tier-price-currency {
@@ -4478,11 +4138,6 @@ body.light-theme .extend-wizard-wrapper {
 }
 
 /* ============================================================
-   CONFIRM MODAL - KALDIRILDI (styles.css'te tek kaynak)
-   ============================================================ */
-/* .confirm-modal-overlay, .confirm-modal-box, etc. artık styles.css'ten gelir */
-
-/* ============================================================
    AVATAR POPUP
    ============================================================ */
 .avatar-popup-overlay {
@@ -4583,9 +4238,6 @@ body.light-theme .extend-wizard-wrapper {
   .avatar-popup-body .big-avatar {
     max-width: min(300px, 80vw);
   }
-  .plan-card .plan-features {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* 767px ve altı - mobil navbar */
@@ -4595,10 +4247,6 @@ body.light-theme .extend-wizard-wrapper {
   }
   .nav-right {
     margin-left: auto;
-  }
-  .theme-toggle-row {
-    flex-direction: column;
-    align-items: flex-start;
   }
   .lang-selector-compact {
     margin-top: 0.3rem;
@@ -4640,9 +4288,6 @@ body.light-theme .extend-wizard-wrapper {
     text-align: center;
     justify-content: center;
   }
-  .plan-card .plan-actions .btn-pro {
-    min-width: 100%;
-  }
   .settings-tab-btn {
     font-size: 9px;
     padding: 0.25rem 0.5rem;
@@ -4671,19 +4316,6 @@ body.light-theme .extend-wizard-wrapper {
   .s-card-body {
     padding: 0.4rem 0.5rem;
   }
-  .color-picker-row label {
-    min-width: 60px;
-    font-size: 9px;
-  }
-  .color-picker-row input[type="color"] {
-    width: 32px;
-    height: 32px;
-  }
-  .color-picker-row input[type="text"] {
-    font-size: 9px;
-    min-width: 60px;
-    max-width: 80px;
-  }
   .plan-card {
     padding: 0.6rem;
   }
@@ -4696,19 +4328,6 @@ body.light-theme .extend-wizard-wrapper {
   .plan-card .plan-desc {
     font-size: 10px;
   }
-  .plan-card .plan-features li {
-    font-size: 9px;
-  }
-  .plan-card .plan-features li .indicator {
-    width: 14px;
-    height: 14px;
-    font-size: 8px;
-  }
-  .plan-card .plan-actions .btn-pro {
-    font-size: 10px;
-    padding: 0.3rem 0.6rem;
-    min-height: 34px;
-  }
   .theme-customization-section .section-title {
     font-size: 0.7rem;
   }
@@ -4718,10 +4337,6 @@ body.light-theme .extend-wizard-wrapper {
   .theme-preview-box p {
     font-size: 11px;
   }
-  .theme-preview-box .preview-badges span {
-    font-size: 8px;
-    padding: 2px 8px;
-  }
 }
 
 /* ============================================================
@@ -4730,19 +4345,15 @@ body.light-theme .extend-wizard-wrapper {
 
 @media (max-width: 767px) {
   .sidebar-nav-item,
-  .settings-tab-btn,
-  .btn-upload,
-  .btn-remove-avatar,
-  .btn-save-ot,
-  .btn-save-theme,
-  .btn-reset-theme,
-  .btn-outline-danger,
-  .lang-compact-btn,
-  .currency-btn,
-  .plan-card .plan-actions .btn-pro,
-  .plan-card .plan-actions .btn-pro-outline,
-  .ot-pro-locked .btn-pro-cta,
-  .avatar-popup-close {
+.settings-tab-btn,
+.btn-upload,
+.btn-remove-avatar,
+.btn-save-ot,
+.btn-outline-danger,
+.lang-compact-btn,
+.currency-btn,
+.ot-pro-locked .btn-pro-cta,
+.avatar-popup-close {
     min-height: 44px;
     min-width: 44px;
   }
@@ -4763,12 +4374,8 @@ body.light-theme .extend-wizard-wrapper {
    ═══════════════════════════════════════════════════════════ */
 
 /* Plan - ödeme metodu */
-.plan-payment-method-block { margin: 0.75rem 0; padding: 0.75rem; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
-.plan-payment-method-label { font-size: 10px; color: var(--muted); font-family: var(--font); display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem; }
-.plan-payment-methods { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .pay-method-btn { padding: 0.4rem 1.2rem; border-radius: 20px; border: 2px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font); font-size: 12px; font-weight: 600; transition: all 0.2s; }
 .pay-method-btn.active { border-color: var(--accent); background: var(--accent); color: var(--ac-on, #fff); }
-.timer-expiry { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: var(--font); }
 
 /* Overtrade */
 /* Ayarlar > Bölge ve Saat ile aynı dil: grup kartı, solda ikon + başlık + açıklama, sağda kompakt kontrol */
@@ -4827,23 +4434,14 @@ body.light-theme .ot-level-opt[data-level="info"] { --lv: #2563eb; }
 
 /* Theme customization form */
 .theme-form { display: flex; flex-direction: column; gap: 1rem; }
-.theme-notice { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.15); border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 12px; color: var(--text); }
 .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .color-field { display: flex; flex-direction: column; gap: 4px; }
 .color-field label { font-size: 12px; color: var(--muted); }
 .color-input-group { display: flex; align-items: center; gap: 0.5rem; }
 .color-input-picker { width: 44px; height: 38px; border: none; cursor: pointer; background: transparent; padding: 0; border-radius: 6px; }
 .color-input-text { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: var(--font); font-size: 12px; }
-.font-size-field { display: flex; flex-direction: column; gap: 0.25rem; }
-.font-size-field label { font-size: 12px; color: var(--muted); }
-.font-size-slider { width: 100%; accent-color: var(--accent); }
-.font-size-hints { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
 .theme-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 .theme-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
-.preview-text { margin: 0; color: var(--text); }
-.preview-badges .badge-accent { background: var(--accent); color: var(--ac-on, #fff); padding: 4px 12px; border-radius: 4px; font-size: 12px; }
-.preview-badges .badge-green { background: var(--green); color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
-.preview-badges .badge-red { background: var(--red); color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
 
 @media (max-width: 640px) {
   .color-grid { grid-template-columns: 1fr; }

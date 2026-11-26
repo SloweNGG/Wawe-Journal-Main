@@ -86,8 +86,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .chip-live { display: inline-flex; align-items: center; gap: 7px; border-color: rgba(34,197,94,.45) !important; }
 .chip-logo { width: 20px; height: 20px; border-radius: 5px; object-fit: contain; flex-shrink: 0; }
 .chip-tag { font-size: 10px; letter-spacing: .06em; color: #4ade80; }
-.chip-soon { display: inline-flex; align-items: center; gap: 7px; color: #a1a1aa; border-style: dashed !important; }
-.chip-soon .chip-tag { color: #c4b5fd; }
 
 /* hero */
 .hero-scene { position: relative; margin-top: -92px; padding: 188px 24px 0; min-height: 1120px; display: flex; flex-direction: column; justify-content: space-between; gap: 48px; text-align: center;

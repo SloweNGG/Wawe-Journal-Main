@@ -196,35 +196,6 @@ body.light-theme .nav::after {
   filter: drop-shadow(0 0 10px var(--accent-glow));
 }
 
-.nav-logo-text {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-
-.nav-logo-text span {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.nav-version {
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-  font-weight: 600;
-  color: var(--muted);
-  background: rgba(var(--ac-rgb), 0.1);
-  border: 1px solid rgba(var(--ac-rgb), 0.15);
-  padding: 0.05rem 0.35rem;
-  border-radius: 4px;
-  margin-left: 2px;
-  opacity: 0.6;
-  letter-spacing: 0.04em;
-}
-
 .nav-right {
   display: flex;
   align-items: center;
@@ -295,52 +266,6 @@ body.light-theme .nav::after {
 }
 
 /* Tooltip for Plan Badge */
-.plan-badge-tooltip {
-  position: absolute;
-  top: calc(100% + 9px);
-  left: 50%;
-  transform: translateX(-50%) translateY(-6px) scale(0.97);
-  min-width: 175px;
-  padding: 8px 12px;
-  background: rgba(13, 14, 24, 0.94);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(var(--ac-rgb), 0.15);
-  color: var(--text);
-  font-family: var(--font);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              visibility 0.2s;
-  z-index: 10001;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.plan-badge-tooltip::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 9px;
-  height: 9px;
-  background: rgba(13, 14, 24, 0.94);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.plan-badge:hover .plan-badge-tooltip,
-.plan-badge:focus .plan-badge-tooltip {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateX(-50%) translateY(0) scale(1);
-}
 
 .plan-tooltip-title {
   font-weight: 700;
@@ -361,64 +286,9 @@ body.light-theme .nav::after {
   font-weight: 500;
 }
 
-body.light-theme .plan-badge-tooltip {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 20px 48px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(var(--ac-rgb), 0.12);
-  color: #1e1b4b;
-}
-
-body.light-theme .plan-badge-tooltip::before {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
 @keyframes dotPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(0.7); }
-}
-
-.nav-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0.15rem 0.6rem 0.15rem 0.3rem;
-  border-radius: 40px;
-  border: 1px solid var(--glass-border);
-  background: rgba(255,255,255,0.03);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-body.light-theme .nav-user {
-  background: rgba(0,0,0,0.02);
-}
-
-.nav-user:hover {
-  border-color: var(--accent);
-  background: rgba(var(--ac-rgb), 0.06);
-}
-
-.nav-user .user-info {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.nav-user .user-info .name {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.nav-user .user-info .role {
-  font-size: 0.5625rem;
-  color: var(--muted);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .user-avatar {
@@ -529,60 +399,6 @@ body.light-theme .nav-bell-btn.has-alert {
 /* ============================================================
    BUG REPORT BUTTON
    ============================================================ */
-.nav-bug-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.nav-bug-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-  border-radius: 50%;
-  color: var(--muted, #94a3b8);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  flex-shrink: 0;
-  text-decoration: none;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-body.light-theme .nav-bug-btn {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-.nav-bug-btn svg,
-.nav-bug-btn i {
-  width: 15px;
-  height: 15px;
-  stroke-width: 2.1;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.nav-bug-btn:hover {
-  border-color: rgba(244, 63, 94, 0.45);
-  color: #fb7185;
-  background: rgba(244, 63, 94, 0.09);
-  box-shadow: 0 0 14px -2px rgba(244, 63, 94, 0.25);
-  transform: translateY(-1px);
-}
-
-.nav-bug-btn:hover svg,
-.nav-bug-btn:hover i {
-  transform: scale(1.12);
-}
-
-.nav-bug-btn:active {
-  transform: translateY(0);
-}
 
 @keyframes bellRing {
   0%, 100% { transform: rotate(0deg); }
@@ -1006,79 +822,9 @@ body.light-theme .bell-panel-footer {
 /* ============================================================
    PRO DROPDOWN MENU (LUXURY GLASSMORPHISM)
    ============================================================ */
-.nav-dropdown-menu.pro-menu-glass {
-  position: absolute;
-  top: 46px;
-  right: 0;
-  min-width: 190px;
-  background: rgba(13, 14, 24, 0.94);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 6px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(-8px) scale(0.97);
-  transform-origin: top right;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              visibility 0.2s;
-  z-index: var(--z-dropdown, 9999);
-  box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.75),
-              0 0 0 1px rgba(var(--ac-rgb), 0.15),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-body.light-theme .nav-dropdown-menu.pro-menu-glass {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 24px 64px -12px rgba(15, 23, 42, 0.18),
-              0 0 0 1px rgba(var(--ac-rgb), 0.1);
-}
-
-.nav-dropdown-menu.pro-menu-glass.open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: all;
-  transform: translateY(0) scale(1);
-}
-
-.pro-menu-header {
-  display: flex;
-  align-items: center;
-  padding: 6px 10px 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 4px;
-}
-
-body.light-theme .pro-menu-header {
-  border-bottom-color: rgba(0, 0, 0, 0.06);
-}
-
-.pro-menu-title {
-  font-family: var(--font);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-body.light-theme .pro-menu-title {
-  color: #64748b;
-}
 
 .pro-menu-tag {
   display: none !important;
-}
-
-.pro-menu-items {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 
 .pro-menu-footer {
@@ -1598,22 +1344,6 @@ body.light-theme .menu-section { border-top-color: rgba(15, 23, 42, 0.07); }
   .plan-badge {
     display: none !important;
   }
-  
-  .nav-user .user-info {
-    display: none;
-  }
-  .nav-user {
-    padding: 0.15rem 0.3rem;
-    border: none;
-    background: transparent;
-  }
-  .nav-user:hover {
-    border: none;
-    background: transparent;
-  }
-  .nav-logo-text {
-    font-size: 0.95rem;
-  }
   .nav-logo-mark {
     width: 24px;
     height: 24px;
@@ -1707,9 +1437,6 @@ body.light-theme .menu-section { border-top-color: rgba(15, 23, 42, 0.07); }
   }
   .nav-right {
     gap: 0.3rem;
-  }
-  .nav-logo-text {
-    font-size: 0.85rem;
   }
   .nav-logo-mark {
     width: 22px;
@@ -1811,9 +1538,6 @@ body.light-theme .menu-section { border-top-color: rgba(15, 23, 42, 0.07); }
   .nav-right {
     gap: 0.2rem;
   }
-  .nav-logo-text {
-    font-size: 0.75rem;
-  }
   .nav-logo-mark {
     width: 20px;
     height: 20px;
@@ -1882,8 +1606,7 @@ body.light-theme .menu-section { border-top-color: rgba(15, 23, 42, 0.07); }
 .strategies-main,
 .trades-main,
 .settings-wrap,
-.settings-panels,
-.page-content {
+.settings-panels {
   animation: fadeInContent 0.4s cubic-bezier(0.4,0,0.2,1) both;
 }
 
@@ -2157,11 +1880,6 @@ body.light-theme .wj-journal-transit-dot {
 /* 7) Pro sürekli yumuşak glow — sadece upgrade-pulse yoksa */
 .nav .plan-badge.pro:not(.badge-upgrade-pulse) {
   animation: badgeProPulseSoft 3s ease-in-out infinite !important;
-}
-
-/* 8) Upgrade trigger (JS class ekler/kaldırır) – sürekli animasyonları ezer */
-.nav .plan-badge.badge-upgrade-pulse {
-  animation: badgePopGlow 0.45s cubic-bezier(0.34,1.56,0.64,1) !important;
 }
 
 /* 9) Hover: transition + hafif büyüme (PAKET B: mevcut davranış korundu) */
@@ -2508,78 +2226,6 @@ body.light-theme .journal-item.active {
 .journal-icon-wrap svg {
   width: 14px;
   height: 14px;
-}
-
-.journal-icon-wrap.has-prop-logo {
-  position: relative;
-  overflow: visible;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-ftmo {
-  background: rgba(0, 210, 255, 0.12) !important;
-  border: 1px solid rgba(0, 210, 255, 0.38) !important;
-  box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-fundednext {
-  background: rgba(var(--ac-p3-rgb), 0.12) !important;
-  border: 1px solid rgba(var(--ac-p3-rgb), 0.38) !important;
-  box-shadow: 0 0 10px rgba(var(--ac-p3-rgb), 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-fundingpips {
-  background: rgba(56, 189, 248, 0.12) !important;
-  border: 1px solid rgba(56, 189, 248, 0.38) !important;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-apex {
-  background: rgba(249, 115, 22, 0.12) !important;
-  border: 1px solid rgba(249, 115, 22, 0.38) !important;
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-topstep {
-  background: rgba(234, 179, 8, 0.12) !important;
-  border: 1px solid rgba(234, 179, 8, 0.38) !important;
-  box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-the5ers {
-  background: rgba(34, 197, 94, 0.12) !important;
-  border: 1px solid rgba(34, 197, 94, 0.38) !important;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-e8 {
-  background: rgba(79, 227, 164, 0.12) !important;
-  border: 1px solid rgba(79, 227, 164, 0.38) !important;
-  box-shadow: 0 0 10px rgba(79, 227, 164, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-alpha {
-  background: rgba(245, 158, 11, 0.12) !important;
-  border: 1px solid rgba(245, 158, 11, 0.38) !important;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-}
-
-.journal-icon-wrap.has-prop-logo.prop-custom {
-  background: rgba(var(--ac-p2-rgb), 0.12) !important;
-  border: 1px solid rgba(var(--ac-p2-rgb), 0.38) !important;
-  box-shadow: 0 0 10px rgba(var(--ac-p2-rgb), 0.2);
-}
-
-.nav-dropdown-prop-icon {
-  width: 15px;
-  height: 15px;
-  object-fit: contain;
-  display: block;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.journal-item:hover .nav-dropdown-prop-icon {
-  transform: scale(1.15);
 }
 
 .journal-info {
@@ -3092,11 +2738,6 @@ body.light-theme .noti-stat-chip.limit-danger {
 }
 
 /* YENIDEN BAGLA: Turuncu Uyarı */
-.ctrader-status-dot.needs-reconnect {
-  background: #f59e0b;
-  box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
-  animation: ctrader-pulse-amber 1.5s infinite;
-}
 @keyframes ctrader-pulse-amber {
   0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
   70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
@@ -3254,7 +2895,6 @@ body.light-theme .noti-stat-chip.limit-danger {
   border-radius: 12px;
 }
 .journal-dropdown .journal-icon-wrap svg { width: 17px; height: 17px; }
-.journal-dropdown .nav-dropdown-prop-icon { width: 20px; height: 20px; }
 
 .journal-dropdown .journal-info { gap: 3px; }
 .journal-dropdown .journal-info .journal-name {
@@ -3333,7 +2973,6 @@ body.light-theme .noti-stat-chip.limit-danger {
    radius and padding. The notification panel (bell) stays wider on
    purpose because of its tab row.
    ============================================================ */
-.nav-dropdown-menu.pro-menu-glass,
 .dropdown-menu,
 .journal-dropdown {
   box-sizing: border-box;
@@ -3448,27 +3087,6 @@ html:not(.is-pro) a[data-pro-link] {
 }
 
 /* ── + İşlem Ekle: ortak buton stili (siyah zemin, mor çerçeve, hap) ── */
-.nav-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 13px 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--ac-d1);
-  background: #000;
-  color: #f4f4f5;
-  font-family: var(--font);
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-.nav-add-btn:hover { background: #0d0618; border-color: var(--ac-l1); color: #fff; }
-.nav-add-btn:focus-visible { outline: 2px solid var(--ac-l1); outline-offset: 2px; }
-.light-theme .nav-add-btn { background: #fff; color: #1e1b2e; border-color: var(--ac-d1); }
-.light-theme .nav-add-btn:hover { background: #f5f0ff; }
 .nav .nav-right { gap: 0.55rem; }
 
 
@@ -3523,8 +3141,6 @@ html:not(.is-pro) a[data-pro-link] {
 
 /* ── Dar ekranlar ── */
 @media (max-width: 1180px) {
-  .nav-add-btn span { display: none; }
-  .nav-add-btn { width: 32px; padding: 0; justify-content: center; }
   .nav .journal-switch-btn .journal-name { max-width: 120px; }
 }
 @media (min-width: 768px) and (max-width: 980px) {
@@ -3547,7 +3163,6 @@ html:not(.is-pro) a[data-pro-link] {
     max-width: none;
   }
   .nav .nav-right { margin-left: auto; }
-  body[data-quick-add] .nav-add-btn { display: none; }
 }
 
 /* ============================================================
@@ -3587,7 +3202,6 @@ html:not(.is-pro) a[data-pro-link] {
 .nav .journal-dropdown .journal-item { gap: 9px; padding: 6px 8px; border-radius: 9px; }
 .nav .journal-dropdown .journal-icon-wrap { width: 28px; height: 28px; border-radius: 8px; }
 .nav .journal-dropdown .journal-icon-wrap svg { width: 14px; height: 14px; }
-.nav .journal-dropdown .nav-dropdown-prop-icon { width: 16px; height: 16px; }
 .nav .journal-dropdown .journal-info { gap: 1px; min-width: 0; }
 .nav .journal-dropdown .journal-info .journal-name { font-size: 12.5px; line-height: 1.25; }
 .nav .journal-dropdown .journal-count,

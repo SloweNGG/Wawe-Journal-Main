@@ -16,7 +16,7 @@
   if (window.WWThemeStudio) return;
 
   var T = function () { return window.WWTheme; };
-  var root = null, mode = 'dark', draft = null, saved = null, savedFont = 16, font = 16;
+  var root = null, mode = 'dark', draft = null, saved = null, font = 16;
   var commitTimer = 0, pushTimer = 0, COMMIT_DELAY = 350, PUSH_DELAY = 1500;
   var CONTRAST_TEXT = 4.5, CONTRAST_ON_ACCENT = 3, CONTRAST_ACCENT = 3, CONTRAST_BORDER = 1.12;
 
@@ -74,7 +74,7 @@
     saved = st[mode] ? copy(st[mode]) : copy(T().PRESETS[mode][0]);
     saved.preset = T().matchPreset(saved, mode);
     draft = copy(saved);
-    savedFont = font = st.fontSize || currentFont();
+    font = st.fontSize || currentFont();
 
     var label = $('[data-ts-mode-label]');
     if (label) label.textContent = mode === 'light' ? tr('settings.studio_mode_light', 'Açık tema paleti.') : tr('settings.studio_mode_dark', 'Koyu tema paleti.');
@@ -273,7 +273,7 @@
     st[mode] = null; st.fontSize = T().setFont(null);
     T().save(st);
     saved = copy(T().PRESETS[mode][0]); saved.preset = saved.id; delete saved.id; delete saved.name;
-    draft = copy(saved); savedFont = font = 16;
+    draft = copy(saved); font = 16;
     refresh(false);
     status('saved');
     toast(tr('settings.theme_reset_done', 'Tema varsayılana döndürüldü'));

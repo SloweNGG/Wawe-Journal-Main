@@ -526,7 +526,7 @@
     if (confirmResolve) finishConfirm(false);
   }
 
-  // page-local confirm (no confirm-dialog.js: it injects unescaped HTML). Resolves true on confirm, false on cancel/close/Esc.
+  // page-local confirm with escaped text. Resolves true on confirm, false on cancel/close/Esc.
   var confirmResolve = null;
   function askConfirm(text, okLabel) {
     return new Promise(function (resolve) {

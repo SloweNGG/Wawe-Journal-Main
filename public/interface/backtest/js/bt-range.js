@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  var KEY_RE = /^\d{4}-\d{2}-\d{2}$/, TIME_RE = /^\d{2}:\d{2}$/;
+  var TIME_RE = /^\d{2}:\d{2}$/;
   var PRESETS = [{ id: '1d', days: 1 }, { id: '1w', days: 7 }, { id: '1m', months: 1 }, { id: '3m', months: 3 }];
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }

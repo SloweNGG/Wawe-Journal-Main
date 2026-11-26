@@ -230,20 +230,6 @@
    RESPONSIVE
    ============================================================ */
 @media (max-width: 1200px) {
-  .dashboard-skeleton {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .dashboard-skeleton .generic-skeleton-block.wide {
-    grid-column: span 1;
-  }
-  .dashboard-skeleton .generic-skeleton-block.full,
-  .dashboard-skeleton .generic-skeleton-block.size-lg,
-  .dashboard-skeleton .generic-skeleton-block.size-full {
-    grid-column: span 2;
-  }
-  .dashboard-skeleton .generic-skeleton-block.size-md {
-    grid-column: span 1;
-  }
   .dashboard-grid {
     --row-h: 210px;
     grid-template-columns: repeat(2, 1fr);
@@ -259,13 +245,6 @@
 }
 
 @media (max-width: 768px) {
-  .dashboard-skeleton {
-    grid-template-columns: 1fr;
-  }
-  .dashboard-skeleton .generic-skeleton-block.full,
-  .dashboard-skeleton .generic-skeleton-block[class*="size-"] {
-    grid-column: span 1;
-  }
   .dashboard-grid {
     --row-h: 190px;
     grid-template-columns: 1fr;
@@ -282,19 +261,6 @@
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-  .fab-container {
-    bottom: 1rem;
-    right: 1rem;
-  }
-  .fab-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 20px;
-  }
-  .fab-btn svg {
-    width: 20px;
-    height: 20px;
   }
 }
 

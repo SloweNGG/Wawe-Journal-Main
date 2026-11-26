@@ -354,7 +354,7 @@
       draw: function (target) {
         if (!api.chart) return;
         target.useMediaCoordinateSpace(function (scope) {
-          var ctx = scope.context, W = scope.mediaSize.width, H = scope.mediaSize.height, f = opt(), font = '11px ' + f.font;
+          var ctx = scope.context, H = scope.mediaSize.height, f = opt(), font = '11px ' + f.font;
           ctx.save();
           // overlay names and values in the top left corner, one row each
           var y = 12;

@@ -491,10 +491,6 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
    KAZANÇ VE KAYIP GÜNLERİ (Belirgin, Modern ve Temaya Uyumlu)
    ============================================================ */
 
-.cal-day.color-0 .day-bg {
-  background: transparent;
-}
-
 /* Kazanç Günleri (Profit) */
 .cal-day.color-1 {
   border-color: rgba(34, 197, 94, 0.35);

@@ -1045,8 +1045,6 @@ window.loadNotifications = async function() {
     }
 
     if (user && user.id) {
-      console.log('🔔 [loadNotifications] Oturum açık kullanıcı ID:', user.id);
-
       // Gerçek zamanlı bildirim dinleyicisi (Supabase Realtime). WwRealtime (interface/shared/realtime-guard.js) kanalı
       // yalnızca geçerli oturumla açar ve token reddedilirse sonsuz yeniden denemeyi durdurur; yoksa kanal açılmaz.
       if (!window._wwNotifSubscribed && window.WwRealtime) {
@@ -1059,7 +1057,6 @@ window.loadNotifications = async function() {
               table: 'notifications',
               filter: 'user_id=eq.' + user.id
             }, function(payload) {
-              console.log('🔔 [loadNotifications Realtime] Veritabanından bildirim değişikliği:', payload);
               // a new live coach alert: the coach panel shows it (toast, optional desktop notification)
               try {
                 if (payload && payload.eventType === 'INSERT' && payload.new && /^coach\.alert\./.test(payload.new.title_key || '') && wwNotifPrefOn('coach_alert')) {
@@ -1205,8 +1202,6 @@ window.loadNotifications = async function() {
 
       if (error) {
         console.warn('⚠️ [loadNotifications] notifications tablosu sorgu hatası:', error);
-      } else {
-        console.log('✅ [loadNotifications] notifications tablosundan çekilen kayıt sayısı:', notis ? notis.length : 0);
       }
 
       if (!error && Array.isArray(notis)) {
@@ -2739,8 +2734,6 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap, mt5Map) {
       var itemColor = j.color || '#7c6dfa';
       var pa = propMap[j.id];
       var propItemBadge = getPropBadgeHtml(pa);
-      var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
-      var pInfo = (pa && typeof resolver === 'function') ? resolver((pa.rules && pa.rules.firm) || pa.template_key) : null;
       var ctAcc = ctraderMap[j.id];
       var broker = navBrokerOf(ctAcc, mt5Map[j.id]);
 

@@ -1,5 +1,5 @@
 // Sayfalardaki yerel <script src> / <link href> adresleri public/'te var olan bir dosyaya çıkmalı (perf 3d:
-// quick-add-modal.astro yıllarca repoda hiç olmayan /js/quick-modal.js'i istiyordu → 404).
+// eski quick-add-modal önizleme sayfası repoda hiç olmayan /js/quick-modal.js'i istiyordu → 404).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -25,9 +25,5 @@ describe('local script / stylesheet references', () => {
       }
     }
     assert.deepEqual(missing, []);
-  });
-
-  it('the quick add preview page no longer asks for /js/quick-modal.js', () => {
-    assert.ok(!fs.readFileSync('src/pages/quick-add-modal.astro', 'utf8').includes('/js/quick-modal.js'));
   });
 });

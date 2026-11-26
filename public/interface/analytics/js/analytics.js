@@ -9,21 +9,13 @@ const wwLog = (typeof window !== 'undefined' && window.wwLog)
   : { log: () => {}, warn: () => {}, info: () => {}, debug: () => {}, error: console.error.bind(console) };
 
 import {
-  getCurrencySymbol,
   sanitizeHTML,
-  sanitizeURL,
-  calcTradePnL,
-  formatCurrency,
-  formatCurrencyPDF,
-  bellEmptyStateHtml,
   filterTradesByDate
 } from './helpers.js';
 
 import {
-  getChartTheme,
   updateChartTheme,
   renderCharts,
-  getCharts,
   clearAllApexCharts,
   clearLightweightChart,
   setAllTrades,
@@ -34,14 +26,10 @@ import {
 import {
   showSkeletons,
   hideSkeletons,
-  saveLayoutOrder,
-  loadLayoutOrder,
-  initDragDrop,
   destroyDragDrop,
   forceResizeAllCharts,
   renderProStats,
   renderKpiBar,
-  buildWidgets,
   renderWidgets,
   loadStrategySection,
   markOvertradeAsRead,

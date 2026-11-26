@@ -30,8 +30,6 @@
 .partner-cta-btn,
 .callback-btn,
 .save-btn,
-.btn-plan,
-.btn-solid,
 .btn-line,
 .btn-accent,
 .ph-btn,
@@ -69,8 +67,6 @@
 .partner-cta-btn:hover,
 .callback-btn:hover,
 .save-btn:hover,
-.btn-plan:hover,
-.btn-solid:hover,
 .btn-line:hover,
 .btn-accent:hover,
 .ph-btn:hover,
@@ -134,8 +130,6 @@
 .light-theme .partner-cta-btn,
 .light-theme .callback-btn,
 .light-theme .save-btn,
-.light-theme .btn-plan,
-.light-theme .btn-solid,
 .light-theme .btn-line,
 .light-theme .btn-accent,
 .light-theme .ph-btn,
@@ -173,8 +167,6 @@
 .light-theme .partner-cta-btn:hover,
 .light-theme .callback-btn:hover,
 .light-theme .save-btn:hover,
-.light-theme .btn-plan:hover,
-.light-theme .btn-solid:hover,
 .light-theme .btn-line:hover,
 .light-theme .btn-accent:hover,
 .light-theme .ph-btn:hover,
@@ -234,11 +226,9 @@
 .btn-modal-cancel,
 .btn-modal-confirm,
 .btn-new-journal,
-.btn-plan,
 .btn-primary,
 .btn-save,
 .btn-save-ot,
-.btn-solid,
 .bug-submit-btn,
 .callback-btn,
 .create-strategy-btn,
@@ -251,7 +241,6 @@
 .journal-btn-save,
 .partner-cta-btn,
 .prop-card-btn-advance,
-.prop-header-btn.advance,
 .qa-comm-btn-save,
 .save-btn,
 .wj-btn-primary,
@@ -263,7 +252,6 @@
 /* strategies, onboarding, prop header and quick-add save join the shared style */
 .btn-add-strategy,
 .wj-btn-primary,
-.prop-header-btn.advance,
 .qa-comm-btn-save {
   background: #000 !important;
   background-image: none !important;
@@ -274,7 +262,6 @@
 }
 .btn-add-strategy:hover,
 .wj-btn-primary:hover,
-.prop-header-btn.advance:hover,
 .qa-comm-btn-save:hover {
   background: #0d0618 !important;
   border-color: var(--ac-l1) !important;
@@ -284,7 +271,6 @@
 }
 .light-theme .btn-add-strategy,
 .light-theme .wj-btn-primary,
-.light-theme .prop-header-btn.advance,
 .light-theme .qa-comm-btn-save {
   background: #fff !important;
   color: #1a1033 !important;
@@ -292,7 +278,6 @@
 }
 .light-theme .btn-add-strategy:hover,
 .light-theme .wj-btn-primary:hover,
-.light-theme .prop-header-btn.advance:hover,
 .light-theme .qa-comm-btn-save:hover {
   background: #f5f0ff !important;
   border-color: var(--ac-d2) !important;
@@ -327,7 +312,6 @@
    ------------------------------------------------------------ */
 .btn-action-extend,
 .pro-btn-cta,
-.plan-card .plan-actions .btn-pro,
 .nav-btn-next,
 .nav-btn-submit-pay,
 .coupon-submit-btn,
@@ -346,7 +330,6 @@
 }
 .btn-action-extend:hover,
 .pro-btn-cta:hover,
-.plan-card .plan-actions .btn-pro:hover,
 .nav-btn-next:hover,
 .nav-btn-submit-pay:hover,
 .coupon-submit-btn:hover,
@@ -374,7 +357,6 @@
 
 .light-theme .btn-action-extend,
 .light-theme .pro-btn-cta,
-.light-theme .plan-card .plan-actions .btn-pro,
 .light-theme .nav-btn-next,
 .light-theme .nav-btn-submit-pay,
 .light-theme .coupon-submit-btn,
@@ -389,7 +371,6 @@
 }
 .light-theme .btn-action-extend:hover,
 .light-theme .pro-btn-cta:hover,
-.light-theme .plan-card .plan-actions .btn-pro:hover,
 .light-theme .nav-btn-next:hover,
 .light-theme .nav-btn-submit-pay:hover,
 .light-theme .coupon-submit-btn:hover,

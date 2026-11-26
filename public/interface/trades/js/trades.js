@@ -868,7 +868,6 @@
       var t = trades[i];
       var pnl = getTradePnL(t);
       var isWin = pnl !== null && pnl > 0;
-      var isLoss = pnl !== null && pnl < 0;
       var isOpen = !t.exit_price;
       var indClass = isOpen ? 'open' : isWin ? 'win' : 'loss';
       if (grouping) {
@@ -896,7 +895,6 @@
       // ⭐ i18n: title attribute'ları
       var editTitle = _t('trades.edit');
       var deleteTitle = _t('trades.delete');
-      var showNoteTitle = _t('dashboard.show_note');
       var notesLabel = _t('trades.notes_label');
       var noNotesText = _t('trades.no_notes');
 
@@ -927,7 +925,6 @@
       var t = trades[i];
       var pnl = getTradePnL(t);
       var isWin = pnl !== null && pnl > 0;
-      var isLoss = pnl !== null && pnl < 0;
       var isOpen = !t.exit_price;
       var indClass = isOpen ? 'open' : isWin ? 'win' : 'loss';
 
@@ -1395,8 +1392,6 @@
       strategy: { selectId: 'strategy-filter', titleKey: 'trades.strategy_title', fallbackTitle: 'Strateji' }
     };
 
-    var currentFilterKey = null;
-
     function getOptionText(opt) {
       return (opt.textContent || '').trim();
     }
@@ -1420,8 +1415,6 @@
       if (!cfg) return;
       var sel = document.getElementById(cfg.selectId);
       if (!sel) return;
-
-      currentFilterKey = key;
 
       var titleText = _t(cfg.titleKey) || cfg.fallbackTitle;
       titleEl.textContent = titleText;
@@ -1452,7 +1445,6 @@
       overlay.classList.remove('active');
       sheet.classList.remove('active');
       document.body.style.overflow = '';
-      currentFilterKey = null;
     }
 
     chips.forEach(function(chip) {

@@ -612,87 +612,6 @@ import Layout from '../layouts/Layout.astro';
     /* ============================================================
        THEME / LANGUAGE / CURRENCY
        ============================================================ */
-    .theme-toggle-card {
-      background: var(--surface2);
-      border-radius: 12px;
-      padding: 1rem;
-    }
-    .theme-toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-    .theme-toggle-info {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .theme-toggle-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-    }
-    .theme-toggle-icon svg {
-      width: 20px;
-      height: 20px;
-      stroke: var(--accent);
-      stroke-width: 1.8;
-    }
-    .theme-toggle-text h4 {
-      font-family: var(--font-display);
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin: 0 0 2px;
-    }
-    .theme-toggle-text p {
-      font-size: 11px;
-      color: var(--muted);
-      margin: 0;
-    }
-    .toggle-switch {
-      position: relative;
-      width: 50px;
-      height: 26px;
-      flex-shrink: 0;
-    }
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-    .toggle-slider {
-      position: absolute;
-      inset: 0;
-      background: var(--border);
-      border-radius: 99px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .toggle-slider::before {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      left: 3px;
-      top: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.3s;
-    }
-    .toggle-switch input:checked + .toggle-slider {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-    }
-    .toggle-switch input:checked + .toggle-slider::before {
-      transform: translateX(24px);
-    }
 
     .lang-selector-compact {
       display: flex;
@@ -817,21 +736,6 @@ import Layout from '../layouts/Layout.astro';
        ============================================================ */
     .settings-page-header {
       margin-bottom: 1.5rem;
-    }
-    .settings-page-header-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: .4rem;
-      font-family: var(--font-mono);
-      font-size: 9px;
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      color: var(--accent2);
-      background: rgba(var(--ac-rgb), 0.08);
-      border: 1px solid rgba(var(--ac-rgb), 0.18);
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin-bottom: .5rem;
     }
     .settings-page-header h1 {
       font-family: var(--font-display);
@@ -963,86 +867,6 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 20px;
       box-shadow: none;
     }
-    .plan-card .plan-actions {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-top: 0.75rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-    .plan-card .plan-actions .btn-pro {
-      background: #000;
-      border: none;
-      color: #fff;
-      padding: 0.7rem 1.6rem;
-      border-radius: 10px;
-      font-family: var(--font);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
-      overflow: hidden;
-      flex: 1;
-      min-width: 140px;
-      text-align: center;
-      letter-spacing: 0.02em;
-    }
-    .plan-card .plan-actions .btn-pro::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      display: none;
-      transition: left 0.6s ease;
-    }
-    .plan-card .plan-actions .btn-pro:hover::before {
-      left: 100%;
-    }
-    .plan-card .plan-actions .btn-pro:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: none;
-    }
-    .plan-card .plan-actions .btn-pro:active {
-      transform: scale(0.96);
-    }
-    .plan-card .plan-actions .btn-pro.secondary {
-      background: transparent;
-      border: 1.5px solid var(--border2);
-      color: var(--text);
-      box-shadow: none;
-    }
-    .plan-card .plan-actions .btn-pro.secondary:hover {
-      border-color: var(--accent2);
-      color: var(--accent2);
-      box-shadow: none;
-      transform: translateY(-2px);
-    }
-    .plan-card .plan-actions .btn-pro-outline {
-      background: transparent;
-      border: 1.5px solid var(--border);
-      color: var(--muted);
-      padding: 0.7rem 1.6rem;
-      border-radius: 10px;
-      font-family: var(--font);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      flex: 1;
-      min-width: 140px;
-      text-align: center;
-    }
-    .plan-card .plan-actions .btn-pro-outline:hover {
-      border-color: var(--red);
-      color: var(--red);
-      background: rgba(239, 68, 68, 0.05);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
-    }
     .plan-card .plan-status {
       display: inline-flex;
       align-items: center;
@@ -1079,21 +903,6 @@ import Layout from '../layouts/Layout.astro';
       background: var(--muted);
       animation: none;
     }
-    .plan-payment-note {
-      font-size: 11.5px;
-      color: var(--muted);
-      margin-top: 0.75rem;
-      padding: 0.5rem 0.75rem;
-      background: var(--surface2);
-      border-radius: 8px;
-      border: 1px dashed var(--border);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .plan-payment-note .payment-icon {
-      font-size: 16px;
-    }
 
     /* ⭐ PLAN PERKS */
     .plan-perks-box {
@@ -1119,82 +928,13 @@ import Layout from '../layouts/Layout.astro';
       gap: 0.5rem;
       letter-spacing: 0.02em;
     }
-    .plan-perks-box .perks-title .perks-icon {
-      font-size: 18px;
-    }
     .plan-perks-box .perks-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.5rem;
     }
-    .plan-perks-box .perk-item {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.5rem 0.75rem;
-      background: var(--surface);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      transition: all 0.2s ease;
-    }
-    .plan-perks-box .perk-item:hover {
-      border-color: rgba(var(--ac-rgb), 0.25);
-      background: rgba(var(--ac-rgb), 0.03);
-      transform: translateX(3px);
-    }
-    .plan-perks-box .perk-item .perk-icon {
-      font-size: 16px;
-      width: 28px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-    .plan-perks-box .perk-item .perk-text {
-      font-size: 12.5px;
-      font-weight: 500;
-      color: var(--text);
-      font-family: var(--font);
-    }
 
     /* ⭐ ABONELİK SÜRESİ */
-    .subscription-timer {
-      margin-top: 0.75rem;
-      padding: 0.75rem 1rem;
-      background: var(--surface2);
-      border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-    .subscription-timer .timer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-    }
-    .subscription-timer .timer-label {
-      font-size: 11px;
-      color: var(--muted);
-      font-family: var(--font-mono);
-      letter-spacing: 0.05em;
-    }
-    .subscription-timer .timer-value {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      font-family: var(--font);
-      font-variant-numeric: tabular-nums;
-    }
-    .subscription-timer .timer-progress-wrap {
-      width: 100%;
-      height: 4px;
-      background: var(--border);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .subscription-timer .timer-progress-wrap .timer-progress {
-      height: 100%;
-      border-radius: 99px;
-      background: var(--accent);
-      transition: width 0.5s ease;
-    }
 
     /* ============================================================
        AVATAR POPUP
@@ -1297,12 +1037,17 @@ import Layout from '../layouts/Layout.astro';
       .avatar-popup-body .big-avatar { max-width: 300px; }
       .avatar-popup-close { top: -10px; right: -10px; width: 30px; height: 30px; font-size: 14px; }
       .confirm-modal-box { margin: 0 0.5rem; }
-      .plan-card .plan-features { grid-template-columns: 1fr; }
       .color-grid { grid-template-columns: 1fr; }
       .plan-perks-box .perks-grid { grid-template-columns: 1fr; }
       
       /* Dokunma alanlarını büyüt */
-      .settings-tab-btn, .btn-upload, .btn-remove-avatar, .btn-save-ot, .btn-save-theme, .btn-reset-theme, .btn-outline-danger, .lang-compact-btn, .currency-btn { min-height: 44px; }
+      .settings-tab-btn,
+.btn-upload,
+.btn-remove-avatar,
+.btn-save-ot,
+.btn-outline-danger,
+.lang-compact-btn,
+.currency-btn { min-height: 44px; }
       /* Sadece ikonları göster */
       .settings-tab-btn span { display: none; }
       .settings-tab-btn { justify-content: center; padding: 0.5rem 1rem; }
@@ -1311,7 +1056,6 @@ import Layout from '../layouts/Layout.astro';
     @media (max-width: 767px) {
       .nav-links { display: none !important; }
       .nav-right { margin-left: auto; }
-      .theme-toggle-row { flex-direction: column; align-items: flex-start; }
       .lang-selector-compact { margin-top: 0.5rem; }
       .currency-selector-compact { margin-top: 0.5rem; }
     }

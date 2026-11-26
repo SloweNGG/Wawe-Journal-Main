@@ -243,7 +243,6 @@ function wwAccent() {
   var isPageVisible = true;
   var chartsInitialized = false;
   var chartRenderGen = 0;   // her destroy/render'da artar; sıradaki (kare kare) grafik çizimleri eskiyse durur
-  var chartsRenderedOnce = false;
   var refreshToken = 0;
 
   // ⭐ RESIZE OBSERVER
@@ -330,40 +329,10 @@ function wwAccent() {
   }
 
   // ============================================================
-  // ⭐ APEXCHARTS BASE OPTIONS (Tooltip body'de render)
-  // ============================================================
-
-  function getBaseOptions() {
-    return wwApex({
-      theme: getApexTheme(),
-      chart: {
-        animations: {
-          enabled: true,
-          easing: 'easeinout',
-          speed: 400
-        }
-      },
-      grid: {
-        position: 'back'
-      },
-      tooltip: {
-        custom: function ({ series, seriesIndex, dataPointIndex, w }) {
-          var label = w.globals.labels[dataPointIndex] || '';
-          var seriesName = w.globals.seriesNames[seriesIndex] || '';
-          var value = w.globals.series[seriesIndex][dataPointIndex] || 0;
-          var color = w.globals.colors[seriesIndex] || '#8b5cf6';
-          return wwTipHtml({ title: label, rows: [{ label: seriesName, value: value, color: color }] });
-        }
-      }
-    });
-  }
-
-  // ============================================================
   // ⭐ TEMA DEĞİŞİMİNİ DİNLE (FIX)
   // ============================================================
 
   function resetChartsForTheme() {
-    chartsRenderedOnce = false;
     chartsInitialized = false;
     destroyAllCharts();
 
@@ -539,19 +508,6 @@ function wwAccent() {
     var prevText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.trend_previous') : 'önceki döneme göre';
     el.innerHTML = '<b class="stat-trend-pct">' + arrow + ' ' + trend.percent + '%</b><span class="stat-trend-label">' + prevText + '</span>';
     el.className = 'stat-trend ' + (trend.isPositive ? 'positive' : 'negative');
-  }
-
-  function smartDateLabel(dateStr) {
-    if (!dateStr) return '';
-    var d = new Date(dateStr);
-    var day = d.getDate();
-    var month = d.getMonth() + 1;
-    var year = d.getFullYear();
-    var currentYear = new Date().getFullYear();
-    if (year !== currentYear) {
-      return day + '/' + month + '/' + String(year).slice(2);
-    }
-    return day + '/' + month;
   }
 
   function getDayNames(lang) {
@@ -1598,134 +1554,6 @@ function wwAccent() {
   // ⭐ APEXCHARTS - RENDER FUNCTIONS
   // ============================================================
 
-  function renderCumulativeChart(trades) {
-    if (!trades || !trades.length) return null;
-
-    var cum = 0;
-    var cumData = [];
-    var cumTimestamps = [];
-
-    trades.forEach(function (t) {
-      var pnl = calcTradePnL(t);
-      cum += pnl;
-      cumData.push(parseFloat(cum.toFixed(2)));
-      var ts = new Date(t.trade_date).getTime();
-      cumTimestamps.push(ts);
-    });
-
-    // ⭐ FIX (BADGE): firstPnL 0'a çok yakınsa changePercent patlıyor.
-    // Baseline olarak toplam PnL'i kullan, sıfırsa badge'i sıfırla.
-    var firstPnL = cumData[0] || 0;
-    var lastPnL = cumData[cumData.length - 1] || 0;
-    var totalAbs = 0;
-    for (var ci = 0; ci < cumData.length; ci++) totalAbs += Math.abs(cumData[ci]);
-
-    var changePercent = 0;
-    if (Math.abs(firstPnL) > 0.01 && totalAbs > 0.01) {
-      changePercent = ((lastPnL - firstPnL) / Math.abs(firstPnL)) * 100;
-      if (!isFinite(changePercent)) changePercent = 0;
-    } else if (totalAbs > 0.01) {
-      // firstPnL ~ 0 ama net değişim var → oransal anlamsız, sadece işaret göster
-      changePercent = lastPnL >= 0 ? 100 : -100;
-    }
-
-    var changeEl = safeEl('cumulative-change');
-    if (changeEl) {
-      changeEl.textContent = (lastPnL >= firstPnL ? '↑' : '↓') + ' ' + Math.abs(changePercent).toFixed(1) + '%';
-      changeEl.className = 'chart-badge ' + (lastPnL >= firstPnL ? '' : 'negative');
-    }
-
-    var isMobile = window.innerWidth < 768;
-
-    var options = wwApex({
-      series: [{
-        name: 'Kümülatif K/Z',
-        data: cumTimestamps.map(function (ts, idx) {
-          return [ts, cumData[idx]];
-        })
-      }],
-      chart: {
-        type: 'area',
-        height: '100%',
-        animations: {
-          enabled: true,
-          easing: 'easeinout',
-          speed: 400
-        }
-      },
-      colors: [wwAccent()],
-      fill: {
-        type: 'gradient',
-        gradient: {
-          shadeIntensity: 1,
-          opacityFrom: 0.5,
-          opacityTo: 0.05,
-          stops: [0, 90, 100]
-        }
-      },
-      stroke: {
-        curve: 'smooth',
-        width: 2.5
-      },
-      grid: {
-        position: 'back',
-        padding: {
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10
-        }
-      },
-      xaxis: {
-        type: 'datetime',
-        tickAmount: isMobile ? 4 : 10,
-        labels: {
-          style: wwAxisLabels(),
-          formatter: function (value, timestamp) {
-            var d = new Date(timestamp || value);
-            var loc = getChartLocale();
-            return d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
-          },
-          hideOverlappingLabels: true,
-          trim: true
-        }
-      },
-      yaxis: {
-        labels: {
-          style: wwAxisLabels(),
-          formatter: function (value) {
-            // eksen etiketi kısa ($400, $1K: WwChart.money, Analytics ile aynı); tam tutar ipucunda
-            return window.WwChart ? window.WwChart.money(value) : formatCompactCurrency(value);
-          }
-        },
-        min: function (min) {
-          return min - Math.abs(min) * 0.1;
-        },
-        max: function (max) {
-          return max + Math.abs(max) * 0.1;
-        }
-      },
-      tooltip: {
-        theme: getApexTheme().mode,
-        x: {
-          formatter: function (value) {
-            var d = new Date(value);
-            var loc = getChartLocale();
-            return d.toLocaleDateString(loc, { day: '2-digit', month: 'short', year: 'numeric' });
-          }
-        },
-        y: {
-          formatter: function (value) {
-            return formatCurrency(value);
-          }
-        }
-      },
-      legend: { show: false }
-    });
-
-    return options;
-  }
-
   function renderWinLossChart(trades) {
     // Break-even (pnl == 0) kayıp sayılmaz; ayrı nötr dilim. Payda = tüm kapanmış işlemler.
     var wins = 0, losses = 0, breakeven = 0;
@@ -1795,111 +1623,6 @@ function wwAccent() {
           }
         }
       }
-    });
-
-    return options;
-  }
-
-  function renderDailyChart(trades) {
-    var colors = getApexColors();
-    var days = {};
-    var now = new Date();
-    for (var i = 29; i >= 0; i--) {
-      var d = new Date(now);
-      d.setDate(d.getDate() - i);
-      days[localDateStr(d)] = 0;
-    }
-    trades.forEach(function (t) {
-      var dStr = (t.trade_date || '').split('T')[0].split(' ')[0];
-      if (!dStr && t.created_at) {
-        try { dStr = new Date(t.created_at).toISOString().split('T')[0]; } catch(e) {}
-      }
-      var pnl = calcTradePnL(t);
-      if (dStr && (t.exit_price || t.pnl !== null && t.pnl !== undefined)) {
-        if (days[dStr] === undefined) {
-          days[dStr] = 0;
-        }
-        days[dStr] += pnl;
-      }
-    });
-
-    var dailyLabels = Object.keys(days).map(function (d) {
-      var dt = new Date(d);
-      return dt.getDate() + '/' + (dt.getMonth() + 1);
-    });
-    var dailyData = Object.values(days);
-
-    if (dailyData.every(function (v) { return v === 0; })) return null;
-
-    var isMobile = window.innerWidth < 768;
-    var dailyEl = safeEl('chart-daily');
-
-    var options = wwApex({
-      series: [{
-        name: 'Günlük K/Z',
-        data: dailyData
-      }],
-      chart: {
-        type: 'bar',
-        height: '100%',
-        animations: {
-          enabled: true,
-          easing: 'easeinout',
-          speed: 400
-        }
-      },
-      colors: [wwAccent()],
-      plotOptions: {
-        bar: {
-          borderRadius: 4,
-          borderRadiusApplication: 'end',
-          columnWidth: wwBarSize(dailyEl ? dailyEl.clientWidth : 0, dailyData.length, '60%'),
-          distributed: true,
-          colors: {
-            ranges: [
-              { from: 0, to: 0.01, color: colors.mutedColor },
-              { from: 0.01, to: Number.MAX_VALUE, color: '#22c55e' },
-              { from: -Number.MAX_VALUE, to: -0.01, color: '#ef4444' }
-            ]
-          }
-        }
-      },
-      grid: {
-        position: 'back',
-        padding: {
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10
-        }
-      },
-      xaxis: {
-        categories: dailyLabels,
-        tickAmount: isMobile ? 4 : 10,
-        labels: {
-          style: wwAxisLabels(),
-          hideOverlappingLabels: true,
-          trim: true
-        }
-      },
-      yaxis: {
-        labels: {
-          style: wwAxisLabels(),
-          formatter: function (value) {
-            // eksen etiketi kısa ($400, $1K: WwChart.money, Analytics ile aynı); tam tutar ipucunda
-            return window.WwChart ? window.WwChart.money(value) : formatCompactCurrency(value);
-          }
-        }
-      },
-      tooltip: {
-        theme: getApexTheme().mode,
-        y: {
-          formatter: function (value) {
-            return formatCurrency(value);
-          }
-        }
-      },
-      legend: { show: false }
     });
 
     return options;
@@ -2278,9 +2001,8 @@ function wwAccent() {
       ['Direction', function () { mountApex(directionTargetId, renderDirectionChart(trades)); }]
     ];
 
-    // Hepsi sıraya alındı: bu arada gelen resize yalnızca çizilmiş olanları boyutlar (updateCharts)
+    // Hepsi sıraya alındı: bu arada gelen resize yalnızca çizilmiş olanları boyutlar
     chartsInitialized = true;
-    chartsRenderedOnce = true;
 
     var i = 0;
     function runNext() {
@@ -2297,58 +2019,6 @@ function wwAccent() {
       }
     }
     runNext();   // kümülatif hemen (prop seviye çizgileri lwcCharts['chart-cumulative']'i bekler)
-  }
-
-  // ============================================================
-  // ⭐ UPDATE CHARTS - SADECE RESIZE
-  // ============================================================
-
-  function updateCharts(trades) {
-    if (!trades || !trades.length) {
-      destroyAllCharts();
-      return;
-    }
-
-    if (chartsInitialized && chartsRenderedOnce) {
-      for (var key in apexCharts) {
-        try {
-          var container = safeEl(key);
-          if (container) {
-            var rect = container.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0) {
-              apexCharts[key].resize(rect.width, rect.height);
-            }
-          }
-        } catch (e) { }
-      }
-      for (var lkey in lwcCharts) {
-        try {
-          var lcontainer = safeEl(lkey);
-          if (lcontainer) {
-            var lrect = lcontainer.getBoundingClientRect();
-            if (lrect.width > 0 && lrect.height > 0) {
-              lwcCharts[lkey].applyOptions({ width: lrect.width, height: lrect.height });
-              if (typeof lwcCharts[lkey]._fitCumulative === 'function') {
-                lwcCharts[lkey]._fitCumulative();
-              } else if (lwcCharts[lkey].timeScale) {
-                lwcCharts[lkey].timeScale().fitContent();
-              }
-            }
-          }
-        } catch (e) { }
-      }
-      return;
-    }
-
-    chartsRenderedOnce = false;
-    chartsInitialized = false;
-    destroyAllCharts();
-
-    if (chartRafId) cancelAnimationFrame(chartRafId);
-    chartRafId = requestAnimationFrame(function () {
-      chartRafId = null;
-      renderCharts(trades);
-    });
   }
 
   // ============================================================
@@ -3271,7 +2941,6 @@ function wwAccent() {
       if (myToken !== refreshToken) return;
 
       if (filtered.length > 0) {
-        chartsRenderedOnce = false;
         chartsInitialized = false;
         destroyAllCharts();
 

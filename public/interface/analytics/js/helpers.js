@@ -62,13 +62,6 @@ export function formatCurrency(value) {
   return '+' + currency + formatted;
 }
 
-export function formatCurrencyPlain(value) {
-  var num = parseFloat(value) || 0;
-  var currency = getCurrencySymbol();
-  var formatted = Math.abs(num).toLocaleString((window.WwTime && window.WwTime.numLocale ? window.WwTime.numLocale() : 'tr-TR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return (num < 0 ? '-' : '') + currency + formatted;
-}
-
 export function formatCurrencyPDF(value) {
   var num = parseFloat(value) || 0;
   var currency = getCurrencySymbol();

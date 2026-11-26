@@ -622,17 +622,6 @@ body.light-theme .qa-sym-list {
   outline: 2px solid var(--qa-accent);
   outline-offset: 1px;
 }
-.quick-add-instrument-btn .inst-label {
-  display: block;
-  font-size: 7.5px;
-  color: var(--qa-muted);
-  font-weight: 400;
-  margin-top: 1px;
-}
-.quick-add-instrument-btn.active .inst-label {
-  color: var(--qa-accent-light);
-  opacity: 0.8;
-}
 
 #price-custom-multiplier-wrap input {
   width: 100%;
@@ -971,29 +960,6 @@ body.light-theme .qa-sym-list {
 }
 .quick-add-preview.rail-neg .preview-rail {
   background: var(--qa-red);
-}
-
-.preview-badge-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.preview-live-tag {
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--qa-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.pulse-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--qa-green);
-  box-shadow: 0 0 8px var(--qa-green);
-  animation: qaPulse 1.8s infinite ease-in-out;
 }
 @keyframes qaPulse {
   0% { transform: scale(0.9); opacity: 0.7; }

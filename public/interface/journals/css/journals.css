@@ -2,38 +2,6 @@
    JOURNALS SAYFASI — Hesaplar
    ============================================================ */
 
-.journals-page-main {
-  padding: 2rem 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.journals-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.journals-page-header h1 {
-  font-family: var(--font-display);
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 0.25rem;
-  letter-spacing: -0.02em;
-}
-
-.journals-page-header .subtitle {
-  font-family: var(--font);
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin: 0;
-}
-
 .journals-usage-bar {
   font-family: var(--font);
   font-size: 0.85rem;
@@ -443,18 +411,6 @@
 }
 
 /* Yatay İki Kolonlu Modal Düzeni */
-.journal-modal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.08fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.journal-modal-col {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
 
 .journal-col-heading {
   display: flex;
@@ -558,43 +514,6 @@
 .journal-color-hint .ww-mark { margin: 0 3px; }
 
 /* İkon seçici */
-.journal-icon-picker {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-
-.journal-icon-btn {
-  aspect-ratio: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  padding: 0;
-}
-
-.journal-icon-btn svg,
-.journal-icon-btn i {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-}
-
-.journal-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-}
-
-.journal-icon-btn.active {
-  background: rgba(var(--ac-rgb), 0.12);
-  border-color: var(--accent);
-  color: var(--accent2);
-}
 
 .journal-modal-footer {
   display: flex;
@@ -1050,120 +969,6 @@ body.light-theme .journal-prop-section {
   gap: 0.75rem;
 }
 
-/* Prop Card Top Icon Wrap with Official Logo */
-.journal-icon-wrap.has-prop-logo {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 38px !important;
-  height: 38px !important;
-  border-radius: 10px !important;
-  padding: 0 !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-ftmo {
-  background: rgba(0, 210, 255, 0.12) !important;
-  border: 1px solid rgba(0, 210, 255, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(0, 210, 255, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-fundednext {
-  background: rgba(var(--ac-p3-rgb), 0.12) !important;
-  border: 1px solid rgba(var(--ac-p3-rgb), 0.4) !important;
-  box-shadow: 0 4px 14px rgba(var(--ac-p3-rgb), 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-fundingpips {
-  background: rgba(56, 189, 248, 0.12) !important;
-  border: 1px solid rgba(56, 189, 248, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-apex {
-  background: rgba(249, 115, 22, 0.12) !important;
-  border: 1px solid rgba(249, 115, 22, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-topstep {
-  background: rgba(234, 179, 8, 0.12) !important;
-  border: 1px solid rgba(234, 179, 8, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-the5ers {
-  background: rgba(34, 197, 94, 0.12) !important;
-  border: 1px solid rgba(34, 197, 94, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-e8 {
-  background: rgba(79, 227, 164, 0.12) !important;
-  border: 1px solid rgba(79, 227, 164, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(79, 227, 164, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-alpha {
-  background: rgba(245, 158, 11, 0.12) !important;
-  border: 1px solid rgba(245, 158, 11, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25) !important;
-}
-
-.journal-icon-wrap.has-prop-logo.prop-custom {
-  background: rgba(var(--ac-p2-rgb), 0.12) !important;
-  border: 1px solid rgba(var(--ac-p2-rgb), 0.4) !important;
-  box-shadow: 0 4px 14px rgba(var(--ac-p2-rgb), 0.25) !important;
-}
-
-.prop-card-logo-img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
-}
-
-.journal-card:hover .prop-card-logo-img {
-  transform: scale(1.15);
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-ftmo {
-  box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-fundednext {
-  box-shadow: 0 6px 20px rgba(var(--ac-p3-rgb), 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-fundingpips {
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-apex {
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-topstep {
-  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-the5ers {
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-e8 {
-  box-shadow: 0 6px 20px rgba(79, 227, 164, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-alpha {
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4) !important;
-}
-
-.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-custom {
-  box-shadow: 0 6px 20px rgba(var(--ac-p2-rgb), 0.4) !important;
-}
-
 /* Prop Badge on Card - Branded Pill with Official Logo */
 .journal-card-prop-badge {
   display: inline-flex;
@@ -1322,11 +1127,6 @@ body.light-theme .journal-prop-section {
     padding: 1.1rem;
   }
 
-  .journal-modal-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-  }
-
   .journal-prop-row,
   .journal-custom-grid {
     grid-template-columns: 1fr;
@@ -1339,18 +1139,6 @@ body.light-theme .journal-prop-section {
 
 /* Mobil */
 @media (max-width: 640px) {
-  .journals-page-main {
-    padding: 1rem;
-  }
-
-  .journals-page-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .journals-page-header h1 {
-    font-size: 1.4rem;
-  }
 
   .btn-new-journal {
     justify-content: center;
@@ -1358,10 +1146,6 @@ body.light-theme .journal-prop-section {
 
   .journals-grid {
     grid-template-columns: 1fr;
-  }
-
-  .journal-icon-picker {
-    grid-template-columns: repeat(6, 1fr);
   }
 }
 
@@ -1590,7 +1374,6 @@ body.light-theme .journal-prop-inactive-tip {
   border: 1px solid color-mix(in srgb, var(--journal-color, var(--accent)) 32%, transparent);
 }
 .journal-icon-wrap svg, .journal-icon-wrap i { width: 21px; height: 21px; }
-.journal-icon-wrap.has-prop-logo { width: 44px !important; height: 44px !important; border-radius: 13px !important; }
 
 .journal-card-top { margin-bottom: 1rem; }
 .journal-card-name {
@@ -2165,7 +1948,6 @@ body.light-theme .mt5-step p.mt5-step-tip { color: #b45309; }
 
 .journal-card-top { display: flex; align-items: center; gap: 11px; margin-bottom: 0.85rem; }
 .journal-card-top .journal-icon-wrap { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
-.journal-icon-wrap.has-prop-logo { width: 38px !important; height: 38px !important; border-radius: 11px !important; }
 
 .journal-card-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .journal-card-title .journal-card-name { font-size: 1rem; line-height: 1.25; margin: 0; padding-right: 0; }

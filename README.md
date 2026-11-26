@@ -21,7 +21,7 @@ Live at [wawejournal.com](https://wawejournal.com). The UI is available in Engli
 
 ## Tech stack
 
-- **Frontend:** [Astro](https://astro.build) 7 (static output) with vanilla JavaScript modules and a small SPA router; React integration is installed but unused. Charts use ApexCharts and Lightweight Charts, loaded from a CDN. PWA with a service worker.
+- **Frontend:** [Astro](https://astro.build) 7 (static output) with vanilla JavaScript modules and a small SPA router. Charts use ApexCharts and Lightweight Charts, loaded from a CDN. PWA with a service worker.
 - **Backend:** [Supabase](https://supabase.com) – Postgres with row level security, Auth, Storage, Realtime and Edge Functions (Deno) in `supabase/functions`.
 - **AI:** Google Gemini (streaming) with OpenRouter fallback models, called only from the `ai-coach` Edge Function.
 - **Hosting:** Cloudflare Pages (`wrangler.toml`); production deploys from the `master` branch.
@@ -73,7 +73,7 @@ supabase/functions/   Edge Functions; shared logic in _shared/
 integrations/         WaweSync Expert Advisor sources for MetaTrader 5 and 4
 scripts/              setup, demo data and performance tooling
 tests/                unit tests; tests/smoke/ backtest browser tests
-docs/                 dated release and handoff notes (Turkish)
+docs/                 dated release, handoff and daily notes (Turkish)
 PROJECT_OVERVIEW.md   detailed architecture notes (Turkish)
 ```
 

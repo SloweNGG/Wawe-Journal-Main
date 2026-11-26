@@ -5,7 +5,6 @@
 import { sb, requireAuth } from '../core/supabase.js';
 import { safeLocalStorageGet, safeLocalStorageSet } from '../core/storage.js';
 import { showToast } from '../utils/ui.js';
-import { getUserPlan } from './user.js';
 
 function t(key, params, fallback) {
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {

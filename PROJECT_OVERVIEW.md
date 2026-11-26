@@ -14,8 +14,6 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 | Bileşen | Sürüm | Not |
 |---|---|---|
 | Astro | ^7.4.12 (lockfile 7.4.12) | Statik çıktı, adaptör yok. 4.16'dan 7.4'e geçiş: commit `c7dcc30` |
-| @astrojs/react | ^7.1.9 | React entegrasyonu (şu an hiçbir sayfa React bileşeni kullanmıyor) |
-| React / React DOM | ^18.3.1 | |
 | esbuild | ^0.21.5 (`devDependencies`) | `astro.config.mjs` bundle ve küçültme için doğrudan kullanır |
 | Node.js | >=22.23.4 | `package.json` → `engines` |
 
@@ -56,7 +54,7 @@ Gecikmeli yüklenen script'ler (quick-add, grafik kütüphaneleri, SortableJS) `
 - `vite.build.cssTarget`: CSS küçültücü önekleri silmesin diye tarayıcı hedefi sabit.
 
 ### Ortam değişkenleri (yalnızca adlar)
-`.env.example` içinde: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_URL`, `VITE_APP_NAME`, haber API'si ayarları vb. Üretim değerleri Cloudflare Pages ortamında tanımlıdır. İstemci ayarları `public/config.js` ve `public/src/core/config.js` üzerinden okunur.
+`.env.example` içinde: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_URL`, `VITE_APP_NAME`. Üretim değerleri Cloudflare Pages ortamında tanımlıdır. İstemci ayarları `public/config.js` ve `public/src/core/config.js` üzerinden okunur.
 
 Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`). Adlar `README.md` ve fonksiyon başlıklarında yazılıdır: cTrader (`CTRADER_*`), NOWPayments (`NOWPAYMENTS_*`), Creem (`CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`, `CREEM_PRODUCT_MONTHLY`, `CREEM_PRODUCT_YEARLY`), Turnstile, Telegram (`TELEGRAM_*`), Web Push (`VAPID_*`, `scripts/admin-push-setup.mjs` üretir), AI (`GEMINI_API_KEY`, `OPENROUTER_API_KEY`).
 
@@ -89,8 +87,7 @@ Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`)
 │  ├─ demo/                Yerel demo backend + Playwright ile tanıtım ekran görüntüsü/video çekimi (README.md)
 │  ├─ perf/                Lighthouse, CLS, realtime ve canlı trafik/sürüm doğrulama araçları
 │  ├─ indexnow.mjs         Değişen sayfaları IndexNow'a bildirir
-│  ├─ gen-backgrounds.mjs, resize-images.mjs   Arka plan SVG'leri ve srcset görselleri
-│  └─ ctrader-probe.ts     cTrader API denemesi
+│  └─ gen-backgrounds.mjs, resize-images.mjs   Arka plan SVG'leri ve srcset görselleri
 │
 ├─ src/                    Astro kaynakları (sayfa iskeletleri)
 │  ├─ layouts/
@@ -102,9 +99,7 @@ Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`)
 │  │  ├─ SpaRouter.astro    Sayfa yenilemeden geçiş (window.wwSpa)
 │  │  ├─ UpgradeModal.astro Pro'ya yükseltme penceresi
 │  │  ├─ LegalDisclosures.astro, LegalFullText.astro   Hukuk metinleri
-│  │  ├─ blog/, tools/      Blog logosu şeridi; araç sayfalarının prop kural alanları
-│  │  ├─ QuickAddModal.astro
-│  │  └─ QuickAddFAB.tsx, quick-add/*.tsx   React sürümü (kullanılmıyor)
+│  │  └─ blog/, tools/      Blog logosu şeridi; araç sayfalarının prop kural alanları
 │  ├─ scripts/theme-engine.js   Tema motoru (window.WWTheme), BaseHead'e satır içi gömülür
 │  ├─ data/                blog.ts, glossary.ts, responsive-images.ts
 │  ├─ content/blog/        Blog yazıları (.md); çeviriler tr/, de/ altında aynı dosya adıyla
@@ -127,10 +122,10 @@ Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`)
 │  │  ├─ script.js          Giriş noktası; modülleri window'a açar
 │  │  ├─ bundle.js          Derleme çıktısı (elle düzenlenmez)
 │  │  ├─ pricing.js
-│  │  ├─ core/              config, supabase (auth), journal, storage, prop-templates, utils
+│  │  ├─ core/              config, supabase (auth), journal, storage, prop-templates
 │  │  ├─ services/          user (plan), payment, stats, prop-service
 │  │  ├─ features/          theme (motora köprü), overtrade, notifications, csv-parsers
-│  │  └─ utils/             helpers, ui (toast), validation, confirm-dialog, prop-calculator, prop-montecarlo
+│  │  └─ utils/             helpers, ui (toast), validation, prop-calculator, prop-montecarlo
 │  ├─ interface/           Sayfa bazlı JS/CSS
 │  │  ├─ dashboard/         dashboard.js, prop-card-v2.js, onboarding.js (kurulum sihirbazı ve tur) + css
 │  │  ├─ analytics/ ES modülleri: analytics, dashboard-manager, chart-renderers,
@@ -143,7 +138,6 @@ Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`)
 │  │  └─ shared/            Tüm sayfaların ortak modülleri (bkz. bölüm 7)
 │  ├─ components/
 │  │  ├─ navbar/            navbar.js/css, page-transition.js
-│  │  ├─ notification-bell/
 │  │  ├─ ai-coach/          ai-coach.js/css (sohbet paneli), voice-orb.js (dikte animasyonu)
 │  │  ├─ econ-calendar/     Navbar'daki ekonomik takvim rozeti ve paneli, econ-info.js (olay açıklamaları)
 │  │  ├─ note-tools/        İşlem notlarında duygu etiketleri ve dikte
@@ -232,7 +226,6 @@ Her uygulama sayfasında ayrıca AI koç paneli (`public/components/ai-coach/`),
 | Route | Açıklama |
 |---|---|
 | `/ctrader-callback` | cTrader OAuth dönüş sayfası (SPA dışı); hangi hesabın hangi deftere bağlanacağını kullanıcı seçer |
-| `/quick-add-modal` | Quick Add'in bağımsız önizleme sayfası (eski kalıntı) |
 
 `public/_redirects` yalnızca eski `/premium-dashboard` adresini `/analytics`'e 301 ile yönlendirir. `sitemap.xml` elle tutulmaz; derlemede `scripts/sitemap.mjs` üretir (noindex ve canonical'ı olmayan sayfalar hariç, `/tr/` ve `/de/` için hreflang ile). `robots.txt` `/admin`, `/settings/` ve `/api/` yollarını engeller; giriş sayfaları bilerek engellenmez, noindex meta etiketiyle dışarıda kalır.
 
@@ -557,7 +550,6 @@ Uygulama ve giriş sayfalarının fontları kendi sunucumuzdan gelir (`public/fo
 | **Syne** | `--font-display` | Başlıklar |
 | DM Sans | — | Yalnızca PDF raporlarına gömülür (`public/fonts/pdf`, dashboard ve analytics PDF'leri) |
 
-**Not:** `public/index.css` hâlâ `DM Mono`, `Inter`, `DM Sans` ve `Space Grotesk` adlarını içeriyor ama hiçbir sayfadan bağlanmıyor gibi görünüyor.
 
 ### 7.3 Ortak bileşen ve modüller
 
@@ -565,7 +557,6 @@ Uygulama ve giriş sayfalarının fontları kendi sunucumuzdan gelir (`public/fo
 |---|---|---|
 | Navbar | `src/components/Navbar.astro` + `public/components/navbar/` | Menü, defter seçici, bildirim zili, ekonomik takvim rozeti, plan rozeti, çıkış |
 | Toast | `public/src/utils/ui.js` → `showToast(msg, type)` | Kısa bildirim |
-| Onay penceresi | `public/src/utils/confirm-dialog.js` | Onay/iptal soruları |
 | Modal, iskelet, boş durum | `styles.css` (`.modal-overlay`/`.modal-box`, `.skeleton*`, `.empty-state`) | Ortak CSS sınıfları |
 | Quick Add | `public/interface/quick-add/` | Hızlı işlem ekleme; broker CSV/XLSX/HTML algılama ve eşleştirme |
 | Yükseltme penceresi | `src/components/UpgradeModal.astro` | Pro'ya geçiş (kart veya kripto) |
@@ -602,14 +593,12 @@ Böylece font, eksen yazısı, ızgara ve tooltip görünümü diğer sayfalarla
 - **Backtest duman testleri:** gerçek derlenmiş sayfa üzerinde headless Chrome (`tests/smoke/`, `node --test`'in parçası değil). Adımlar: `npx astro build` → `python3 tests/smoke/make.py` → `PP_DIR=<puppeteer-core klasörü> node tests/smoke/run.mjs`. Ayrıntı ve senaryolar: `tests/smoke/README.md`.
 - **SQL doğrulama:** her yeni migration'ın `supabase/tests/*_verify.sql` betiği tek transaction'da çalışıp ROLLBACK ile biter; bazılarının PGlite provası (`rehearse_*.mjs`) vardır.
 - **Yayın:** Üretim sitesi **`master`** dalından Cloudflare Pages ile yayınlanır; push edilen her şey birkaç dakikada wawejournal.com'a çıkar (`main` eski, kullanılmıyor). Push'tan sonra Pages panelinde deploy'un başladığına bak. Edge Function'lar ve migration'lar push ile gitmez, elle uygulanır (bkz. 5 ve 5.6).
-- **Devir notları:** Canlıda neyin ne zaman yapıldığı, yedeklerin yeri ve sonraki adımlar `docs/` altındaki tarihli notlardadır (en yenisi `docs/2026-11-21-MT4.md`).
+- **Devir notları:** Canlıda neyin ne zaman yapıldığı, yedeklerin yeri ve sonraki adımlar `docs/` altındaki tarihli notlardadır (en yenisi `docs/2026-11-24-OZET.md`).
 - **Yerel demo:** `node scripts/seed-demo.mjs` yerel sahte Supabase için demo verisi üretir; `scripts/demo/` Playwright ile tanıtım görüntüsü çeker. Canlı veritabanına istek gitmez.
 - **Astro geliştirme araç çubuğu kapalı** (`astro.config.mjs` → `devToolbar.enabled = false`): localhost'ta alt paneldeki tabloların üstünü kapatıyordu.
 - **Önbellek kırma:** Kaynak dosyalara elle `?v=` yazılmaz; derleme her yerel JS/CSS referansına `?v=<BUILD_ID>` yazar (`scripts/asset-version.mjs`). Kodla kurulan adreslerde (fetch, `script.src`, dinamik import) kaynakta `?v=__WW_BUILD_ID__` yazılır. Damgasız referans derlemeyi durdurur. Service worker önbellek adı da her derlemede değişir.
 - **Birebir kopyalar:** `public/src/utils/prop-calculator.js` ve `prop-montecarlo.js` ↔ `supabase/functions/_shared/` (bkz. 5.4).
 - **Bilinen sorunlar ve tutarsızlıklar:**
-  - `src/components/quick-add/QuickAddModal.tsx` (React, kullanılmıyor) işlemi `journal_id` olmadan ekler.
   - `report-bug.astro`'nun `bug_reports` başarısız olunca `system_settings`'e yedek yazması admin-only RLS yüzünden başarısız olur.
   - Bazı istemci ayarları (Supabase genel anahtarı vb.) ortam değişkeni yoksa kodda yedek değer olarak duruyor. Bunlar herkese açık türden anahtarlar olsa da tek bir yerden (`config.js`) yönetilmeleri daha doğru olur.
   - `--no-verify-jwt` gereken fonksiyonların listesi `README.md` ile `docs/2026-11-15-DEVAM-NOTLARI.md` arasında farklı (bkz. 5.6).
-  - `public/index.css` kullanılmıyor gibi görünüyor (bkz. 7.2).

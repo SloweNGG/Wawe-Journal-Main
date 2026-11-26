@@ -74,7 +74,6 @@ body:not(.light-theme) {
 
 .text-green { color: var(--green); }
 .text-red { color: var(--red); }
-.text-amber { color: var(--adm-warn); }
 .text-accent { color: var(--accent2); }
 .text-muted { color: var(--muted); }
 .mono { font-family: var(--font-mono); }
@@ -966,8 +965,6 @@ body.light-theme .field input[type="date"] { color-scheme: light; }
   color: var(--green);
 }
 .btn.btn-success:hover { background: var(--green); border-color: var(--green); color: #fff; }
-.btn.btn-success.btn-success-solid { background: var(--green); border-color: var(--green); color: #fff; }
-.btn.btn-success.btn-success-solid:hover { opacity: 0.88; }
 
 .table-action-btns { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; max-width: 230px; margin-left: auto; }
 .table-action-btns .btn { padding: 0.28rem 0.7rem; }

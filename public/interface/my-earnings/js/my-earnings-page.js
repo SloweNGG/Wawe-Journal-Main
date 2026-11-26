@@ -305,11 +305,9 @@
         var client = await getSb();
         if (!client) return;
 
-        var hasLoaded = false;
         try {
           var { data, error } = await client.rpc('get_my_partner_application');
           if (!error && data && data.has_application) {
-            hasLoaded = true;
             if (data.status === 'pending') {
               showApplyState('pending');
             } else if (data.status === 'rejected') {
@@ -542,10 +540,8 @@
 
         // 2. Fetch Payout Summary / User data
         let totalEarnings = 0;
-        let totalUsage = 0;
         codeRows.forEach(function(r) {
           totalEarnings += parseFloat(r.total_earnings || 0);
-          totalUsage += parseInt(r.usage_count || 0, 10);
         });
 
         let pendingPayout = 0;

@@ -39,12 +39,11 @@
    * Matches an incoming fill (on the OPPOSITE side of a queue) against that
    * queue's oldest entries first (FIFO), splitting for partial fills.
    * Mutates `queue` in place (removes/shrinks matched entries).
-   * Returns { trades, remainingQty, remainingFee }.
+   * Returns { trades, remainingQty }.
    */
   function matchAgainstQueue(queue, incoming, closingDirectionOfQueue) {
     var trades = [];
     var remainingQty = incoming.qty;
-    var remainingFee = incoming.fee || 0;
 
     while (remainingQty > 1e-12 && queue.length > 0) {
       var lot = queue[0];
