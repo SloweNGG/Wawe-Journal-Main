@@ -669,7 +669,7 @@
 
   function selectBrokerChoice(choice) {
     selectedBrokerChoice = choice;
-    document.querySelectorAll('.broker-choice-card').forEach(function(c) {
+    document.querySelectorAll('#wizard-broker-selection-section .broker-choice-card').forEach(function(c) {
       c.classList.remove('active');
     });
     var activeCard = document.getElementById('choice-' + choice);
@@ -718,23 +718,19 @@
     if (soon) soon.hidden = on;
     if (card) card.hidden = !on;
     if (card4) card4.hidden = !on;
-    var bm = document.getElementById('broker-mt-card');
-    if (bm && on && !bm.dataset.mt5) {
-      bm.dataset.mt5 = '1';
-      bm.style.opacity = '1';
-      bm.style.cursor = 'pointer';
-      bm.setAttribute('role', 'button');
-      bm.setAttribute('tabindex', '0');
-      var soonTxt = bm.lastElementChild;
-      if (soonTxt) { soonTxt.style.color = '#4ade80'; soonTxt.textContent = '● ' + jt('journal.wiz.broker_ct_tag', 'Otomatik Senkron'); }
-      bm.onclick = function() {
+    // "Hesabı platforma bağla" penceresi: MT5/MT4 kartı bu pencereyi kapatıp WaweSync bağlama penceresini açar
+    ['mt5', 'mt4'].forEach(function(pf) {
+      var bmCard = document.getElementById('bm-choice-' + pf);
+      if (!bmCard) return;
+      bmCard.hidden = !on;
+      bmCard.onclick = function() {
         var jid = currentBrokerJournalIdForMt5();
         if (!jid) return;
         var jn = (document.getElementById('broker-modal-journal-name') || {}).textContent || '';
         if (typeof window.closeBrokerModal === 'function') window.closeBrokerModal();
-        openMt5(jid, jn);
+        openMt5(jid, jn, pf);
       };
-    }
+    });
   }
 
   function currentBrokerJournalIdForMt5() { return window.__wwBrokerJournalId || null; }
@@ -2094,7 +2090,7 @@
       applyMt5Beta();
       var modal = document.getElementById('broker-modal');
       var nameEl = document.getElementById('broker-modal-journal-name');
-      if (nameEl) nameEl.textContent = journalName || 'Seçili';
+      if (nameEl) nameEl.textContent = journalName || '';
 
       var existingWrap = document.getElementById('existing-ctrader-wrap');
       var existingSelect = document.getElementById('existing-ctrader-select');
@@ -2142,7 +2138,7 @@
         if (!accId || !currentBrokerJournalId) return;
 
         btnLinkExisting.disabled = true;
-        btnLinkExisting.textContent = 'Bağlanıyor...';
+        btnLinkExisting.textContent = jt('journal.broker.linking', 'Bağlanıyor…');
 
         try {
           var res = await window.sb.rpc('link_ctrader_account', {
@@ -2150,17 +2146,17 @@
             p_journal_id: currentBrokerJournalId
           });
           if (res && res.data && res.data.success) {
-            if (window.showToast) window.showToast('cTrader hesabı defterinize bağlandı!', 'success');
+            if (window.showToast) window.showToast(jt('journal.broker.linked_ok', 'cTrader hesabı deftere bağlandı.'), 'success');
             closeBrokerModal();
             renderJournals();
           } else {
-            throw new Error(res?.data?.error || 'Bağlantı kurulamadı.');
+            throw new Error(res?.data?.error || jt('journal.broker.link_failed', 'Bağlantı kurulamadı.'));
           }
         } catch(e) {
           if (window.showToast) window.showToast(e.message, 'error');
         } finally {
           btnLinkExisting.disabled = false;
-          btnLinkExisting.textContent = 'Bu Hesabı Deftere Bağla';
+          btnLinkExisting.textContent = jt('journal.broker.link_existing', 'Bu Hesabı Deftere Bağla');
         }
       };
     }
@@ -2173,7 +2169,7 @@
         if (window.CTRADER_CONFIG && typeof window.CTRADER_CONFIG.getAuthUrl === 'function') {
           window.location.href = window.CTRADER_CONFIG.getAuthUrl();
         } else {
-          alert('cTrader konfigürasyonu bulunamadı.');
+          if (window.showToast) window.showToast(jt('journal.broker.no_config', 'cTrader ayarları yüklenemedi. Sayfayı yenileyip tekrar deneyin.'), 'error');
         }
       };
     }

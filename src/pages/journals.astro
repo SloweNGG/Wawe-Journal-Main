@@ -519,63 +519,72 @@ import Layout from '../layouts/Layout.astro';
   </div>
 </div>
 
-<!-- ⭐ Broker Connect Modal -->
+<!-- ⭐ Broker Connect Modal: platform kartları sihirbazın 3. adımıyla aynı (.broker-choice-card); MT5/MT4 kartı
+     bu pencereyi kapatıp WaweSync bağlama penceresini açar (journals-page.js bindBrokerModal) -->
 <div class="journal-modal-overlay" id="broker-modal">
-  <div class="journal-modal" style="max-width: 500px;">
+  <div class="journal-modal broker-modal" role="dialog" aria-modal="true" aria-labelledby="broker-modal-title">
     <div class="journal-modal-header">
-      <h3 style="display:flex;align-items:center;gap:8px;">
-        <i data-lucide="link-2" style="color:#06B6D4;"></i>
-        <span>Hesabı Brokera Bağla</span>
+      <h3 class="broker-modal-h">
+        <span class="broker-modal-h-icon"><i data-lucide="link-2"></i></span>
+        <span id="broker-modal-title" data-i18n="journal.broker.title">Hesabı Platforma Bağla</span>
       </h3>
-      <button class="journal-modal-close" onclick="closeBrokerModal()"><i data-lucide="x"></i></button>
+      <button type="button" class="journal-modal-close" onclick="closeBrokerModal()" data-i18n-aria-label="common.close" aria-label="Kapat"><i data-lucide="x"></i></button>
     </div>
-    <div class="journal-modal-body" style="padding:1.5rem;">
-      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;">
-        <strong id="broker-modal-journal-name" style="color:var(--text);"></strong> defterinizi cTrader hesabınıza bağlayarak kapanmış işlemlerinizi tek tıkla senkronize edin.
-      </p>
+    <div class="journal-modal-body broker-modal-body">
+      <div class="broker-modal-target">
+        <span class="broker-modal-target-label" data-i18n="journal.broker.target">Hesap</span>
+        <strong id="broker-modal-journal-name"></strong>
+      </div>
+      <p class="broker-modal-intro" data-i18n="journal.broker.intro">Bir platform seçin; kapanan işlemleriniz bu hesaba kendiliğinden aktarılır.</p>
 
-      <!-- Broker Kartları -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem;">
-        <div style="border:2px solid var(--ac);background:rgba(var(--ac-rgb), 0.08);border-radius:12px;padding:0.9rem;text-align:center;">
-          <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--ac),#06B6D4);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:#fff;font-weight:700;font-size:0.85rem;">cT</div>
-          <div style="font-weight:700;font-size:0.92rem;color:var(--text);">cTrader</div>
-          <div style="font-size:0.75rem;color:#4ade80;margin-top:2px;">● Otomatik Senkron</div>
-        </div>
-
-        <div id="broker-mt-card" style="border:1px solid var(--border);background:var(--surface2);border-radius:12px;padding:0.9rem;opacity:0.5;text-align:center;cursor:not-allowed;">
-          <div style="width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:var(--muted);font-weight:700;font-size:0.85rem;">MT</div>
-          <div style="font-weight:700;font-size:0.92rem;color:var(--muted);">MetaTrader</div>
-          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Yakında</div>
-        </div>
+      <div class="broker-choice-grid broker-modal-grid">
+        <button type="button" class="broker-choice-card active" id="bm-choice-ctrader" aria-pressed="true">
+          <span class="broker-choice-icon"><img class="broker-logo" src="/images/platforms/ctrader_icon.png" alt="" width="28" height="28" /></span>
+          <span class="broker-choice-info">
+            <span class="broker-choice-title"><span>cTrader</span><span class="broker-choice-tag" data-i18n="journal.wiz.broker_ct_tag">Otomatik Senkron</span></span>
+            <span class="broker-choice-desc" data-i18n="journal.broker.ct_desc">cTrader ile giriş yapıp izin verin, geçmiş işlemleriniz tek tıkla gelir.</span>
+          </span>
+          <span class="broker-choice-radio"></span>
+        </button>
+        <button type="button" class="broker-choice-card" id="bm-choice-mt5">
+          <span class="broker-choice-icon"><img class="broker-logo" src="/images/platforms/mt5.png" alt="" width="28" height="28" /></span>
+          <span class="broker-choice-info">
+            <span class="broker-choice-title"><span>MetaTrader 5</span><span class="broker-choice-tag" data-i18n="journal.wiz.broker_ct_tag">Otomatik Senkron</span></span>
+            <span class="broker-choice-desc" data-i18n="mt5.wiz.desc">Kapanan işlemleriniz WaweSync eklentisiyle kendiliğinden aktarılır. Şifre gerekmez.</span>
+          </span>
+          <i class="broker-choice-go" data-lucide="chevron-right"></i>
+        </button>
+        <button type="button" class="broker-choice-card" id="bm-choice-mt4">
+          <span class="broker-choice-icon"><img class="broker-logo" src="/images/platforms/mt4.png" alt="" width="28" height="28" /></span>
+          <span class="broker-choice-info">
+            <span class="broker-choice-title"><span>MetaTrader 4</span><span class="broker-choice-tag" data-i18n="journal.wiz.broker_ct_tag">Otomatik Senkron</span></span>
+            <span class="broker-choice-desc" data-i18n="mt5.wiz.desc">Kapanan işlemleriniz WaweSync eklentisiyle kendiliğinden aktarılır. Şifre gerekmez.</span>
+          </span>
+          <i class="broker-choice-go" data-lucide="chevron-right"></i>
+        </button>
       </div>
 
-      <!-- Bağlı Hesaplar Varsa Listele -->
-      <div id="existing-ctrader-wrap" style="display:none;margin-bottom:1.25rem;background:var(--surface2);padding:1rem;border-radius:12px;border:1px solid var(--border);">
-        <label style="font-size:0.8rem;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
-        <select id="existing-ctrader-select"></select>
+      <!-- Bağlı cTrader hesapları varsa: biriyle eşle -->
+      <div id="existing-ctrader-wrap" class="broker-modal-existing" style="display:none;">
+        <label class="journal-ct-label" for="existing-ctrader-select" data-i18n="journal.wiz.existing_label">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
+        <select id="existing-ctrader-select" class="journal-ct-select"></select>
         <div id="broker-ct-pick" class="ct-pick" hidden></div>
-        <button type="button" class="btn-save-ot" id="btn-link-existing-ctrader" style="width:100%;margin-top:10px;padding:0.6rem;background:var(--ac);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;">Bu Hesabı Deftere Bağla</button>
-        <div style="text-align:center;margin:10px 0 4px;font-size:0.75rem;color:var(--muted);">— veya yeni hesap yetkilendirin —</div>
+        <button type="button" class="broker-modal-btn-secondary" id="btn-link-existing-ctrader" data-i18n="journal.broker.link_existing">Bu Hesabı Deftere Bağla</button>
+        <div class="broker-modal-or"><span data-i18n="journal.broker.or_new">veya yeni bir cTrader hesabı yetkilendirin</span></div>
       </div>
 
-      <!-- Güvenlik Notu -->
-      <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:0.75rem;font-size:0.8rem;color:#67e8f9;line-height:1.4;margin-bottom:1.25rem;">
-        🔒 <strong>Güvenlik Garantisi:</strong> Yalnızca kapanmış işlem geçmişiniz okunur. Adınıza işlem açılamaz, paranıza erişilemez.
+      <div class="broker-modal-note">
+        <i data-lucide="shield-check"></i>
+        <span><strong data-i18n="journal.broker.safe_title">Güvenli:</strong> <span data-i18n="journal.broker.safe_text">Yalnızca kapanmış işlem geçmişiniz okunur. Adınıza işlem açılamaz, paranıza erişilemez.</span></span>
       </div>
 
-      <button type="button" id="btn-oauth-ctrader" style="width:100%;padding:0.85rem;border-radius:10px;font-weight:700;background:linear-gradient(90deg,var(--ac),#06B6D4);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s;">
+      <button type="button" id="btn-oauth-ctrader" class="broker-modal-btn-primary">
         <i data-lucide="external-link"></i>
-        <span>cTrader ile Yetkilendir & Bağla</span>
+        <span data-i18n="journal.broker.oauth">cTrader ile Yetkilendir ve Bağla</span>
       </button>
     </div>
   </div>
 </div>
-
-
-
-
-
-
 
 {/* Sayfa script'i (eskiden burada satır içiydi): defer/async YOK, aynı anda çalışsın; data-page-script = SPA'da her girişte yeniden çalışır */}
 <script src="/interface/journals/js/journals-page.js" is:inline data-page-script></script>

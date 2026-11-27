@@ -209,7 +209,9 @@
       '<div class="journal-modal mt5-modal" role="dialog" aria-modal="true" aria-labelledby="mt5-title">' +
         '<div class="journal-modal-header">' +
           '<h3 id="mt5-title" class="mt5-title"><img src="/images/platforms/mt5.png" alt="" width="22" height="22" data-mt5-logo /><span></span></h3>' +
-          '<button class="journal-modal-close" type="button" data-mt5-close aria-label="Close">×</button>' +
+          '<button class="journal-modal-close" type="button" data-mt5-close aria-label="' + esc(t('common.close', 'Kapat')) + '">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
+          '</button>' +
         '</div>' +
         '<div class="journal-modal-body mt5-body"></div>' +
       '</div>';

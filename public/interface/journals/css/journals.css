@@ -1997,3 +1997,98 @@ body.light-theme .mt5-step p.mt5-step-tip { color: #b45309; }
 @media (max-width: 640px) {
   .journal-card { padding: 0.9rem 0.95rem 0.8rem; }
 }
+
+/* ============================================================
+   "Hesabı platforma bağla" penceresi (#broker-modal, 2026-11-27)
+   Kartlar sihirbazın broker adımıyla aynı (.broker-choice-card); burada <button> oldukları için sıfırlanır.
+   ============================================================ */
+#broker-modal .journal-modal { max-width: 520px; }
+.broker-modal-h { display: flex; align-items: center; gap: 10px; }
+.broker-modal-h-icon {
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--accent, var(--ac));
+  background: color-mix(in srgb, var(--accent, var(--ac)) 12%, transparent);
+}
+.broker-modal-h-icon svg { width: 16px; height: 16px; }
+.broker-modal-body { padding-top: 1.1rem; padding-bottom: 1.4rem; }
+.broker-modal-target {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  padding: 5px 12px 5px 10px; border-radius: 999px;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+.broker-modal-target-label { color: var(--muted); font-weight: 600; }
+.broker-modal-target strong { color: var(--text); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.broker-modal-intro { font-size: 0.86rem; color: var(--muted); line-height: 1.5; margin: 0.7rem 0 0; }
+.broker-modal-grid { gap: 10px; margin-top: 1rem; }
+#broker-modal .broker-choice-card {
+  width: 100%; text-align: left; font: inherit; color: inherit; margin: 0;
+  -webkit-appearance: none; appearance: none;
+}
+#broker-modal .broker-choice-card:focus-visible { outline: 2px solid var(--accent, var(--ac)); outline-offset: 2px; }
+#broker-modal .broker-choice-card[hidden] { display: none; }
+#broker-modal .broker-choice-info { display: block; min-width: 0; }
+#broker-modal .broker-choice-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#broker-modal .broker-choice-desc { display: block; }
+.broker-choice-go { width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; transition: transform 0.15s, color 0.15s; }
+#broker-modal .broker-choice-card:hover .broker-choice-go { color: var(--text); transform: translateX(2px); }
+
+.broker-modal-existing {
+  margin-top: 1rem; padding: 1rem; border-radius: 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+}
+.broker-modal-btn-secondary {
+  width: 100%; margin-top: 10px; padding: 0.65rem; border-radius: 10px; cursor: pointer;
+  font: inherit; font-size: 0.86rem; font-weight: 600; color: #fff;
+  background: var(--accent, var(--ac)); border: 0; transition: filter 0.15s, opacity 0.15s;
+}
+.broker-modal-btn-secondary:hover:not(:disabled) { filter: brightness(1.08); }
+.broker-modal-btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+.broker-modal-or {
+  display: flex; align-items: center; gap: 10px; margin: 12px 0 0;
+  font-size: 0.74rem; color: var(--muted); text-align: center;
+}
+.broker-modal-or::before, .broker-modal-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.broker-modal-note {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-top: 1rem; padding: 0.75rem 0.9rem; border-radius: 10px;
+  background: color-mix(in srgb, #22c55e 7%, transparent);
+  border: 1px solid color-mix(in srgb, #22c55e 22%, transparent);
+  font-size: 0.8rem; line-height: 1.45; color: var(--muted);
+}
+.broker-modal-note strong { color: var(--text); font-weight: 700; }
+.broker-modal-note svg, .broker-modal-note i { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: #22c55e; }
+
+.broker-modal-btn-primary {
+  width: 100%; margin-top: 1rem; padding: 0.85rem 1rem; border-radius: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font: inherit; font-size: 0.92rem; font-weight: 700; color: #fff; border: 0;
+  background: linear-gradient(90deg, var(--accent, var(--ac)), #06b6d4);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--accent, var(--ac)) 70%, transparent);
+  transition: filter 0.15s, transform 0.15s;
+}
+.broker-modal-btn-primary svg { width: 17px; height: 17px; }
+.broker-modal-btn-primary:hover { filter: brightness(1.06); }
+.broker-modal-btn-primary:active { transform: translateY(1px); }
+.broker-modal-btn-primary:focus-visible { outline: 2px solid var(--accent, var(--ac)); outline-offset: 2px; }
+
+/* açık temada yeşil etiket beyaz zeminde okunsun (sihirbaz + bu pencere) */
+body.light-theme .broker-choice-tag { color: #15803d; background: rgba(34, 197, 94, 0.13); }
+body.light-theme .broker-modal-note svg, body.light-theme .broker-modal-note i { color: #16a34a; }
+
+/* koyu tema: sihirbaz penceresiyle aynı siyah yüzeyler */
+body:not(.light-theme) #broker-modal .broker-choice-card,
+body:not(.light-theme) #broker-modal .broker-modal-existing,
+body:not(.light-theme) #broker-modal .broker-modal-target { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.1); }
+body:not(.light-theme) #broker-modal .broker-choice-card.active { background: var(--card-bg); border-color: var(--accent, var(--ac)); }
+body:not(.light-theme) #broker-modal .broker-choice-card:hover:not(.active) { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.25); }
+body:not(.light-theme) #broker-modal .broker-choice-icon { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.1); }
+body:not(.light-theme) #broker-modal .broker-choice-radio { border-color: rgba(255, 255, 255, 0.25); }
+body:not(.light-theme) #broker-modal .journal-ct-select { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.12); }
+
+@media (max-width: 480px) {
+  #broker-modal .broker-choice-card { padding: 0.85rem 0.9rem; gap: 0.8rem; }
+  #broker-modal .broker-choice-icon { width: 42px; height: 42px; }
+}

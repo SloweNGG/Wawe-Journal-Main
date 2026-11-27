@@ -526,3 +526,7 @@ body.light-theme .wwai-viz { --wwai-cat-1: #2a78d6; --wwai-cat-2: #eb6834; --wwa
 .wwai-orb-face { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; }
 @keyframes wwai-orb-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .wwai-orb { animation: none; } }
+
+/* hesaplar sayfasının pencereleri (oluştur/düzenle, sil, platforma bağla, MT5) açıkken yüzen koç butonu
+   pencerenin alt düğmesinin üstüne binmesin (telefonda "cTrader ile Yetkilendir" düğmesini örtüyordu) */
+body:has(.journal-modal-overlay.active) .wwai-fab:not(.is-open) { display: none; }
