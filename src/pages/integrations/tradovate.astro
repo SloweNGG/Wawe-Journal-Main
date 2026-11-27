@@ -6,9 +6,11 @@
 //  - Performance: aynı dolumu paylaşan aynı yöndeki satırlar tek işlem, K/Z dosyadan; Orders: hesap + kontrat bazında
 //    pozisyon sıfırlanana kadar tek işlem, ters dönüş bölünür, dolmamış/iptal/reddedilmiş emir atlanır, açık kalan
 //    pozisyon alınmaz, birden fazla hesap uyarısı; ABD tarih biçimi; kök sembol + kontrat nota; puan değeri tablosu
-//    (FUTURES_POINT_VALUES), bilinmeyen kökte puan cinsinden K/Z + uyarı; komisyon yok:
+//    (FUTURES_POINT_VALUES), bilinmeyen kökte puan cinsinden K/Z + uyarı:
 //    public/interface/quick-add/js/parser-v2.js (buildTradovatePerformance / buildTradovateOrders)
-//  - Mükerrer atlama: quick-add.js executeCsvImport
+//  - Komisyon: Performance/Orders'ta yok; Cash History ('tradovate-cash') birlikte seçilince ya da önizlemeye
+//    bırakılınca her dolumun komisyon/ücreti kendi işlemine yazılır, K/Z net olur (parser-v2.js attachTradovateFees)
+//  - Mükerrer atlama; daha önce komisyonsuz yüklenmiş işlemlere komisyon ekleme: quick-add.js executeCsvImport
 // Tradovate API bağlantısı / otomatik senkron YOK: burada vaat edilmez.
 import PageLayout from '../../layouts/PageLayout.astro';
 
@@ -23,7 +25,7 @@ const faq = [
   },
   {
     q: 'Are commissions included?',
-    a: 'No. Tradovate’s Performance and Orders exports do not contain commissions or exchange fees, so the imported P&L is before those costs. The preview says this before you confirm.',
+    a: 'Yes, when you add the Cash History report. Tradovate’s Performance and Orders exports have no commissions or exchange fees, but Cash History lists the fees of every fill. Select it together with your Performance or Orders file, or drop it onto the preview, and each trade gets the commissions and fees of its own fills, so P&L is after costs. Without it, P&L is before fees and the preview says so.',
   },
   {
     q: 'How is P&L calculated for micro and mini contracts?',
@@ -35,7 +37,7 @@ const faq = [
   },
   {
     q: 'What if I upload overlapping date ranges?',
-    a: 'Trades already in the journal are skipped, so you can upload a longer export or the same week twice without creating duplicates.',
+    a: 'Trades already in the journal are skipped, so you can upload a longer export or the same week twice without creating duplicates. If you imported trades earlier without Cash History, uploading them again with it adds the missing commissions to those trades.',
   },
 ];
 
@@ -49,7 +51,7 @@ const schema = [
 ---
 <PageLayout
   title="Tradovate Trading Journal: Import Futures Trades | Wawe Journal"
-  description="Import your Tradovate Performance report or Orders export into Wawe Journal. Futures trades with contract point values for ES, NQ, MES, MNQ and more. Free."
+  description="Import your Tradovate Performance or Orders export into Wawe Journal, with commissions from Cash History. Point values for ES, NQ, MES, MNQ and more. Free."
   crumb="Tradovate journal"
   crumbParent={{ name: 'Integrations', href: '/integrations' }}
   schema={schema}
@@ -70,9 +72,9 @@ const schema = [
     <section class="fp-sec reveal">
       <h2>How to import Tradovate trades <span class="dim">in three steps.</span></h2>
       <div class="fp-grid">
-        <div class="fp-item"><span class="num">01</span><h3>Download the Performance report</h3><p>In Tradovate, open your account reports, choose the Performance tab, pick a date range and download it as CSV. The Orders export works as well.</p></div>
+        <div class="fp-item"><span class="num">01</span><h3>Download the Performance report</h3><p>In Tradovate, open your account reports, choose the Performance tab, pick a date range and download it as CSV. The Orders export works as well. For commissions, also download Cash History for the same dates.</p></div>
         <div class="fp-item"><span class="num">02</span><h3>Keep the file as it is</h3><p>No editing needed. Tradovate’s column names and its month/day/year dates are recognised automatically.</p></div>
-        <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file. Check the preview, then import into your active journal.</p></div>
+        <div class="fp-item"><span class="num">03</span><h3>Drop it into Wawe Journal</h3><p>Open Add Trade, switch to CSV Import and drop the file, together with Cash History if you have it. Check the preview, then import into your active journal.</p></div>
       </div>
     </section>
 
@@ -99,7 +101,7 @@ const schema = [
       <h2>Good to know <span class="dim">before you import.</span></h2>
       <div class="fp-grid">
         <div class="fp-item"><h3>No auto-sync yet</h3><p>Tradovate import is file based. Wawe Journal does not connect to your account; upload a new export when you want the journal updated.</p></div>
-        <div class="fp-item"><h3>P&amp;L before commissions</h3><p>Tradovate’s exports do not include commissions or exchange fees, so the imported result is before those costs.</p></div>
+        <div class="fp-item"><h3>Commissions come from Cash History</h3><p>The Performance and Orders exports have no fees. Add the Cash History report and each trade gets the commissions and exchange fees of its own fills, so P&amp;L is net. Without it, P&amp;L is before fees.</p></div>
         <div class="fp-item"><h3>Open positions stay out</h3><p>A position that is still open at the end of an Orders export has no closing fill, so it is not imported. Orders that never filled are skipped too.</p></div>
       </div>
       <p class="fp-note">Times in your file are read in the time zone you choose under Settings. Exporting several Tradovate accounts in one Orders file? Each account is tracked separately, but all trades go into the journal you have open, so export one account at a time to keep them apart.</p>

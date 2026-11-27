@@ -521,6 +521,8 @@ async function fileToCsvText(file) {
   let currentInstrument = 'forex';
   let currentMultiplier = 100000;
   let csvPreviewData = null;
+  // Tradovate Cash History ({ name, text }): işlem dosyasıyla birlikte seçilen ya da sonradan bırakılan komisyon dosyası
+  let csvCash = null;
 
   let datePickerState = { isOpen: false, viewYear: 2026, viewMonth: 0, selectedDate: null };
   let datePickerTargetInput = null;
@@ -946,7 +948,7 @@ async function fileToCsvText(file) {
                   <button type="button" class="quick-import-btn" id="quick-csv-select">${ICONS.upload}<span data-quick-i18n="quickmodal.csv_choose_file">Dosya Seç</span></button>
                   <div class="qa-drop-formats">CSV · XLSX · XLS · HTML · TXT</div>
                 </div>
-                <input type="file" id="quick-csv-file" accept=".csv,.xlsx,.xls,.htm,.html,.txt" hidden>
+                <input type="file" id="quick-csv-file" accept=".csv,.xlsx,.xls,.htm,.html,.txt" multiple hidden>
 
                 <div class="qa-csv-options">
                   <label for="quick-csv-broker" data-quick-i18n="quickmodal.broker_format">Broker Formatı</label>
@@ -2150,6 +2152,7 @@ async function fileToCsvText(file) {
     if (loading) loading.classList.remove('active');
 
     csvFile = null;
+    csvCash = null;
     const fileInput = el('quick-csv-file');
     if (fileInput) fileInput.value = '';
 
@@ -2529,6 +2532,18 @@ async function fileToCsvText(file) {
     }
   }
 
+  // Tradovate işlemleri önce komisyonsuz yüklendiyse, Cash History ile tekrar yüklenince mükerrer satırın komisyonu
+  // doldurulur. Yalnızca kayıtta komisyon yoksa ve K/Z hâlâ dosyadaki brüt K/Z ise (elle düzenlenmemiş kayıt).
+  function commissionBackfill(prev, r) {
+    if (!prev || prev.id == null) return null;
+    const comm = Math.abs(Number(r.commission) || 0);
+    const gross = r.gross_pnl != null ? Number(r.gross_pnl) : NaN;
+    if (!(comm > 0) || !isFinite(gross)) return null;
+    if (Number(prev.commission) > 0) return null;
+    if (prev.pnl == null || Math.abs(Number(prev.pnl) - gross) > 0.005) return null;
+    return { id: prev.id, commission: comm, gross_pnl: gross, pnl: parseFloat((gross - comm).toFixed(2)) };
+  }
+
   // Footer "İçe Aktar" yalnızca okunmuş bir dosya varken aktif
   function syncImportBtn() {
     const btn = el('quick-import-btn');
@@ -2644,7 +2659,47 @@ async function fileToCsvText(file) {
     container.innerHTML = html;
   }
 
-  async function handleCsvFileSelect(file) {
+  function isTradovateTrades(detected) {
+    return detected === 'tradovate' || detected === 'tradovate-orders';
+  }
+
+  // Birden çok dosya: tek işlem dosyası + isteğe bağlı Tradovate Cash History (komisyonlar). Hangisinin Cash
+  // History olduğu içeriğe bakılarak bulunur (dosya adı değişmiş olabilir).
+  async function handleCsvFiles(files) {
+    const list = Array.prototype.slice.call(files || []);
+    if (list.length <= 1) {
+      if (list[0]) handleCsvFileSelect(list[0]);
+      return;
+    }
+    try {
+      await ensureCsvParsers();
+      let cash = null;
+      const tradeFiles = [];
+      for (const f of list) {
+        let text = null;
+        try { text = await fileToCsvText(f); } catch (e) {}
+        const isCash = !cash && text != null && typeof window.parseCsvByBroker === 'function' &&
+          window.parseCsvByBroker(text, 'auto').detected === 'tradovate-cash';
+        if (isCash) cash = { name: f.name, text: text };
+        else tradeFiles.push(f);
+      }
+      if (tradeFiles.length !== 1) {
+        showToast(t('quickmodal.csv_one_trade_file'), 'error');
+        return;
+      }
+      handleCsvFileSelect(tradeFiles[0], { cash: cash });
+    } catch (e) {
+      wwLog.warn('Çoklu dosya okuma hatası:', e);
+      showToast(t('quickmodal.error_save', { message: e.message }), 'error');
+    }
+  }
+
+  // opts.cash: { name, text } Tradovate Cash History; işlem dosyası Tradovate ise komisyonlar işlemlere yazılır
+  async function handleCsvFileSelect(file, opts) {
+    opts = opts || {};
+    // Tradovate önizlemesi açıkken tek başına bırakılan Cash History o önizlemeye eklenir
+    const prevPreview = csvPreviewData;
+    const prevFile = csvFile;
     // Önceki dosyanın önizlemesi/verisi yeni dosya okunamazsa ekranda (ve içe aktarımda) kalmasın
     csvPreviewData = null;
     syncImportBtn();
@@ -2680,8 +2735,27 @@ async function fileToCsvText(file) {
       const selectedBroker = brokerSelect ? brokerSelect.value : 'auto';
 
       if (typeof window.parseCsvByBroker === 'function') {
-        const parsed = window.parseCsvByBroker(csvText, selectedBroker);
+        const parsed = window.parseCsvByBroker(csvText, selectedBroker, opts.cash ? { tradovateCashHistory: opts.cash.text } : undefined);
         const detected = parsed.detected || selectedBroker;
+
+        if (detected === 'tradovate-cash') {
+          if (prevFile && prevPreview && isTradovateTrades(prevPreview.detected)) {
+            await handleCsvFileSelect(prevFile, { cash: { name: file.name, text: csvText }, attached: true });
+            return;
+          }
+          // İşlem dosyası yok: ne yapılacağını söyle
+          csvFile = null;
+          csvCash = null;
+          const note = (parsed.warnings && parsed.warnings[0]) || t('quickmodal.csv_no_data');
+          if (badgeEl) badgeEl.innerHTML = badgeIcon('warning');
+          renderCSVLog(['<div>' + logTag('warning') + ' — ' + escapeHtml(note) + '</div>']);
+          showToast(note, 'info');
+          return;
+        }
+        csvCash = opts.cash && isTradovateTrades(detected) ? opts.cash : null;
+        if (csvCash && filenameEl) {
+          filenameEl.textContent = t('quickmodal.csv_file_selected', { filename: file.name + ' + ' + csvCash.name });
+        }
 
         // Tanınmayan format: sütun eşleme ekranı (elle ya da AI ile); onaylanan eşleme bu format için saklanır
         if ((!parsed.rows || parsed.rows.length === 0) && parsed.needsManualMapping && parsed.headers && parsed.headers.length >= 2) {
@@ -2703,6 +2777,7 @@ async function fileToCsvText(file) {
         }
 
         presentParsed(parsed, detected, csvText);
+        if (opts.attached && csvCash) showToast(t('quickmodal.csv_cash_attached'), 'success');
         return;
       }
 
@@ -2964,6 +3039,10 @@ async function fileToCsvText(file) {
 
       // ⭐ Duplicate (Mükerrer İşlem) Önleme - Mevcut defterdeki işlemleri sayfalı çek
       const existingSignatures = new Map();
+      // Tradovate + Cash History: mükerrer çıkan işlem daha önce komisyonsuz yüklendiyse komisyonu doldurulur
+      const backfill = !!(csvPreviewData.isBrokerParsed && csvPreviewData.parsed && csvPreviewData.parsed.tradovateFees);
+      const existingBySig = new Map();
+      const commissionFixes = [];
       try {
         let from = 0;
         const pageSize = 1000;
@@ -2973,7 +3052,9 @@ async function fileToCsvText(file) {
           // Mükerrer kontrolü yalnızca CANLI işlemlerle (backtest aynası gerçek işlemi "mükerrer" yapmasın)
           const { data: existingData, error: fetchErr } = await window.WwTrades.applyScope(
             sb.from('trades')
-              .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+              .select(backfill
+                ? 'id, symbol, direction, entry_price, exit_price, lot, trade_date, pnl, gross_pnl, commission'
+                : 'symbol, direction, entry_price, exit_price, lot, trade_date')
               .eq('journal_id', journalId),
             'live'
           )
@@ -2994,6 +3075,10 @@ async function fileToCsvText(file) {
                           Number(et.lot || 0).toFixed(4) + '|' +
                           String(et.trade_date || '').substring(0, 10);
               existingSignatures.set(sig, (existingSignatures.get(sig) || 0) + 1);
+              if (backfill) {
+                if (!existingBySig.has(sig)) existingBySig.set(sig, []);
+                existingBySig.get(sig).push(et);
+              }
             });
             if (existingData.length < pageSize) {
               hasMore = false;
@@ -3036,6 +3121,8 @@ async function fileToCsvText(file) {
 
           if (existingSignatures.get(sig) > 0) {
             existingSignatures.set(sig, existingSignatures.get(sig) - 1);
+            const fix = backfill ? commissionBackfill((existingBySig.get(sig) || []).shift(), r) : null;
+            if (fix) { commissionFixes.push(fix); continue; }
             skippedDuplicates++;
             log.push('<div>' + logTag('warning') + ' — #' + (i + 1) + ' ' + escapeHtml(r.symbol) + ' (' + (r.trade_date || '-') + ') mükerrer işlem, atlandı.</div>');
             continue;
@@ -3047,12 +3134,14 @@ async function fileToCsvText(file) {
           // ⭐ YENİ: Broker'ın gerçek Net $ değerini sıkıca oku
           let pnl = parseStoredPnl(r.pnl);
 
-          // Broker'ın değeri yoksa entry/exit/lot'tan hesapla (fallback)
+          // Broker'ın değeri yoksa entry/exit/lot'tan hesapla (fallback). Hesaplanan değer brüttür: komisyon ve
+          // swap aşağıda net K/Z'ye işlenir (önizleme de böyle gösterir).
+          let computedGross = null;
           if (pnl === null && r.exit_price != null && r.entry_price) {
             const diff = r.direction === 'LONG'
               ? (r.exit_price - r.entry_price)
               : (r.entry_price - r.exit_price);
-            pnl = toAccountCurrency(diff * r.lot * multiplier, r.symbol, Number(r.exit_price));
+            computedGross = toAccountCurrency(diff * r.lot * multiplier, r.symbol, Number(r.exit_price));
           }
 
           // Dosyadaki kaçıncı özdeş satır sayacı
@@ -3068,7 +3157,13 @@ async function fileToCsvText(file) {
 
           const commVal = r.commission != null ? Math.abs(Number(r.commission) || 0) : (r.fee != null ? Math.abs(Number(r.fee) || 0) : 0);
           const swapVal = r.swap != null ? (Number(r.swap) || 0) : 0;
+          if (computedGross !== null && isFinite(computedGross)) {
+            pnl = parseFloat((computedGross - commVal + swapVal).toFixed(2));
+          }
           let grossVal = r.gross_pnl != null ? (Number(r.gross_pnl) || 0) : null;
+          if (grossVal == null && computedGross !== null && isFinite(computedGross)) {
+            grossVal = parseFloat(computedGross.toFixed(2));
+          }
           if (grossVal == null && pnl != null) {
             grossVal = parseFloat((pnl + commVal - swapVal).toFixed(2));
           }
@@ -3135,29 +3230,55 @@ async function fileToCsvText(file) {
         }
       }
 
+      // Daha önce komisyonsuz yüklenmiş Tradovate işlemleri: komisyon, net ve brüt K/Z güncellenir (6'şar paralel)
+      let commissionUpdated = 0;
+      for (let i = 0; i < commissionFixes.length; i += 6) {
+        if (statusText) statusText.textContent = t('quickmodal.csv_importing') + ' (' + Math.min(i + 6, commissionFixes.length) + '/' + commissionFixes.length + ')';
+        const results = await Promise.all(commissionFixes.slice(i, i + 6).map(function(fix) {
+          return sb.from('trades')
+            .update({ commission: fix.commission, pnl: fix.pnl, gross_pnl: fix.gross_pnl })
+            .eq('id', fix.id)
+            .eq('user_id', user.id);
+        }));
+        results.forEach(function(res) {
+          if (res && res.error) {
+            log.push('<div>' + logTag('error') + ' — ' + escapeHtml(res.error.message) + '</div>');
+            failed++;
+          } else {
+            commissionUpdated++;
+          }
+        });
+      }
+      const changed = imported + commissionUpdated;
+
       renderCSVLog(log);
       if (progressEl) progressEl.style.display = 'none';
 
-      if (imported > 0 && failed === 0) {
+      if (changed > 0 && failed === 0) {
         try {
           window.dispatchEvent(new CustomEvent('trade-saved'));
         } catch (evErr) {}
         if (typeof window.refreshOnboardingTasks === 'function') {
           window.refreshOnboardingTasks();
         }
-        if (skippedDuplicates > 0) {
-          showToast(t('quickmodal.csv_duplicates_skipped', { count: imported, skipped: skippedDuplicates }), 'success');
-        } else {
-          showToast(t('quickmodal.csv_import_success', { count: imported }), 'success');
+        let msg = '';
+        if (imported > 0 && skippedDuplicates > 0) {
+          msg = t('quickmodal.csv_duplicates_skipped', { count: imported, skipped: skippedDuplicates });
+        } else if (imported > 0) {
+          msg = t('quickmodal.csv_import_success', { count: imported });
         }
-      } else if (imported > 0) {
+        if (commissionUpdated > 0) {
+          msg = (msg ? msg + ' ' : '') + t('quickmodal.csv_commission_updated', { count: commissionUpdated });
+        }
+        showToast(msg, 'success');
+      } else if (changed > 0) {
         try {
           window.dispatchEvent(new CustomEvent('trade-saved'));
         } catch (evErr) {}
         if (typeof window.refreshOnboardingTasks === 'function') {
           window.refreshOnboardingTasks();
         }
-        showToast(t('quickmodal.csv_import_error', { success: imported, failed: failed }), 'error');
+        showToast(t('quickmodal.csv_import_error', { success: changed, failed: failed }), 'error');
       } else if (skippedDuplicates > 0 && failed === 0) {
         if (statusText) statusText.textContent = t('quickmodal.csv_all_duplicates', { count: skippedDuplicates });
         if (badge) badge.innerHTML = badgeIcon('warning');
@@ -3166,7 +3287,7 @@ async function fileToCsvText(file) {
         showToast(t('quickmodal.error_general'), 'error');
       }
 
-      if (imported > 0) {
+      if (changed > 0) {
         const previewContainer = el('csv-preview-container');
         if (previewContainer) previewContainer.style.display = 'none';
         csvPreviewData = null;
@@ -3731,7 +3852,10 @@ async function fileToCsvText(file) {
         });
       }
       csvFileInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) handleCsvFileSelect(this.files[0]);
+        if (!this.files || !this.files.length) return;
+        const list = Array.prototype.slice.call(this.files);
+        this.value = ''; // aynı dosya tekrar seçilebilsin
+        handleCsvFiles(list);
       });
     }
 
@@ -3750,7 +3874,7 @@ async function fileToCsvText(file) {
     const brokerSelect = document.getElementById('quick-csv-broker');
     if (brokerSelect) {
       brokerSelect.addEventListener('change', function() {
-        if (csvFile) handleCsvFileSelect(csvFile);
+        if (csvFile) handleCsvFileSelect(csvFile, { cash: csvCash });
       });
     }
 
@@ -3841,17 +3965,15 @@ async function fileToCsvText(file) {
         const files = e.dataTransfer && e.dataTransfer.files;
         if (!files || files.length === 0) return;
 
-        const file = files[0];
-        const lower = file.name.toLowerCase();
-        const ok = /\.(csv|xlsx|xls|htm|html|txt)$/.test(lower);
-        if (!ok) {
-          if (typeof showToast === 'function') {
-            showToast('Desteklenmeyen dosya tipi. CSV, Excel veya HTML yükleyin.', 'error');
-          }
+        const list = Array.prototype.filter.call(files, function(f) {
+          return /\.(csv|xlsx|xls|htm|html|txt)$/.test(f.name.toLowerCase());
+        });
+        if (!list.length) {
+          if (typeof showToast === 'function') showToast(t('quickmodal.csv_unsupported_type'), 'error');
           return;
         }
 
-        handleCsvFileSelect(file);
+        handleCsvFiles(list);
       });
     }
 
@@ -4113,6 +4235,7 @@ async function fileToCsvText(file) {
     }
 
     csvFile = null;
+    csvCash = null;
     switchTab('csv');
     const statusEl = el('quick-csv-status');
     const filenameEl = el('quick-csv-filename');

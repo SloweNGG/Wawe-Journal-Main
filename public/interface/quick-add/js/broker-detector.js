@@ -10,7 +10,7 @@
  * {
  *   broker: 'mt4' | 'mt5' | 'ctrader' | 'xtb' | 'oanda' | 'ibkr' |
  *           'binance' | 'bybit-closed-pnl' | 'tradingview' | 'tr-legacy' |
- *           'tradovate' | 'tradovate-orders' | 'generic',
+ *           'tradovate' | 'tradovate-orders' | 'tradovate-cash' | 'generic',
  *   confidence: 0..1,
  *   isFillBased: boolean,          // needs fill-pairing.js before row mapping
  *   explicitMap: function(rawHeaders)|null   // returns {field: headerIndex|[idx,idx]}
@@ -218,6 +218,15 @@
       required: ['bs', 'contract'],
       weight: ['avgprice', 'avgfillprice', 'filledqty', 'filltime', 'status', 'product', 'orderid', 'account'],
       isFillBased: true,
+      explicitMap: null
+    },
+    {
+      // Tradovate "Cash History" (Account Reports > Cash History): işlem değil bakiye hareketleri (komisyon, Trade
+      // Paired, para yatırma). Tek başına içe aktarılmaz; parser-v2.js komisyonları Performance/Orders işlemlerine yazar.
+      broker: 'tradovate-cash',
+      required: ['cashchangetype', 'delta'],
+      weight: ['account', 'transactionid', 'timestamp', 'date', 'amount', 'currency', 'contract'],
+      isFillBased: false,
       explicitMap: null
     },
     {

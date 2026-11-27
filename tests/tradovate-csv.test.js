@@ -284,3 +284,149 @@ describe('Tradovate: layouts seen in other tools (2026-11-24 research)', () => {
     assert.equal(r.rows.reduce((a, x) => a + x.pnl, 0), -78.5);
   });
 });
+
+// Cash History (Account Reports > Cash History): komisyonlar Performance / Orders işlemlerine yazılır.
+// Biçim gerçek bir dışa aktarımdan (başka bir projenin anonimleştirdiği örnek, 2026-11-25 kontrol): CRLF, ABD tarihli
+// Timestamp + ISO Date, düz sayı Delta ("-0.52"), tırnaklı binlik ayraçlı Amount, türler baştaki boşlukla
+// (" Commission", " Trade Paired"). Satırlar bizim.
+describe('Tradovate Cash History commissions', () => {
+  const CASH_HEAD = 'Account,Transaction ID,Timestamp,Date,Delta,Amount,Cash Change Type,Currency,Contract';
+  let txn = 700000000000;
+  const cashRow = (acct, time, delta, type, contract) =>
+    [acct, String(txn++), time, '2026-11-' + time.slice(3, 5), delta, '"50,000.00"', ' ' + type, 'USD', contract].join(',');
+  const cashFile = (rows) => [CASH_HEAD].concat(rows).join('\r\n') + '\r\n';
+  const sum = (rows, k) => Math.round(rows.reduce((a, x) => a + (x[k] || 0), 0) * 100) / 100;
+
+  // A: uzun 1 MES (09:30 -> 09:31). B: tek satış dolumu (2 adet, 10:00) iki alışla kapanır (10:05, 10:06) = tek kısa işlem
+  const PERF = csv([
+    PERF_HEAD,
+    perf('MESZ6', '501', '502', '1', '6000.00', '6002.00', '$10.00', '11/12/2026 09:30:00', '11/12/2026 09:31:00'),
+    perf('MESZ6', '512', '511', '1', '5998.00', '6001.00', '$15.00', '11/12/2026 10:05:00', '11/12/2026 10:00:00'),
+    perf('MESZ6', '513', '511', '1', '5999.00', '6001.00', '$10.00', '11/12/2026 10:06:00', '11/12/2026 10:00:00'),
+  ]);
+  const CASH = cashFile([
+    cashRow('ACC-1', '11/11/2026 15:00:00', '-0.62', 'Commission', 'MESZ6'), // dosyanın tarih aralığı dışında
+    cashRow('ACC-1', '11/12/2026 08:00:00', '500.00', 'Fund Transaction', ''),
+    cashRow('ACC-1', '11/12/2026 08:01:00', '-12.00', 'Market Data Subscription', ''),
+    cashRow('ACC-1', '11/12/2026 09:30:00', '-0.62', 'Commission', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 09:31:00', '-0.62', 'Commission', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 09:31:00', '-0.35', 'Exchange Fee', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 09:31:00', '10.00', 'Trade Paired', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 10:00:00', '-1.24', 'Commission', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 10:05:00', '-0.62', 'Commission', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 10:05:00', '15.00', 'Trade Paired', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 10:06:00', '-0.62', 'Commission', 'MESZ6'),
+    cashRow('ACC-1', '11/12/2026 10:06:00', '10.00', 'Trade Paired', 'MESZ6'),
+  ]);
+
+  it('a Cash History file on its own is recognised and explained, not imported', () => {
+    const r = P.parse(CASH, {});
+    assert.equal(r.detected, 'tradovate-cash');
+    assert.equal(r.rows.length, 0);
+    assert.equal(r.needsManualMapping, false);
+    assert.ok(r.warnings[0].includes('Cash History'));
+  });
+
+  it('without Cash History the preview says where the commissions are', () => {
+    const r = P.parse(PERF, {});
+    assert.equal(sum(r.rows, 'commission'), 0);
+    assert.ok(r.warnings.some((w) => w.includes('Cash History')));
+    assert.equal(r.tradovateFees, null);
+  });
+
+  it('Performance: fees of each fill go to its trade, P&L becomes net, gross is kept', () => {
+    const r = P.parse(PERF, { tradovateCashHistory: CASH });
+    assert.equal(r.rows.length, 2, JSON.stringify(r.errors));
+    const [a, b] = r.rows;
+    assert.equal(a.direction, 'LONG');
+    assert.equal(a.commission, 1.59); // 0.62 + 0.62 + 0.35 borsa ücreti
+    assert.equal(a.gross_pnl, 10);
+    assert.equal(a.pnl, 8.41);
+    assert.equal(b.direction, 'SHORT');
+    assert.equal(b.lot, 2);
+    assert.equal(b.commission, 2.48); // 2 adetlik giriş dolumu 1.24 + iki çıkış
+    assert.equal(b.gross_pnl, 25);
+    assert.equal(b.pnl, 22.52);
+    assert.deepEqual(plain(r.tradovateFees), { applied: 4.07, trades: 2, total: 4.07, notApplied: 0, account: 'ACC-1', accountCount: 1 });
+    assert.equal(r.warnings.length, 1);
+    assert.ok(r.warnings[0].includes('$4.07'));
+  });
+
+  it('one fill split over two pair rows, and two trades filling in the same second, share fees by quantity', () => {
+    // 601 alış 2 adet 09:00: iki ayrı satışla kapanır, satırlar aynı giriş dolumunu paylaştığı için tek işlem.
+    // 09:10'da 602 satış (1. işlem) ve 611 alış (2. işlem) aynı saniyede: o saniyenin ücreti adetle bölünür.
+    const p = csv([
+      PERF_HEAD,
+      perf('MNQZ6', '601', '602', '1', '21000.00', '21001.00', '$2.00', '11/12/2026 09:00:00', '11/12/2026 09:10:00'),
+      perf('MNQZ6', '601', '603', '1', '21000.00', '21002.00', '$4.00', '11/12/2026 09:00:00', '11/12/2026 09:20:00'),
+      perf('MNQZ6', '611', '612', '1', '21003.00', '21004.00', '$2.00', '11/12/2026 09:10:00', '11/12/2026 09:30:00'),
+    ]);
+    const c = cashFile([
+      cashRow('A', '11/12/2026 09:00:00', '-1.00', 'Commission', 'MNQZ6'),
+      cashRow('A', '11/12/2026 09:10:00', '-1.00', 'Commission', 'MNQZ6'), // 602 satış (1) + 611 alış (1)
+      cashRow('A', '11/12/2026 09:20:00', '-0.50', 'Commission', 'MNQZ6'),
+      cashRow('A', '11/12/2026 09:30:00', '-0.50', 'Commission', 'MNQZ6'),
+    ]);
+    const r = P.parse(p, { tradovateCashHistory: c });
+    assert.deepEqual(plain(r.rows.map((x) => [x.lot, x.commission, x.pnl])), [[2, 2, 4], [1, 1, 1]]);
+  });
+
+  it('fees that match no trade are reported; fees outside the file dates are ignored', () => {
+    const extra = CASH.replace(/\r\n$/, '') + '\r\n' + [
+      cashRow('ACC-1', '11/12/2026 09:45:00', '-0.62', 'Commission', 'MESZ6'), // aralıkta, hiçbir işlem açık değil
+      cashRow('ACC-1', '11/12/2026 09:30:00', '-0.40', 'Commission', 'MNQZ6'), // başka kontrat
+      cashRow('ACC-1', '11/13/2026 09:00:00', '-5.00', 'Commission', 'MESZ6'), // ertesi gün: dosya dışında
+    ].join('\r\n');
+    const r = P.parse(PERF, { tradovateCashHistory: extra });
+    assert.equal(sum(r.rows, 'commission'), 4.07);
+    assert.equal(r.tradovateFees.notApplied, 1.02);
+    assert.ok(r.warnings.some((w) => w.includes('$1.02')));
+  });
+
+  it('several accounts in Cash History: the one whose fills line up with the trades is used', () => {
+    const other = cashFile([
+      cashRow('ACC-2', '11/12/2026 09:30:00', '-9.99', 'Commission', 'MESZ6'),
+      cashRow('ACC-2', '11/12/2026 11:00:00', '-9.99', 'Commission', 'MESZ6'),
+    ]).replace(/\r\n$/, '');
+    const both = other + '\r\n' + CASH.split('\r\n').slice(1).join('\r\n');
+    const r = P.parse(PERF, { tradovateCashHistory: both });
+    assert.equal(r.tradovateFees.account, 'ACC-1');
+    assert.equal(sum(r.rows, 'commission'), 4.07);
+    assert.ok(r.warnings.some((w) => w.includes('ACC-1') && w.includes('2')));
+  });
+
+  it('a Cash History for other trades adds nothing and says so', () => {
+    const c = cashFile([cashRow('ACC-1', '11/12/2026 09:30:00', '-1.24', 'Commission', 'ESZ6')]);
+    const r = P.parse(PERF, { tradovateCashHistory: c });
+    assert.equal(sum(r.rows, 'commission'), 0);
+    assert.equal(sum(r.rows, 'pnl'), 35);
+    assert.equal(r.tradovateFees.trades, 0);
+    assert.ok(r.warnings.some((w) => w.includes('eşleşmedi')));
+  });
+
+  it('Orders: fees follow fills through a reversal; partial fills inside a trade count; open position fees are left out', () => {
+    const o = csv([
+      ORD_HEAD,
+      ord('1', 'ACC-9', ' Buy', 'MNQZ6', '21000.00', '2', '11/12/2026 09:30:00'),
+      ord('2', 'ACC-9', ' Sell', 'MNQZ6', '21010.00', '3', '11/12/2026 09:35:00'), // uzunu kapatır, kısa 1 açar
+      ord('3', 'ACC-9', ' Buy', 'MNQZ6', '21005.00', '1', '11/12/2026 09:40:00'),
+      ord('4', 'ACC-9', ' Buy', 'MNQZ6', '21020.00', '1', '11/12/2026 09:50:00'), // açık kalır
+    ]);
+    const c = cashFile([
+      cashRow('ACC-9', '11/12/2026 09:30:00', '-0.80', 'Commission', 'MNQZ6'),
+      cashRow('ACC-9', '11/12/2026 09:35:00', '-1.20', 'Commission', 'MNQZ6'),
+      cashRow('ACC-9', '11/12/2026 09:37:00', '-0.40', 'Commission', 'MNQZ6'), // kısmi dolum, kısa işlem açıkken
+      cashRow('ACC-9', '11/12/2026 09:40:00', '-0.40', 'Commission', 'MNQZ6'),
+      cashRow('ACC-9', '11/12/2026 09:50:00', '-0.40', 'Commission', 'MNQZ6'),
+    ]);
+    const r = P.parse(o, { tradovateCashHistory: c });
+    assert.equal(r.detected, 'tradovate-orders');
+    assert.deepEqual(plain(r.rows.map((x) => [x.direction, x.lot, x.gross_pnl, x.commission, x.pnl])), [
+      ['LONG', 2, 40, 1.6, 38.4],
+      ['SHORT', 1, 10, 1.2, 8.8],
+    ]);
+    assert.equal(r.tradovateFees.applied, 2.8);
+    assert.equal(r.tradovateFees.notApplied, 0.4);
+    assert.equal(r.tradovateFees.account, null); // hesap adları eşleşti: hesap + kontrat ile eşlendi
+  });
+});

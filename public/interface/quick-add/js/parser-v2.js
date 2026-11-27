@@ -594,9 +594,176 @@
     };
   }
 
+  // Tradovate uyarıları kullanıcının dilinde: quick-modal-i18n.js'teki "quickmodal.tv_*" anahtarları. Çeviri yüklü
+  // değilse (testler) Türkçe metin kullanılır. Tutarlar "$" olmadan verilir: quickI18n.t parametreyi RegExp
+  // replace ile koyar, değerdeki "$" özel karakter olurdu; "$" çeviri metninde durur.
+  function tvMsg(key, fallback, params) {
+    params = params || {};
+    try {
+      var qi = global.quickI18n;
+      if (qi && typeof qi.t === 'function') {
+        var s = qi.t('quickmodal.' + key, params);
+        if (s && s !== 'quickmodal.' + key) return s;
+      }
+    } catch (e) {}
+    var text = fallback;
+    Object.keys(params).forEach(function (p) { text = text.split('{{' + p + '}}').join(String(params[p])); });
+    return text;
+  }
+
+  function money2(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+
+  // =========================================================================
+  // Tradovate Cash History: komisyon ve ücretler
+  // =========================================================================
+  // Performance ve Orders dosyalarında komisyon yok. "Cash History" dışa aktarımı (Account Reports > Cash History)
+  // bakiyedeki her değişikliği bir satır yazar; her dolumun komisyonu ayrı bir satırdır, dolumla aynı saniyeyi ve
+  // kontratı taşır. Gerçek dışa aktarımın biçimi (başka bir projenin gerçek dosyadan anonimleştirdiği örnekte
+  // görüldü; o proje ücretleri kuruşu kuruşuna eşleştirdi):
+  //   Account,Transaction ID,Timestamp,Date,Delta,Amount,Cash Change Type,Currency,Contract      (CRLF, BOM yok)
+  //   ACC1,566569084425,07/10/2026 15:33:34,2026-07-10,-0.52,"251,695.40", Commission,USD,MNQU6
+  // Tür, API adının kelimelere ayrılmış hâli ve baştaki boşlukla gelir (" Commission", " Trade Paired"). Ücret
+  // sayılanlar: Commission ve kontrat taşıyan her "...Fee" (ExchangeFee, ClearingFee, NfaFee, BrokerageFee...).
+  // Abonelik, para yatırma gibi satırlarda kontrat yoktur, işlemlere yazılmaz. Trade Paired satırları (eşleşen
+  // çiftin K/Z'si) yalnızca dosyada birden fazla hesap varken doğru hesabı bulmak için kullanılır.
+  function readTradovateCashHistory(input) {
+    var rows2d = toRows2D(input);
+    var headerIdx = -1;
+    for (var i = 0; i < Math.min(rows2d.length, HEADER_SCAN_ROWS); i++) {
+      var n = (rows2d[i] || []).map(Dict.normalizeHeader);
+      if (n.indexOf('cashchangetype') >= 0 && n.indexOf('delta') >= 0) { headerIdx = i; break; }
+    }
+    if (headerIdx < 0) return null;
+    var col = tvHeaderIndex(rows2d[headerIdx].map(function (h) { return h == null ? '' : String(h); }));
+    var C = { account: col('account'), time: col('timestamp'), date: col('date'), delta: col('delta'),
+      type: col('cashchangetype'), contract: col('contract') };
+    var out = { fees: [], paired: [], accounts: {} };
+    rows2d.slice(headerIdx + 1).forEach(function (row) {
+      var get = function (k) { var v = C[k] < 0 ? null : row[C[k]]; return v == null ? '' : String(v).trim(); };
+      var type = Dict.normalizeHeader(get('type'));
+      var isFee = type === 'commission' || /fee\d*$/.test(type);
+      if (!isFee && type !== 'tradepaired') return;
+      var contract = get('contract').toUpperCase();
+      var delta = parseTradovateMoney(get('delta'));
+      var t = tvTime(parseTradovateDate(get('time') || get('date')));
+      if (!contract || delta === null || t === null) return;
+      var entry = { account: get('account'), contract: contract, time: t, amount: delta };
+      out.accounts[entry.account] = true;
+      (isFee ? out.fees : out.paired).push(entry);
+    });
+    return out;
+  }
+
+  // Dosyada birden fazla hesap varsa: dolum saniyelerine en çok ücret/Trade Paired satırı düşen hesap
+  function chooseCashAccount(cash, trades) {
+    var names = Object.keys(cash.accounts);
+    if (names.length <= 1) return names.length ? names[0] : null;
+    var at = {};
+    trades.forEach(function (t) { t.legs.forEach(function (l) { at[t.contract + '@' + l.time] = true; }); });
+    var score = {};
+    cash.fees.concat(cash.paired).forEach(function (f) {
+      if (at[f.contract + '@' + f.time]) score[f.account] = (score[f.account] || 0) + 1;
+    });
+    var best = names[0];
+    names.forEach(function (a) { if ((score[a] || 0) > (score[best] || 0)) best = a; });
+    return best;
+  }
+
+  // Ücretleri işlemlere yazar. trades: [{ row|null, contract, account, legs: [{ time, qty }], from, to }]
+  // (row null = dosya sonunda açık kalan pozisyon: ücreti ona ayrılır ama işlem içe aktarılmadığı için yazılmaz).
+  //  1) Aynı kontrat + saniyedeki ücret, o saniyedeki dolumlara adetle orantılı bölünür.
+  //  2) Hiçbir dolum saniyesine denk gelmeyen ücret (Orders'ta emrin bir kısmı başka saniyede dolmuş olabilir),
+  //     aynı kontratta o anda açık olan işleme yazılır.
+  // Orders dosyasındaki hesap adları Cash History'de varsa eşleme hesap + kontrat ile yapılır; yoksa (Performance'ta
+  // hesap sütunu yok) Cash History'den tek hesap seçilir. Cash History daha geniş bir tarih aralığıyla alınmış
+  // olabilir: dosyadaki ilk ve son dolumun dışındaki ücretler hesaba katılmaz.
+  function attachTradovateFees(trades, cash) {
+    var useAccount = trades.length > 0 && trades.every(function (t) {
+      return t.account && Object.prototype.hasOwnProperty.call(cash.accounts, t.account);
+    });
+    var chosen = null;
+    var fees = cash.fees;
+    if (!useAccount) {
+      chosen = chooseCashAccount(cash, trades);
+      fees = fees.filter(function (f) { return f.account === chosen; });
+    }
+    var keyOf = useAccount
+      ? function (x) { return x.account + '|' + x.contract; }
+      : function (x) { return x.contract; };
+
+    var buckets = {};
+    var lo = Infinity, hi = -Infinity;
+    trades.forEach(function (t) {
+      t.fee = 0;
+      t.key = keyOf(t);
+      t.legs.forEach(function (l) {
+        if (l.time === null || !(l.qty > 0)) return;
+        if (l.time < lo) lo = l.time;
+        if (l.time > hi) hi = l.time;
+        var k = t.key + '@' + l.time;
+        var b = buckets[k] || (buckets[k] = { qty: 0, fee: 0, legs: [] });
+        b.qty += l.qty;
+        b.legs.push({ qty: l.qty, trade: t });
+      });
+    });
+
+    var inRange = fees.filter(function (f) { return f.time >= lo && f.time <= hi; });
+    inRange.forEach(function (f) {
+      var b = buckets[keyOf(f) + '@' + f.time];
+      if (b) { b.fee -= f.amount; return; }
+      for (var i = 0; i < trades.length; i++) {
+        var t = trades[i];
+        if (t.key === keyOf(f) && t.from !== null && f.time >= t.from && (t.to === null || f.time <= t.to)) {
+          t.fee -= f.amount;
+          return;
+        }
+      }
+    });
+    Object.keys(buckets).forEach(function (k) {
+      var b = buckets[k];
+      if (b.fee) b.legs.forEach(function (l) { l.trade.fee += b.fee * l.qty / b.qty; });
+    });
+
+    var applied = 0, count = 0;
+    trades.forEach(function (t) {
+      if (!t.row || !(t.fee >= 0.005)) return;
+      var fee = round(t.fee, 2);
+      t.row.commission = fee;
+      if (t.row.gross_pnl !== null && t.row.gross_pnl !== undefined) t.row.pnl = round(t.row.gross_pnl - fee, 2);
+      applied += fee;
+      count++;
+    });
+    var total = inRange.reduce(function (a, f) { return a - f.amount; }, 0);
+    return {
+      applied: round(applied, 2), trades: count, total: round(total, 2), notApplied: round(total - applied, 2),
+      account: chosen, accountCount: Object.keys(cash.accounts).length
+    };
+  }
+
+  function tvFeeWarnings(cash, summary) {
+    if (!cash) {
+      return [tvMsg('tv_no_commission', 'Tradovate\'in Performance ve Orders dosyalarında komisyon yok, K/Z komisyon öncesi. Komisyonları eklemek için Tradovate\'ten aynı tarih aralığının Cash History dosyasını indirip bu dosyayla birlikte seçin ya da buraya bırakın.')];
+    }
+    if (!summary || summary.trades === 0) {
+      return [tvMsg('tv_fees_none', 'Cash History dosyası bu işlemlerle eşleşmedi (farklı hesap ya da tarih aralığı); komisyon eklenmedi.')];
+    }
+    var out = [tvMsg('tv_fees_applied', 'Cash History\'deki komisyon ve ücretler eklendi: {{count}} işleme toplam ${{amount}}. K/Z ücretler düşülmüş (net).',
+      { count: summary.trades, amount: money2(summary.applied) })];
+    if (summary.notApplied >= 0.01) {
+      out.push(tvMsg('tv_fees_unmatched', '${{amount}} tutarındaki ücret bu dosyadaki bir işlemle eşleşmedi (açık pozisyon ya da dosyada olmayan işlem) ve eklenmedi.',
+        { amount: money2(summary.notApplied) }));
+    }
+    if (summary.account !== null && summary.accountCount > 1) {
+      out.push(tvMsg('tv_fees_account', 'Cash History dosyasında {{count}} hesap var; ücretler bu işlemlerle eşleşen {{account}} hesabından alındı.',
+        { count: summary.accountCount, account: summary.account }));
+    }
+    return out;
+  }
+
   // Performance: her satır bir alış-satış çifti (qty, buyPrice, sellPrice, pnl, boughtTimestamp, soldTimestamp).
   // Aynı dolumu paylaşan ve aynı yöndeki satırlar (kademeli giriş/çıkış) tek işlemde birleştirilir.
-  function buildTradovatePerformance(rawHeaders, dataRows) {
+  // cash: readTradovateCashHistory sonucu (yoksa null): komisyonlar işlemlere yazılır.
+  function buildTradovatePerformance(rawHeaders, dataRows, cash) {
     var col = tvHeaderIndex(rawHeaders);
     var C = {
       symbol: col('symbol', 'contract'), qty: col('qty', 'quantity'),
@@ -617,7 +784,7 @@
       var bought = parseTradovateDate(cell(row, 'bought'));
       var sold = parseTradovateDate(cell(row, 'sold'));
       if (!contract || !qty || qty <= 0 || buy === null || sell === null) {
-        errors.push('Satır ' + lineNo + ': sembol/miktar/fiyat eksik ya da geçersiz, atlandı.');
+        errors.push(tvMsg('tv_row_invalid_perf', 'Satır {{line}}: sembol/miktar/fiyat eksik ya da geçersiz, atlandı.', { line: lineNo }));
         return;
       }
       var buyFill = cell(row, 'buyFill'), sellFill = cell(row, 'sellFill');
@@ -661,26 +828,35 @@
       groups[r].push(it);
     });
 
+    var feeTrades = [];
     var rows = order.map(function (r) {
       var g = groups[r];
       var first = g[0];
       var qty = 0, entryN = 0, exitN = 0, pnl = 0, pnlKnown = true, opened = null, closed = null;
+      var legs = [];
       g.forEach(function (it) {
         qty += it.qty; entryN += it.entry * it.qty; exitN += it.exit * it.qty;
         if (it.pnl === null) pnlKnown = false; else pnl += it.pnl;
         if (it.opened && (!opened || it.opened < opened)) opened = it.opened;
         if (it.closed && (!closed || it.closed > closed)) closed = it.closed;
+        // Satırın iki dolumu: aynı dolum birden çok satıra bölünmüşse adetleri o saniyede toplanır
+        legs.push({ time: tvTime(it.opened), qty: it.qty }, { time: tvTime(it.closed), qty: it.qty });
       });
-      return tvRow(first.root, first.contract, first.direction, entryN / qty, exitN / qty, qty,
+      var row = tvRow(first.root, first.contract, first.direction, entryN / qty, exitN / qty, qty,
         pnlKnown ? pnl : null, opened, closed, first.entryFill);
+      feeTrades.push({ row: row, contract: first.contract.toUpperCase(), account: '', legs: legs,
+        from: tvTime(opened), to: tvTime(closed) });
+      return row;
     });
+    var feeSummary = cash ? attachTradovateFees(feeTrades, cash) : null;
     rows.sort(function (a, b) { return (tvTime(a.date) || 0) - (tvTime(b.date) || 0); });
-    return { rows: rows, errors: errors };
+    return { rows: rows, errors: errors, pairingWarnings: tvFeeWarnings(cash, feeSummary), feeSummary: feeSummary };
   }
 
   // Orders: emir başına bir satır. Dolan emirler zaman sırasıyla hesap + kontrat bazında izlenir; pozisyon
   // sıfırdan açılıp tekrar sıfıra dönene kadar olan dolumlar tek işlemdir. Ters dönen dolum bölünür.
-  function buildTradovateOrders(rawHeaders, dataRows) {
+  // cash: readTradovateCashHistory sonucu (yoksa null): komisyonlar işlemlere yazılır.
+  function buildTradovateOrders(rawHeaders, dataRows, cash) {
     var col = tvHeaderIndex(rawHeaders);
     var C = {
       side: col('bs', 'side', 'action'), contract: col('contract', 'symbol'),
@@ -705,7 +881,7 @@
       var price = parseTradovatePrice(cell(row, 'price'));
       var date = parseTradovateDate(cell(row, 'time'));
       if (!side || !contract || price === null || !price) {
-        errors.push('Satır ' + lineNo + ': yön/kontrat/fiyat eksik ya da geçersiz, atlandı.');
+        errors.push(tvMsg('tv_row_invalid_orders', 'Satır {{line}}: yön/kontrat/fiyat eksik ya da geçersiz, atlandı.', { line: lineNo }));
         return;
       }
       var account = String(cell(row, 'account') == null ? '' : cell(row, 'account')).trim();
@@ -722,6 +898,7 @@
     var rows = [];
     var openPositions = [];
     var unknownRoots = {};
+    var allTrades = [];
 
     function close(b) {
       var t = b.trade;
@@ -729,8 +906,9 @@
       var sign = t.direction === 'LONG' ? 1 : -1;
       var pnl = pv ? sign * (t.exitN - t.entryN) * pv : null;
       if (!pv) unknownRoots[t.root] = true;
-      rows.push(tvRow(t.root, t.contract, t.direction, t.entryN / t.qty, t.exitN / t.qty, t.qty, pnl,
-        t.opened, t.closed, t.ticket));
+      t.row = tvRow(t.root, t.contract, t.direction, t.entryN / t.qty, t.exitN / t.qty, t.qty, pnl,
+        t.opened, t.closed, t.ticket);
+      rows.push(t.row);
       b.trade = null;
     }
 
@@ -739,20 +917,25 @@
       var b = books[key] || (books[key] = { pos: 0, trade: null });
       var signed = f.side === 'LONG' ? f.qty : -f.qty;
       var remaining = signed;
+      var fillTime = tvTime(f.date);
       while (Math.abs(remaining) > 1e-9) {
         if (b.pos === 0) {
           b.trade = { root: futuresRoot(f.contract), contract: f.contract, direction: remaining > 0 ? 'LONG' : 'SHORT',
-            qty: 0, entryN: 0, exitN: 0, opened: f.date, closed: null, ticket: f.orderId };
+            qty: 0, entryN: 0, exitN: 0, opened: f.date, closed: null, ticket: f.orderId,
+            account: f.account, legs: [], row: null };
+          allTrades.push(b.trade);
         }
         var sameSide = (b.pos >= 0 && remaining > 0 && b.trade.direction === 'LONG') ||
                        (b.pos <= 0 && remaining < 0 && b.trade.direction === 'SHORT');
         if (sameSide) {
           var add = Math.abs(remaining);
           b.trade.qty += add; b.trade.entryN += add * f.price;
+          b.trade.legs.push({ time: fillTime, qty: add });
           b.pos += remaining; remaining = 0;
         } else {
           var closeQty = Math.min(Math.abs(remaining), Math.abs(b.pos));
           b.trade.exitN += closeQty * f.price;
+          b.trade.legs.push({ time: fillTime, qty: closeQty });
           b.trade.closed = f.date;
           b.pos += remaining > 0 ? closeQty : -closeQty;
           remaining += remaining > 0 ? -closeQty : closeQty;
@@ -768,18 +951,26 @@
       }
     });
     if (openPositions.length) {
-      warnings.push(openPositions.length + ' pozisyon dosyanın sonunda hâlâ açık (kapanış emri yok); bunlar içe aktarılmadı.');
+      warnings.push(tvMsg('tv_open_positions', '{{count}} pozisyon dosyanın sonunda hâlâ açık (kapanış emri yok); bunlar içe aktarılmadı.',
+        { count: openPositions.length }));
     }
     var unknown = Object.keys(unknownRoots);
     if (unknown.length) {
-      warnings.push(unknown.join(', ') + ' için kontrat çarpanı bilinmiyor; K/Z puan cinsinden hesaplandı, işlemi düzenleyip kontrol edin.');
+      warnings.push(tvMsg('tv_unknown_multiplier', '{{roots}} için kontrat çarpanı bilinmiyor; K/Z puan cinsinden hesaplandı, işlemi düzenleyip kontrol edin.',
+        { roots: unknown.join(', ') }));
     }
     var accountCount = Object.keys(accounts).length;
     if (accountCount > 1) {
-      warnings.push('Dosyada ' + accountCount + ' Tradovate hesabı var; hepsi seçili deftere eklenecek. Hesapları ayırmak için Tradovate\'ten hesap başına dışa aktarın.');
+      warnings.push(tvMsg('tv_multi_account', 'Dosyada {{count}} Tradovate hesabı var; hepsi seçili deftere eklenecek. Hesapları ayırmak için Tradovate\'ten hesap başına dışa aktarın.',
+        { count: accountCount }));
     }
+    var feeSummary = cash ? attachTradovateFees(allTrades.map(function (t) {
+      return { row: t.row, contract: t.contract.toUpperCase(), account: t.account, legs: t.legs,
+        from: tvTime(t.opened), to: t.row ? tvTime(t.closed) : null };
+    }), cash) : null;
     rows.sort(function (a, b) { return (tvTime(a.date) || 0) - (tvTime(b.date) || 0); });
-    return { rows: rows, errors: errors, pairingWarnings: warnings, openPositions: openPositions };
+    return { rows: rows, errors: errors, pairingWarnings: warnings.concat(tvFeeWarnings(cash, feeSummary)),
+      openPositions: openPositions, feeSummary: feeSummary };
   }
 
   // =========================================================================
@@ -825,20 +1016,31 @@
         detectedBroker = detection.broker;
         confidence = detection.confidence;
         isFillBased = detection.isFillBased;
+        if (detectedBroker === 'tradovate-cash') {
+          // İşlem değil, bakiye hareketleri: tek başına içe aktarılmaz, işlem dosyasının yanına eklenir
+          return {
+            rows: [], errors: [],
+            warnings: [tvMsg('tv_cash_only', 'Bu bir Tradovate Cash History dosyası: içinde işlem değil, komisyonlar var. Performance ya da Orders dosyanızla birlikte seçin, ya da önce o dosyayı yükleyip ardından bunu bırakın.')],
+            detected: detectedBroker, confidence: confidence, needsManualMapping: false, isFillBased: false,
+            openPositions: [], headerFingerprint: fingerprint
+          };
+        }
         if (detectedBroker === 'tradovate' || detectedBroker === 'tradovate-orders') {
+          var cash = options.tradovateCashHistory ? readTradovateCashHistory(options.tradovateCashHistory) : null;
           var tv = detectedBroker === 'tradovate'
-            ? buildTradovatePerformance(rawHeaders, dataRows)
-            : buildTradovateOrders(rawHeaders, dataRows);
+            ? buildTradovatePerformance(rawHeaders, dataRows, cash)
+            : buildTradovateOrders(rawHeaders, dataRows, cash);
           return {
             rows: tv.rows,
             errors: tv.errors,
-            warnings: (tv.pairingWarnings || []).concat(['Tradovate raporlarında komisyon yok: K/Z komisyon hariçtir.']),
+            warnings: tv.pairingWarnings || [],
             detected: detectedBroker,
             confidence: confidence,
             needsManualMapping: false,
             isFillBased: isFillBased,
             openPositions: tv.openPositions || [],
-            headerFingerprint: fingerprint
+            headerFingerprint: fingerprint,
+            tradovateFees: tv.feeSummary || null
           };
         }
         if (detection.explicitMap) {
@@ -914,6 +1116,7 @@
     _internal: {
       matchHeaders: matchHeaders, scoreMatch: scoreMatch, parseTradingViewSide: parseTradingViewSide,
       futuresRoot: futuresRoot, parseTradovateDate: parseTradovateDate, parseTradovatePrice: parseTradovatePrice,
+      readTradovateCashHistory: readTradovateCashHistory,
       FUTURES_POINT_VALUES: FUTURES_POINT_VALUES
     }
   };

@@ -78,7 +78,9 @@ if (typeof window !== 'undefined') {
       suggestedMapping: result.suggestedMapping,
       isFillBased: !!result.isFillBased,
       headerRow: result.headerRow,
-      sampleRows: result.sampleRows
+      sampleRows: result.sampleRows,
+      // Tradovate + Cash History: komisyon özeti (quick-add mükerrer işlemlerin komisyonunu bununla doldurur)
+      tradovateFees: result.tradovateFees || null
     };
   };
 
