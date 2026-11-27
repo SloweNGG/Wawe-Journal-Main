@@ -13,6 +13,13 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .wwai-fab svg { width: 24px; height: 24px; }
 .wwai-fab.is-open { transform: scale(0.92); }
+/* with the chosen coach's face (ai-coach.js renderFab): the blinking orb is the button; one quick blink on hover / focus */
+.wwai-fab.has-av, .wwai-fab.has-av:hover { background: transparent; border: 0; padding: 0; box-shadow: none; }
+.wwai-fab .wwc-av { --av: 54px; box-shadow: var(--av-shadow), 0 8px 22px rgba(0, 0, 0, .35); }
+body.light-theme .wwai-fab .wwc-av { box-shadow: var(--av-shadow), 0 8px 20px rgba(0, 0, 0, .18); }
+.wwai-fab:hover .wwc-av-eyes i, .wwai-fab:focus-visible .wwc-av-eyes i { animation: wwc-blink-now .45s ease-in-out 1; }
+@keyframes wwc-blink-now { 0%, 100% { transform: scaleY(1); } 35%, 60% { transform: scaleY(.07); } }
+@media (prefers-reduced-motion: reduce) { .wwai-fab:hover .wwc-av-eyes i, .wwai-fab:focus-visible .wwc-av-eyes i { animation: none; } }
 
 .wwai-panel {
   position: fixed; right: 2rem; bottom: 2rem; z-index: calc(var(--z-fab, 999) + 1);
@@ -398,6 +405,7 @@ body.light-theme .wwai-viz { --wwai-cat-1: #2a78d6; --wwai-cat-2: #eb6834; --wwa
 
 @media (max-width: 768px) {
   .wwai-fab { right: 1.25rem; bottom: 1.25rem; width: 48px; height: 48px; }
+  .wwai-fab .wwc-av { --av: 48px; }
   body[data-quick-add] .wwai-fab { bottom: calc(1.25rem + 48px + 10px); }
   .wwai-panel, .wwai-panel.is-wide { inset: 0; width: auto; height: auto; border-radius: 0; border: 0; transform-origin: bottom center; }
   /* full screen with viewport-fit=cover: keep the header below the notch and the box above the iPhone home bar */

@@ -80,8 +80,16 @@
   function coachName() { return coach().def.name; }
   function coachText(d, part) { return _t('aiCoach.coach.' + d.id + '.' + part, d[part]); }
   // the coach's avatar: a glossy orb with blinking eyes in its colour (CSS .wwc-av in ai-coach.css); px = diameter
+  // without px the size comes from CSS (.wwc-av: 48px; the floating button sets its own)
   function coachAv(d, px) {
-    return '<span class="wwc-av wwc-av-' + d.id + '" style="--av:' + (px || 48) + 'px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span>';
+    return '<span class="wwc-av wwc-av-' + d.id + '"' + (px ? ' style="--av:' + px + 'px"' : '') + ' aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span>';
+  }
+  // the floating button wears the chosen coach's face (the blinking orb); rebuilt only when the coach changes, so the
+  // blink keeps its rhythm across texts() calls
+  function renderFab() {
+    var id = coach().id;
+    if (!R.fab || R.fab._av === id) return;
+    R.fab._av = id; R.fab.innerHTML = coachAv(coachDef(id)); R.fab.classList.add('has-av');
   }
 
   // ---------------------------------------------------------------- helpers
@@ -152,9 +160,9 @@
   function mount() {
     if (S.mounted) return;
     S.mounted = true;
-    var fab = el('button', 'wwai-fab', ICON.spark);
+    var fab = el('button', 'wwai-fab');
     fab.type = 'button'; fab.id = 'wwai-fab';
-    R.fab = fab;
+    R.fab = fab; renderFab();
     var panel = el('section', 'wwai-panel');
     panel.id = 'wwai-panel'; panel.hidden = true; panel.setAttribute('role', 'dialog');
     panel.innerHTML =
@@ -237,6 +245,7 @@
     if (!R.panel) return;
     var mac = isMac();
     var cur = coach(), open = _t('aiCoach.open', '{coach} · AI Koç', { coach: cur.def.name });
+    renderFab();
     R.fab.setAttribute('aria-label', open);
     R.fab.title = open + ' (' + (mac ? '⌘' : 'Ctrl+') + 'K)';
     R.fab.setAttribute('aria-keyshortcuts', 'Control+K Meta+K');
