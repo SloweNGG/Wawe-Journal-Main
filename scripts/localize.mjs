@@ -279,7 +279,8 @@ function writeLangRedirects(distDir) {
         lines.push(`/${lang}${p}.html ${alt[1]} 301`, `/${lang}${p} ${alt[1]} 301`);
         continue;
       }
-      lines.push(`/${lang}${p}.html ${p}.html 301`, `/${lang}${p} ${p} 301`);
+      // Hedef temiz adres: "/x.html" hedefi Cloudflare'de bir 308 daha ekliyordu (Search Console "Yönlendirmeli sayfa")
+      lines.push(`/${lang}${p}.html ${clean} 301`, `/${lang}${p} ${clean} 301`);
     }
   }
   const file = path.join(distDir, '_redirects');

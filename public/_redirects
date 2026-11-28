@@ -1,3 +1,16 @@
+# Hedefler her zaman TEMİZ adres (/x, /x.html değil): Cloudflare /x.html'i ayrıca /x'e 308 ile yönlendirir,
+# ".html" hedefi iki adımlı zincir yapar ve Search Console'da "Yönlendirmeli sayfa" olarak görünür.
+# Bu kurallar statik dosyadan ÖNCE uygulanır: ileride aynı adla gerçek bir sayfa açılırsa kuralını buradan silin.
+
 # Eski Analiz (Premium Dashboard) adresi kalıcı olarak /analytics'e taşındı
-/premium-dashboard.html /analytics.html 301
-/premium-dashboard /analytics.html 301
+/premium-dashboard.html /analytics 301
+/premium-dashboard /analytics 301
+
+# Kaldırılan sayfalar: Google'ın bildiği adresler 404 ("Bulunamadı") vermesin, ana sayfaya gitsin
+# landing-preview → ana sayfa oldu (2026-10-16), wawesocial (2026-10-24) ve promo (2026-10-24) kaldırıldı
+/landing-preview.html / 301
+/landing-preview / 301
+/wawesocial.html / 301
+/wawesocial / 301
+/promo.html / 301
+/promo / 301
