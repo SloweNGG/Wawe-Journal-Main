@@ -62,7 +62,7 @@
    ağırlığa göre ayrı yüz (kalın metin gerçek Arial Bold ile). Dikey metrikler font tablolarından
    (Geist: ascent 1005 / descent 295 / upm 1000; Syne: 925 / 275; override = metrik ÷ size-adjust).
    unicode-range: yalnızca font dosyalarında gerçekten bulunan karakterler; olmayanlar (→, ₺ …) eskisi gibi sistem
-   fontuna düşer. Yöntem: docs/2026-11-03-PERF-PROGRESS.md → Parça 3 → 3a. Font dosyası değişirse yeniden ölçün. */
+   fontuna düşer. Font dosyası değişirse yeniden ölçün. */
 @font-face {
   font-family: 'Geist Fallback';
   font-weight: 100 449;

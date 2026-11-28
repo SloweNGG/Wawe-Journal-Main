@@ -1,6 +1,6 @@
 // supabase/functions/_shared/token-usage.ts
 // Token counts of one AI coach answer, for the "ai-coach tokens" log line (ai-coach/index.ts). Step 0 of the token
-// reduction plan (docs/2026-11-22-DEVAM-NOTLARI.md): measure what is sent, read from the cache and generated.
+// reduction plan: measure what is sent, read from the cache and generated.
 // Each provider names the fields differently:
 //   - Gemini Interactions API (interaction.completed -> interaction.usage): total_input_tokens, total_cached_tokens,
 //     total_output_tokens, total_thought_tokens, total_tokens

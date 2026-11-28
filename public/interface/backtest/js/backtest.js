@@ -2,7 +2,6 @@
 // accounts and trades in the user's account (WwBtStore, Supabase backend). data_source is 'synthetic' or 'ctrader' (Phase 2: the
 // candles of a cTrader account come from the user's own broker through the ctrader-candles Edge Function, bt-ctrader.js).
 // Re-runs on every SPA visit (data-page-script): top-level state lives in this IIFE and is torn down in PAGE.onLeave.
-// Spec: docs/backtest-v2/asama-arayuz/stage4.md + stage4-ek.md.
 (function () {
   'use strict';
 

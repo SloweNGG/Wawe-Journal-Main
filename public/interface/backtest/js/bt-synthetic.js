@@ -1,5 +1,5 @@
 // Backtest v2, Phase A: deterministic synthetic 1m BID candles (window.WwBtSynthetic).
-// Ported 1:1 from docs/backtest-v2/asama-arsiv/proto/scripts/candles/lib/sources/synthetic.mjs so that the
+// Ported 1:1 from the candle importer (scripts/candles/lib/sources/synthetic.mjs, private archive repo) so that the
 // browser and the Node importer produce the same candles. A day depends only on (seed, symbol, day) and two
 // daily anchors, so generating a month day by day or at once gives identical rows. Only + - * / sqrt and
 // integer ops are used (no Math.exp/log/cos): bit-identical on every IEEE-754 JS engine.

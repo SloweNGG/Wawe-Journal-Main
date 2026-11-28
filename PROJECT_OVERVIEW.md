@@ -75,8 +75,6 @@ Edge Function sırları Supabase'in Deno ortamındadır (`supabase secrets set`)
 ├─ PROJECT_OVERVIEW.md     Bu belge
 ├─ LICENSE                 AGPL-3.0-only
 │
-├─ docs/                   Tarihli devir notları (2026-11-09-CTRADER-MT5.md, 2026-11-15/16-DEVAM-NOTLARI.md,
-│                          2026-11-21-MT4.md), BACKTEST-DURUM.md, backtest-v2/ (DEVAM.md, kurallar)
 ├─ integrations/
 │  ├─ mt5/WaweSync.mq5     MetaTrader 5 senkron EA'sının kaynağı
 │  └─ mt4/WaweSync.mq4     MetaTrader 4 karşılığı (aynı protokol)
@@ -235,7 +233,7 @@ Her uygulama sayfasında ayrıca AI koç paneli (`public/components/ai-coach/`),
 
 **Not:** Çekirdek tablolar (`user_profiles`, `journals`, `trades`, `strategies`, `references`) Supabase panelinden oluşturulmuştur; repoda `CREATE TABLE` karşılıkları yoktur. Migration'lar bu tablolara sütun, indeks ve RLS ekler (bkz. `supabase/migrations/README.md`). Aşağıdaki sütun listeleri migration'lardan ve istemci kodundan derlenmiştir.
 
-**Migration kuralları:** Migration'lar elle, sırayla ve tek transaction olarak çalıştırılır (`psql -v ON_ERROR_STOP=1` veya SQL Editor; `supabase db push` kullanılmaz). Her dosyanın başlığında amaç, çalıştırma sırası, rollback ve doğrulama dosyası yazar. Canlıya yazmadan önce yedek alınır. Hangi migration'ın canlıda ne zaman çalıştığı `docs/` notlarında yazılıdır.
+**Migration kuralları:** Migration'lar elle, sırayla ve tek transaction olarak çalıştırılır (`psql -v ON_ERROR_STOP=1` veya SQL Editor; `supabase db push` kullanılmaz). Her dosyanın başlığında amaç, çalıştırma sırası, rollback ve doğrulama dosyası yazar. Canlıya yazmadan önce yedek alınır. Hangi migration'ın canlıda ne zaman çalıştığı, 2026-11-28'de repodan kaldırılan tarihli `docs/` notlarında yazılıdır (`git log --all -- docs/` ile geri bulunur).
 
 ### 5.1 İlişki şeması
 
@@ -316,7 +314,7 @@ Her tabloda `user_id` sahiplik alanıdır ve RLS politikaları `user_id = auth.u
 - Migration `202611090001` ile: `auto_sync` (varsayılan kapalı; açıksa ve son başarılı senkron 30 dakikadan eskiyse site açılınca arka planda senkron, `public/interface/shared/ctrader-sync.js`) ve `access_revoked_at` (cTrader onay ekranında işaretlenmeyen hesap; senkronlanmaz, deftere bağlanamaz).
 - RPC'ler: `get_ctrader_status` (yeni alanlarla), `link_ctrader_account` (erişimi kalkan hesabı reddeder), `set_ctrader_auto_sync`, `unlink_ctrader_account`, `disconnect_ctrader`.
 
-**MetaTrader 5 / 4 köprüsü** (migration `202611090002_mt5_bridge.sql`). Kullanıcının kendi terminalinde çalışan, yalnızca okuyan WaweSync EA'sı `mt5-bridge` Edge Function'ına bağlanır; MetaTrader şifresi istenmez. Ayrıntı: `docs/2026-11-09-CTRADER-MT5.md`, `docs/2026-11-21-MT4.md`.
+**MetaTrader 5 / 4 köprüsü** (migration `202611090002_mt5_bridge.sql`). Kullanıcının kendi terminalinde çalışan, yalnızca okuyan WaweSync EA'sı `mt5-bridge` Edge Function'ına bağlanır; MetaTrader şifresi istenmez. EA kaynakları: `integrations/mt5/WaweSync.mq5`, `integrations/mt4/WaweSync.mq4` (`.ex4` Pepperstone MT4 MetaEditor ile derlenir).
 | Tablo | Amaç / önemli alanlar |
 |---|---|
 | `mt5_accounts` | Hesap başına bir satır: `user_id`, `journal_id` (dolu olduğunda tekil), `login`, `server`, `broker_name`, `currency`, `is_live`, `balance`, `equity`, `token_hash` (cihaz token'ının SHA-256'sı), `ea_version`, `last_seen_at` (EA nabzı), `last_sync_at`, `last_error`, `cursor_server_ts` (senkron imleci). Tekil `(user_id, server, login)` |
@@ -373,7 +371,7 @@ Edge Function'lar `git push` ile deploy olmaz: `npx supabase functions deploy <a
 | `admin-notify` | Admin Web Push: DB tetikleyici çağrıları (`signup`, `report`, `payout`) ve admin panelinden `config` / `subscribe` / `unsubscribe` / `test` | `--no-verify-jwt`; satır service role ile yeniden okunur |
 | `get-candles` | Eski backtest için mum verisi. **Repodan silindi**; canlıdaki kopyası hâlâ duruyor olabilir, silinmesi ayrı bir adım (canlı yazma). | — |
 
-**`--no-verify-jwt` listesi:** Kesin olanlar: `mt5-bridge`, `admin-notify` (kendi başlıkları), `nowpayment-webhook`, `creem-webhook` (README ve 2026-11-16 notu). `README.md` ayrıca `creem-checkout` ve `ctrader-*` fonksiyonlarını sayar; `docs/2026-11-15-DEVAM-NOTLARI.md` ise `create-payment` ve tüm `creem-*`'i sayar. Bu fonksiyonlar kimliği zaten kendi içinde doğrular; deploy'dan önce canlıdaki ayarı kontrol et.
+**`--no-verify-jwt` listesi:** Kesin olanlar: `mt5-bridge`, `admin-notify` (kendi başlıkları), `nowpayment-webhook`, `creem-webhook` (README ve 2026-11-16 notu). `README.md` ayrıca `creem-checkout` ve `ctrader-*` fonksiyonlarını sayar; 2026-11-15 devir notu ise `create-payment` ve tüm `creem-*`'i sayıyordu. Bu fonksiyonlar kimliği zaten kendi içinde doğrular; deploy'dan önce canlıdaki ayarı kontrol et.
 
 **Ortak modüller (`_shared/`):**
 | Modül | Ne yapar |
@@ -395,7 +393,7 @@ Edge Function'lar `git push` ile deploy olmaz: `npx supabase functions deploy <a
 
 ### 5.7 Backtest v2
 
-**Durum (2026-11-22):** Üretimde (master), `BACKEND = 'supabase'`. Sayfa giriş yapmış tüm kullanıcılara açık. Mumlar iki kaynaktan gelir: tarayıcıda üretilen **sentetik** veri ve kullanıcının kendi broker hesabından **cTrader** verisi (Faz 2, migration 09). Hesaplar ve işlemler kullanıcının hesabında (Supabase) saklanır. Kendi mum arşivimiz (Faz E) henüz yok. Ayrıntılı durum: `docs/BACKTEST-DURUM.md`.
+**Durum (2026-11-22):** Üretimde (master), `BACKEND = 'supabase'`. Sayfa giriş yapmış tüm kullanıcılara açık. Mumlar iki kaynaktan gelir: tarayıcıda üretilen **sentetik** veri ve kullanıcının kendi broker hesabından **cTrader** verisi (Faz 2, migration 09). Hesaplar ve işlemler kullanıcının hesabında (Supabase) saklanır. Kendi mum arşivimiz (Faz E) henüz yok.
 
 **Sayfa ve kütüphaneler (`public/interface/backtest/`):**
 | Dosya | Görev |
@@ -593,7 +591,7 @@ Böylece font, eksen yazısı, ızgara ve tooltip görünümü diğer sayfalarla
 - **Backtest duman testleri:** gerçek derlenmiş sayfa üzerinde headless Chrome (`tests/smoke/`, `node --test`'in parçası değil). Adımlar: `npx astro build` → `python3 tests/smoke/make.py` → `PP_DIR=<puppeteer-core klasörü> node tests/smoke/run.mjs`. Ayrıntı ve senaryolar: `tests/smoke/README.md`.
 - **SQL doğrulama:** her yeni migration'ın `supabase/tests/*_verify.sql` betiği tek transaction'da çalışıp ROLLBACK ile biter; bazılarının PGlite provası (`rehearse_*.mjs`) vardır.
 - **Yayın:** Üretim sitesi **`master`** dalından Cloudflare Pages ile yayınlanır; push edilen her şey birkaç dakikada wawejournal.com'a çıkar (`main` eski, kullanılmıyor). Push'tan sonra Pages panelinde deploy'un başladığına bak. Edge Function'lar ve migration'lar push ile gitmez, elle uygulanır (bkz. 5 ve 5.6).
-- **Devir notları:** Canlıda neyin ne zaman yapıldığı, yedeklerin yeri ve sonraki adımlar `docs/` altındaki tarihli notlardadır (en yenisi `docs/2026-11-24-OZET.md`).
+- **Devir notları:** Tarihli günlük notlar (`docs/`) 2026-11-28'de repodan kaldırıldı; hâlâ geçerli olan kısımları aşağıda "9. Açık işler, kararlar ve yedekler" bölümünde. Eski notlar git geçmişinde: `git log --all -- docs/`.
 - **Yerel demo:** `node scripts/seed-demo.mjs` yerel sahte Supabase için demo verisi üretir; `scripts/demo/` Playwright ile tanıtım görüntüsü çeker. Canlı veritabanına istek gitmez.
 - **Astro geliştirme araç çubuğu kapalı** (`astro.config.mjs` → `devToolbar.enabled = false`): localhost'ta alt paneldeki tabloların üstünü kapatıyordu.
 - **Önbellek kırma:** Kaynak dosyalara elle `?v=` yazılmaz; derleme her yerel JS/CSS referansına `?v=<BUILD_ID>` yazar (`scripts/asset-version.mjs`). Kodla kurulan adreslerde (fetch, `script.src`, dinamik import) kaynakta `?v=__WW_BUILD_ID__` yazılır. Damgasız referans derlemeyi durdurur. Service worker önbellek adı da her derlemede değişir.
@@ -601,4 +599,32 @@ Böylece font, eksen yazısı, ızgara ve tooltip görünümü diğer sayfalarla
 - **Bilinen sorunlar ve tutarsızlıklar:**
   - `report-bug.astro`'nun `bug_reports` başarısız olunca `system_settings`'e yedek yazması admin-only RLS yüzünden başarısız olur.
   - Bazı istemci ayarları (Supabase genel anahtarı vb.) ortam değişkeni yoksa kodda yedek değer olarak duruyor. Bunlar herkese açık türden anahtarlar olsa da tek bir yerden (`config.js`) yönetilmeleri daha doğru olur.
-  - `--no-verify-jwt` gereken fonksiyonların listesi `README.md` ile `docs/2026-11-15-DEVAM-NOTLARI.md` arasında farklı (bkz. 5.6).
+  - `--no-verify-jwt` gereken fonksiyonların listesi `README.md` ile eski 2026-11-15 notu arasında farklıydı (bkz. 5.6).
+
+---
+
+## 9. Açık işler, kararlar ve yedekler
+
+2026-11-28'de silinen tarihli notlardan (21–24 Kasım) hâlâ geçerli olan maddeler. İş bittikçe buradan silin.
+
+**Açık işler**
+- **AI koç:** gerçek bir üye hesabıyla henüz kullanılmadı (günlük sözler, aksiyon kartları, OpenRouter yedeği, ekran görüntülü/vision yedek modeli canlıda hiç devreye girmedi). Günlük limitler geçici (ücretsiz 5 / premium 50). Sert koçların nötr sorularda da söz önermesi davranış kararı bekliyor. MFE/MAE ertelendi: işlemlerde gerçek açılış saati yok (önce cTrader'da açılış saati, MT5 EA'dan MFE/MAE ya da formda saat alanı gerekir).
+- **AI ile Ekle:** telefondan gerçek ekran görüntüsüyle (iPhone galerisi, broker mobil uygulaması) ve okunamayan gerçek bir broker dosyasıyla sütun eşleme denemesi. Ana sayfada ve entegrasyonlar sayfasında tanıtılması önerildi, karar bekliyor.
+- **Tradovate:** CrossTrade partner cevabı bekleniyor (deneme/ücret indirimi, saklama süresi, ülke; gelince ayrı ücretli ek paket kararı). NinjaTrader Connect başvurusunun cevabı bekleniyor. Bir kullanıcının gerçek Performance CSV dosyasıyla doğrulama kaldı.
+- **K/Z:** çapraz paritelerde (EURJPY, GBPJPY) kur verisi yok.
+- **MT5:** EA'yı MQL5 Market'te yayınlamak (mql5.com hesabı gerekir). İsteğe bağlı kısa `api.wawejournal.com` adresi.
+- **SEO:** HSTS Cloudflare panelinden açılacak. Marka profilleri (Product Hunt, AlternativeTo vb.) açılınca URL'leri Organization `sameAs` ve footer'a ekle. Sıradaki sayfa adayları: MT5, cTrader, AI koç özellik sayfaları. Prop preset'leri yalnızca FTMO, FundedNext ve FundingPips için var; başka firma için preset iddia etme.
+- **Ekonomik takvim:** Forex Factory beslemesinde gerçekleşen değer ve gelecek hafta dosyası yok. Üyelere Web Push yok (yalnızca uygulama açıkken uyarı); istenirse abonelik tablosu + pg_cron gerekir.
+- **Admin Web Push:** sunucu tarafı canlı, yalnızca telefonda test kaldı.
+- **Hız:** geç LCP: backtest (~4,6 sn) ve strategies mobil (~3,8 sn).
+- **İsteğe bağlı:** Cloudflare Email Address Obfuscation'ı kapatmak. Giriş/kayıt sayfasındaki `%c%d` konsol satırları Cloudflare Turnstile'dan geliyor, site kodundan değil.
+
+**Verilen kararlar**
+- Ücretli AI planı ve limit çalışması gerçek kullanım gelince yapılacak.
+- Otomatik canlı sağlık kontrolü istenmiyor; sorulmadan yeniden kurulmayacak.
+- Profil sorguları birleştirilmeyecek (giriş kontrolünü riske atıyor).
+- Cloudflare Rocket Loader kapalı kalacak.
+
+**Yedekler ve repo dışı araçlar**
+- Canlı deploy/migration öncesi yedekler: `~/WaweJournal-Backups/` (ör. `20261124T135727Z-ai-coach-sen/` = ai-coach v20, `2026-11-21-pre-mt4-bridge/`).
+- Uçtan uca ölçüm/test betikleri (verify, live-check, sbcount, realvisit, coach-e2e vb.): `~/WaweJournal-PerfWave-2026-11-23/tools/` (node_modules yok; scratchpad'e kopyalayıp `npm i puppeteer-core@23.11.1 pngjs@7 pixelmatch@5.3.0`).

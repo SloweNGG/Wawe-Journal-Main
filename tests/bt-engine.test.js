@@ -1,5 +1,5 @@
 // Backtest v2: exact-money trade engine (public/interface/backtest/js/bt-engine.js)
-// Verified numbers: docs/backtest-v2/asama-arayuz/prototip/check-numbers.mjs and stage4.md section 7.3
+// Verified numbers: the stage-4 prototype check (check-numbers.mjs), kept in git history
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBt, plain } from './helpers/bt-env.js';

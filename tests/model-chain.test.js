@@ -1,7 +1,7 @@
 // ============================================================
 // AI coach: which Gemini model answers and how long the member waits for the first word
 // (supabase/functions/_shared/model-chain.ts). A fake clock replays the free-tier situations seen in production
-// (docs/2026-11-15-DEVAM-NOTLARI.md: the two better models are almost always busy, flash-lite answers), two messages
+// (mid-November 2026: the two better models are almost always busy, flash-lite answers), two messages
 // in a row on the same function instance, with the old settings (20 s per model, no memory) and the new ones.
 // Runner: node --test tests/*.test.js
 // ============================================================

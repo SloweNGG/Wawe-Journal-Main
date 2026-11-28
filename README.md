@@ -73,7 +73,6 @@ supabase/functions/   Edge Functions; shared logic in _shared/
 integrations/         WaweSync Expert Advisor sources for MetaTrader 5 and 4
 scripts/              setup, demo data and performance tooling
 tests/                unit tests; tests/smoke/ backtest browser tests
-docs/                 dated release, handoff and daily notes (Turkish)
 PROJECT_OVERVIEW.md   detailed architecture notes (Turkish)
 ```
 

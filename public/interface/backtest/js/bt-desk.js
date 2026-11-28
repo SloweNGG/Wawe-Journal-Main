@@ -6,7 +6,7 @@
 // windows and the desk edges it sticks like a magnet. Simple mode keeps a fixed layout without frames; a phone stacks the windows at
 // full width and never drags. Layouts: the current one is saved per user, four presets, named layouts (free 1, Premium more), reset.
 // Stored per user in localStorage 'ww_bt_desk_v1:<user id>' (with the statistics widgets and the full-screen multi-chart grid).
-// Own code, no library: snapping, magnet, taskbar and the chart resizing are specific to this page (see docs/BACKTEST-DURUM.md).
+// Own code, no library: snapping, magnet, taskbar and the chart resizing are specific to this page.
 // The pure model at the top is unit tested; mount() needs the DOM.
 (function (global) {
   'use strict';
