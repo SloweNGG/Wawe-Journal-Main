@@ -291,8 +291,9 @@ describe('page-specific helpers left the shared layout', () => {
     assert.ok(!layout.includes('/src/utils/prop-montecarlo.js'));
     assert.match(fs.readFileSync('src/pages/dashboard.astro', 'utf8'), /<script src="\/src\/utils\/prop-montecarlo\.js" is:inline defer><\/script>/);
     const users = [];
-    for (const p of fs.readdirSync('src/pages', { recursive: true })) {
-      if (String(p).endsWith('.astro') && fs.readFileSync('src/pages/' + p, 'utf8').includes('PropMonteCarlo')) users.push(String(p));
+    // readdirSync({ recursive }) Windows'ta "tools\x.astro" verir: karşılaştırma için "/" ayracına çevrilir
+    for (const p of fs.readdirSync('src/pages', { recursive: true }).map((x) => String(x).replace(/\\/g, '/'))) {
+      if (p.endsWith('.astro') && fs.readFileSync('src/pages/' + p, 'utf8').includes('PropMonteCarlo')) users.push(p);
     }
     // Dashboard'ın sayfa script'i satır içinden public/interface/dashboard/js/dashboard-page.js'e taşındı
     const DASH_PAGE_JS = 'public/interface/dashboard/js/dashboard-page.js';
@@ -301,7 +302,7 @@ describe('page-specific helpers left the shared layout', () => {
     assert.ok(users.includes('dashboard.astro') || fs.readFileSync(DASH_PAGE_JS, 'utf8').includes('PropMonteCarlo'), 'the dashboard still uses it');
     for (const p of ['public/components', 'public/interface', 'public/src']) {
       for (const f of fs.readdirSync(p, { recursive: true })) {
-        const file = p + '/' + f;
+        const file = p + '/' + String(f).replace(/\\/g, '/');
         if (!file.endsWith('.js') || file.endsWith('prop-montecarlo.js') || file.endsWith('bundle.js') || file === DASH_PAGE_JS) continue;
         assert.ok(!fs.readFileSync(file, 'utf8').includes('PropMonteCarlo'), file + ' uses PropMonteCarlo: it is only on the dashboard now');
       }

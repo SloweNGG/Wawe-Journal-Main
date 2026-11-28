@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { pathToFileURL } from 'node:url';
 
 const code = fs.readFileSync(path.resolve('public/components/ambient/ambient.js'), 'utf8');
 const mod = { exports: {} };
@@ -119,7 +120,8 @@ describe('ambient: catalog', () => {
     }
     for (const part of Object.keys(A.DAYPART)) keys.push('settings.bg_p_daytime_' + part);
     for (const lang of ['tr', 'en', 'de']) {
-      const d = (await import(path.resolve('public/i18n/locales/' + lang + '.js'))).default;
+      // import() bir URL ister: Windows'ta düz yol ("c:\...") ERR_UNSUPPORTED_ESM_URL_SCHEME verir
+      const d = (await import(pathToFileURL(path.resolve('public/i18n/locales/' + lang + '.js')).href)).default;
       for (const k of keys) assert.ok(typeof d[k] === 'string' && d[k].length, lang + ': ' + k);
     }
   });
