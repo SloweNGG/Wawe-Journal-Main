@@ -1,0 +1,4 @@
+# Tüm metin dosyaları her işletim sisteminde LF ile açılır (core.autocrlf=true olan Windows dahil).
+# Testler kaynak dosyaları "\n" kalıplarıyla okur ve public/src/bundle.js'i taze esbuild çıktısıyla bayt bayt
+# karşılaştırır; CRLF ile açılan dosyalarda bu testler Windows'ta kalıyordu. Depoda zaten her şey LF.
+* text=auto eol=lf
